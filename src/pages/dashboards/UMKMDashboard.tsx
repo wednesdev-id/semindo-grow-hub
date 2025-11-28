@@ -1,39 +1,23 @@
-import React from 'react';
-import CardDataStats from '@/components/dashboard/CardDataStats';
-import ChartOne from '@/components/dashboard/ChartOne';
-import ChartThree from '@/components/dashboard/ChartThree';
-import ChartFour from '@/components/dashboard/ChartFour';
-import TableOne from '@/components/dashboard/TableOne';
-import { Activity, FileText, MessageSquare, BookOpen } from 'lucide-react';
+import EcommerceMetrics from '@/components/dashboard/tailadmin/EcommerceMetrics'
+import MonthlySalesChart from '@/components/dashboard/tailadmin/MonthlySalesChart'
+import MonthlyTarget from '@/components/dashboard/tailadmin/MonthlyTarget'
+import StatisticsChart from '@/components/dashboard/tailadmin/StatisticsChart'
 
-const UMKMDashboard: React.FC = () => {
+export default function UMKMDashboard() {
     return (
-        <>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
-                <CardDataStats title="Health Score" total="68/100" rate="5.0%" levelUp>
-                    <Activity className="text-primary dark:text-white" size={22} />
-                </CardDataStats>
-                <CardDataStats title="Assessments" total="3" rate="1" levelUp>
-                    <FileText className="text-primary dark:text-white" size={22} />
-                </CardDataStats>
-                <CardDataStats title="Consultations" total="1" rate="0" levelDown>
-                    <MessageSquare className="text-primary dark:text-white" size={22} />
-                </CardDataStats>
-                <CardDataStats title="Courses" total="2" rate="12%" levelUp>
-                    <BookOpen className="text-primary dark:text-white" size={22} />
-                </CardDataStats>
+        <div className="grid grid-cols-12 gap-4 md:gap-6">
+            <div className="col-span-12 space-y-6 xl:col-span-7">
+                <EcommerceMetrics />
+                <MonthlySalesChart />
             </div>
 
-            <div className="mt-4 grid grid-cols-12 gap-4 md:mt-6 md:gap-6 2xl:mt-7.5 2xl:gap-7.5">
-                <ChartOne />
-                <ChartFour />
-                <ChartThree />
-                <div className="col-span-12 xl:col-span-7">
-                    <TableOne />
-                </div>
+            <div className="col-span-12 xl:col-span-5">
+                <MonthlyTarget />
             </div>
-        </>
-    );
-};
 
-export default UMKMDashboard;
+            <div className="col-span-12">
+                <StatisticsChart />
+            </div>
+        </div>
+    )
+}
