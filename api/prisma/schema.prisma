@@ -1,0 +1,224 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USER MANAGEMENT & RBAC
+// ============================================
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String   @map("password_hash")
+  fullName      String   @map("full_name")
+  phone         String?
+  businessName  String?  @map("business_name")
+  emailVerified Boolean  @default(false) @map("email_verified")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userRoles    UserRole[]
+  assessments  Assessment[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  displayName String   @map("display_name")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  displayName String   @map("display_name")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId     String   @map("user_id")
+  roleId     String   @map("role_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String @map("role_id")
+  permissionId String @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+// ============================================
+// ASSESSMENT SYSTEM
+// ============================================
+
+model Assessment {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  templateId  String?   @map("template_id")
+  status      String    @default("draft") // draft, in_progress, completed
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template  AssessmentTemplate?  @relation(fields: [templateId], references: [id])
+  responses AssessmentResponse[]
+  score     AssessmentScore?
+  recommendations AssessmentRecommendation[]
+
+  @@map("assessments")
+}
+
+model AssessmentTemplate {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  category    String   // e.g., "General", "F&B", "Retail"
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  questions   AssessmentQuestion[]
+  assessments Assessment[]
+  recommendationRules RecommendationRule[]
+
+  @@map("assessment_templates")
+}
+
+model AssessmentCategory {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  weight      Decimal  @default(1.0) @db.Decimal(3, 2)
+  
+  questions   AssessmentQuestion[]
+  recommendationRules RecommendationRule[]
+
+  @@map("assessment_categories")
+}
+
+model AssessmentQuestion {
+  id          String   @id @default(uuid())
+  templateId  String   @map("template_id")
+  categoryId  String   @map("category_id")
+  text        String
+  type        String   // multiple_choice, scale, boolean, text
+  options     Json?    // For multiple choice
+  weight      Decimal  @default(1.0) @db.Decimal(3, 2)
+  order       Int      @default(0)
+  
+  template    AssessmentTemplate @relation(fields: [templateId], references: [id])
+  category    AssessmentCategory @relation(fields: [categoryId], references: [id])
+  responses   AssessmentResponse[]
+  
+  @@map("assessment_questions")
+}
+
+model AssessmentResponse {
+  id           String   @id @default(uuid())
+  assessmentId String   @map("assessment_id")
+  questionId   String   @map("question_id")
+  answerValue  Json     @map("answer_value")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  assessment Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  question   AssessmentQuestion @relation(fields: [questionId], references: [id])
+
+  @@unique([assessmentId, questionId])
+  @@map("assessment_responses")
+}
+
+model AssessmentScore {
+  id              String   @id @default(uuid())
+  assessmentId    String   @unique @map("assessment_id")
+  totalScore      Decimal  @map("total_score") @db.Decimal(5, 2)
+  umkmLevel       String   @map("umkm_level") // mikro, kecil, menengah
+  confidenceScore Decimal? @map("confidence_score") @db.Decimal(3, 2)
+  categoryScores  Json     @map("category_scores")
+  calculatedAt    DateTime @default(now()) @map("calculated_at")
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_scores")
+}
+
+model RecommendationRule {
+  id          String   @id @default(uuid())
+  templateId  String   @map("template_id")
+  categoryId  String?  @map("category_id")
+  
+  // Condition
+  minScore    Decimal? @db.Decimal(5, 2)
+  maxScore    Decimal? @db.Decimal(5, 2)
+  
+  // Output
+  title       String
+  description String
+  priority    String   // high, medium, low
+  actionItems Json     // Array of strings
+  resources   Json?    // Array of { title, type, url }
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  template    AssessmentTemplate @relation(fields: [templateId], references: [id])
+  category    AssessmentCategory? @relation(fields: [categoryId], references: [id])
+
+  @@map("recommendation_rules")
+}
+
+model AssessmentRecommendation {
+  id           String   @id @default(uuid())
+  assessmentId String   @map("assessment_id")
+  
+  title        String
+  description  String
+  priority     String
+  category     String
+  actionItems  Json
+  resources    Json?
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@map("assessment_recommendations")
+}

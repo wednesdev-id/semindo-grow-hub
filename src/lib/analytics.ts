@@ -35,7 +35,7 @@ declare global {
 }
 
 // Initialize Google Analytics
-export const initGA = () => {
+export const initializeAnalytics = () => {
   // Load gtag script
   const script = document.createElement('script');
   script.async = true;

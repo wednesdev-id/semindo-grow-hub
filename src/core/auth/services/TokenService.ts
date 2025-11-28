@@ -1,4 +1,4 @@
-import { CORE_CONSTANTS } from '../../index'
+import { CORE_CONSTANTS } from '../../constants'
 import { StorageService } from '../../infrastructure/storage/StorageService'
 
 export class TokenService {
@@ -37,7 +37,7 @@ export class TokenService {
   }
 
   async isTokenExpired(): Promise<boolean> {
-    const expirationTime = await this.storageService.getItem('token_expiration')
+    const expirationTime = await this.storageService.getItem<number>('token_expiration')
     if (!expirationTime) return true
     return Date.now() >= expirationTime
   }

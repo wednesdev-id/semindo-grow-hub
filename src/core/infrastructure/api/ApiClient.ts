@@ -4,7 +4,8 @@
  * Handles authentication, retries, rate limiting, and error handling
  */
 
-import { CORE_CONSTANTS, CoreError } from '../..';
+import { CORE_CONSTANTS } from '../../constants';
+import { CoreError } from '../../errors';
 
 // Request and Response Interfaces
 export interface RequestOptions {
@@ -81,7 +82,7 @@ export class ApiClient {
       'X-API-Version': CORE_CONSTANTS.API_VERSION,
       ...config.defaultHeaders
     };
-    
+
     this.retryConfig = {
       maxRetries: CORE_CONSTANTS.MAX_RETRIES,
       retryDelay: 1000,
@@ -130,10 +131,10 @@ export class ApiClient {
    */
   private async request<T>(endpoint: string, options: RequestOptions): Promise<ApiResponse<T>> {
     const requestKey = this.generateRequestKey(endpoint, options);
-    
+
     // Check if identical request is already in progress
     if (this.requestQueue.has(requestKey)) {
-      return this.requestQueue.get(requestKey)!;
+      return this.requestQueue.get(requestKey)! as Promise<ApiResponse<T>>;
     }
 
     // Create new request promise
@@ -145,7 +146,7 @@ export class ApiClient {
 
     // Add to queue
     this.requestQueue.set(requestKey, requestPromise);
-    
+
     return requestPromise;
   }
 
@@ -193,7 +194,7 @@ export class ApiClient {
 
       } catch (error) {
         lastError = this.createApiError(error);
-        
+
         // Check if should retry on exception
         if (attempt < maxRetries && this.shouldRetry(lastError)) {
           await this.delay(this.retryConfig.retryDelay * Math.pow(2, attempt));
@@ -202,7 +203,7 @@ export class ApiClient {
 
         // Log error
         console.error(`API request failed (attempt ${attempt + 1}):`, error);
-        
+
         // Call error handler
         if (this.onError) {
           this.onError(lastError);
@@ -229,10 +230,10 @@ export class ApiClient {
   private buildURL(endpoint: string): string {
     // Remove leading slash from endpoint if present
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-    
+
     // Remove trailing slash from baseURL if present
     const cleanBaseURL = this.baseURL.endsWith('/') ? this.baseURL.slice(0, -1) : this.baseURL;
-    
+
     return `${cleanBaseURL}/${cleanEndpoint}`;
   }
 
@@ -344,7 +345,7 @@ export class ApiClient {
     } catch (parseError) {
       // Handle non-JSON responses
       const text = await response.text();
-      
+
       return {
         success: false,
         error: {
@@ -536,7 +537,7 @@ export class ApiClient {
     endpoint: string;
     options?: RequestOptions;
   }>): Promise<ApiResponse<T>[]> {
-    const promises = requests.map(({ endpoint, options }) => 
+    const promises = requests.map(({ endpoint, options }) =>
       this.request<T>(endpoint, options || {})
     );
 

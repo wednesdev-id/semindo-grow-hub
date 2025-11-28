@@ -154,30 +154,13 @@ export interface OAuthResponse {
   token: string;
 }
 
+import { ApiError, ApiResponse, ValidationError } from '../infrastructure/api/ApiClient';
+import { DeviceInfo } from '../assessment/types';
+
 // Validation Types
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
-}
-
-export interface ValidationError {
-  field: string;
-  message: string;
-  code: string;
-}
-
-// API Response Types
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: ApiError;
-  message?: string;
-}
-
-export interface ApiError {
-  code: string;
-  message: string;
-  details?: unknown;
 }
 
 // Session Management
@@ -188,13 +171,6 @@ export interface SessionInfo {
   ipAddress: string;
   userAgent: string;
   deviceInfo?: DeviceInfo;
-}
-
-export interface DeviceInfo {
-  deviceType: 'mobile' | 'tablet' | 'desktop';
-  os: string;
-  browser: string;
-  isTrusted: boolean;
 }
 
 // Audit Log Types
@@ -221,7 +197,7 @@ export interface RolePermission {
   permissions: Permission[];
 }
 
-export type Permission = 
+export type Permission =
   | 'read:profile'
   | 'update:profile'
   | 'read:business'

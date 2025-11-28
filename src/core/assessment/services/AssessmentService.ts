@@ -17,12 +17,12 @@ export class AssessmentService {
   }
 
   async getTemplates(): Promise<AssessmentTemplate[]> {
-    const res = await this.apiClient.get<AssessmentTemplate[]>('/assessment/templates')
+    const res = await this.apiClient.get<AssessmentTemplate[]>('/assessment')
     return res.success && res.data ? res.data : []
   }
 
   async startAssessment(templateId: string): Promise<Assessment> {
-    const res = await this.apiClient.post<Assessment>('/assessment/start', { templateId })
+    const res = await this.apiClient.post<Assessment>('/assessment', { templateId })
     if (res.success && res.data) return res.data
     throw new Error(res.error?.message || 'Failed to start assessment')
   }
@@ -32,7 +32,7 @@ export class AssessmentService {
   }
 
   async finalize(assessmentId: string): Promise<{ assessment: Assessment; score: AssessmentScore; recommendations: Recommendation[] }> {
-    const res = await this.apiClient.post<Assessment>(`/assessment/${assessmentId}/finalize`)
+    const res = await this.apiClient.post<Assessment>(`/assessment/${assessmentId}/submit`)
     if (!res.success || !res.data) throw new Error(res.error?.message || 'Finalize failed')
     const assessment = res.data
     const templateRes = await this.apiClient.get<AssessmentTemplate>(`/assessment/templates/${assessment.category}`)
@@ -43,7 +43,7 @@ export class AssessmentService {
   }
 
   async getHistory(userId: string): Promise<Assessment[]> {
-    const res = await this.apiClient.get<Assessment[]>(`/assessment/history?userId=${encodeURIComponent(userId)}`)
+    const res = await this.apiClient.get<Assessment[]>('/assessment/me')
     return res.success && res.data ? res.data : []
   }
 

@@ -4,6 +4,10 @@
  * This file serves as the main entry point for all core functionality
  */
 
+// Core Definitions
+export * from './constants';
+export * from './errors';
+
 // Auth Module
 export * from './auth/types';
 export * from './auth/services/AuthService';
@@ -44,10 +48,10 @@ export class CoreModuleRegistry {
   }
 
   async initializeAll(): Promise<void> {
-    const initializationPromises = Array.from(this.modules.values()).map(module => 
+    const initializationPromises = Array.from(this.modules.values()).map(module =>
       module.initialize()
     );
-    
+
     try {
       await Promise.all(initializationPromises);
       console.log('All core modules initialized successfully');
@@ -61,7 +65,7 @@ export class CoreModuleRegistry {
     const destructionPromises = Array.from(this.modules.values())
       .filter(module => module.destroy)
       .map(module => module.destroy!());
-    
+
     try {
       await Promise.all(destructionPromises);
       console.log('All core modules destroyed successfully');
@@ -105,10 +109,10 @@ export class CoreApplication {
     try {
       // Register all core modules
       await this.registerModules();
-      
+
       // Initialize all modules
       await this.moduleRegistry.initializeAll();
-      
+
       this.isInitialized = true;
       console.log('Core application initialized successfully');
     } catch (error) {
@@ -124,6 +128,7 @@ export class CoreApplication {
     }
 
     try {
+      // Destroy all modules
       await this.moduleRegistry.destroyAll();
       this.isInitialized = false;
       console.log('Core application destroyed successfully');
@@ -178,53 +183,6 @@ export interface CoreConfig {
 }
 
 /**
- * Core Error Classes
- * Custom error classes for core module operations
- */
-export class CoreError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public details?: unknown
-  ) {
-    super(message);
-    this.name = 'CoreError';
-  }
-}
-
-export class ModuleInitializationError extends CoreError {
-  constructor(moduleName: string, details?: unknown) {
-    super(
-      `Failed to initialize module: ${moduleName}`,
-      'MODULE_INIT_ERROR',
-      details
-    );
-    this.name = 'ModuleInitializationError';
-  }
-}
-
-export class ValidationError extends CoreError {
-  constructor(message: string, details?: unknown) {
-    super(message, 'VALIDATION_ERROR', details);
-    this.name = 'ValidationError';
-  }
-}
-
-export class AuthenticationError extends CoreError {
-  constructor(message: string = 'Authentication failed', details?: unknown) {
-    super(message, 'AUTH_ERROR', details);
-    this.name = 'AuthenticationError';
-  }
-}
-
-export class AuthorizationError extends CoreError {
-  constructor(message: string = 'Access denied', details?: unknown) {
-    super(message, 'AUTHORIZATION_ERROR', details);
-    this.name = 'AuthorizationError';
-  }
-}
-
-/**
  * Core Utilities
  * Helper functions for core module operations
  */
@@ -267,7 +225,7 @@ export const CoreUtils = {
     if (obj === null || typeof obj !== 'object') return obj;
     if (obj instanceof Date) return new Date(obj.getTime()) as unknown as T;
     if (Array.isArray(obj)) return obj.map(item => this.deepClone(item)) as unknown as T;
-    
+
     const cloned: Record<string, unknown> = {};
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj as object, key)) {
@@ -320,50 +278,3 @@ export const CoreUtils = {
     return div.innerHTML;
   }
 };
-
-/**
- * Core Constants
- * Global constants used across core modules
- */
-export const CORE_CONSTANTS = {
-  // API Constants
-  API_VERSION: 'v1',
-  API_TIMEOUT: 30000, // 30 seconds
-  MAX_RETRIES: 3,
-  
-  // Auth Constants
-  TOKEN_KEY: 'semindo_access_token',
-  REFRESH_TOKEN_KEY: 'semindo_refresh_token',
-  SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutes
-  
-  // Storage Constants
-  STORAGE_PREFIX: 'semindo_',
-  MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_FILE_TYPES: ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'],
-  
-  // Validation Constants
-  MIN_PASSWORD_LENGTH: 8,
-  MAX_PASSWORD_LENGTH: 128,
-  MIN_PHONE_LENGTH: 10,
-  MAX_PHONE_LENGTH: 15,
-  
-  // Business Constants
-  BUSINESS_LEVELS: {
-    MICRO: { minRevenue: 0, maxRevenue: 300000000, minEmployees: 0, maxEmployees: 4 },
-    SMALL: { minRevenue: 300000000, maxRevenue: 2500000000, minEmployees: 5, maxEmployees: 19 },
-    MEDIUM: { minRevenue: 2500000000, maxRevenue: 50000000000, minEmployees: 20, maxEmployees: 99 }
-  },
-  
-  // Feature Flags
-  FEATURES: {
-    ASSESSMENT: true,
-    LEARNING: true,
-    CONSULTATION: true,
-    FINANCING: true,
-    MARKETPLACE: true,
-    EXPORT: true,
-    COMMUNITY: true,
-    MONITORING: true,
-    ANALYTICS: true
-  }
-} as const;
