@@ -15,7 +15,7 @@ export default function AssessmentResultsPage() {
     useEffect(() => {
         const fetchResults = async () => {
             try {
-                const token = localStorage.getItem('token')
+                const token = localStorage.getItem('auth_token')
                 const res = await fetch(`/api/v1/assessment/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`

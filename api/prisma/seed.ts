@@ -301,6 +301,54 @@ async function main() {
     }
 
     console.log('Seed data inserted successfully')
+
+    // 6. Create Demo User
+    const bcrypt = require('bcryptjs')
+    // Create demo user with UMKM role
+    const demoPassword = await bcrypt.hash("password123", 10);
+
+    const demoUser = await prisma.user.upsert({
+        where: { email: "demo@example.com" },
+        update: {},
+        create: {
+            email: "demo@example.com",
+            passwordHash: demoPassword,
+            fullName: "Demo UMKM User",
+            userRoles: {
+                create: {
+                    role: {
+                        connect: { name: "umkm" }
+                    }
+                }
+            }
+        },
+    });
+
+    console.log("✅ Demo UMKM user created:", demoUser.email);
+
+    // Create super admin demo user
+    const adminPassword = await bcrypt.hash("admin123", 10);
+
+    const adminUser = await prisma.user.upsert({
+        where: { email: "admin@semindo.com" },
+        update: {},
+        create: {
+            email: "admin@semindo.com",
+            passwordHash: adminPassword,
+            fullName: "Super Admin",
+            userRoles: {
+                create: {
+                    role: {
+                        connect: { name: "admin" }
+                    }
+                }
+            }
+        },
+    });
+
+    console.log("✅ Super Admin user created:", adminUser.email);
+
+    console.log("✅ Seeding completed successfully!");
 }
 
 main()

@@ -1,10 +1,13 @@
 import express, { Application } from 'express'
 import { healthRouter } from './systems/health'
 import { assessmentRouter } from './systems/assessment'
-import { authRouter } from './systems/auth/auth.routes'
+import { authRouter } from './systems/auth'
+import { usersRouter } from './systems/users'
+import { profileRouter } from './systems/profile'
 import { securityMiddleware } from './systems/middlewares/security'
 import { auditMiddleware } from './systems/middlewares/audit'
 import { corsMiddleware } from './systems/middlewares/cors'
+import { lmsRouter } from './systems/lms'
 
 export function createServer(): Application {
   const app = express()
@@ -16,14 +19,24 @@ export function createServer(): Application {
   app.use(auditMiddleware)
 
   app.use((req, res, next) => {
-    console.log(`[DEBUG] Incoming Request: ${req.method} ${req.path}`)
+    const start = Date.now()
+    console.log(`[API] Incoming ${req.method} ${req.path}`)
+
+    res.on('finish', () => {
+      const duration = Date.now() - start
+      console.log(`[API] Completed ${req.method} ${req.path} ${res.statusCode} [${duration}ms]`)
+    })
+
     next()
   })
 
   app.use('/healthz', healthRouter)
   app.use('/api/v1/auth', authRouter)
+  app.use('/api/v1/users', usersRouter)
+  app.use('/api/v1/profile', profileRouter)
   console.log('Mounting /assessment route', assessmentRouter)
   app.use('/api/v1/assessment', assessmentRouter)
+  app.use('/api/v1/lms', lmsRouter)
 
   app.get('/', (_req, res) => {
     res.json({ name: 'Semindo API', version: '0.1.0' })

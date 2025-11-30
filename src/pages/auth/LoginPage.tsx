@@ -19,8 +19,25 @@ export default function LoginPage() {
         try {
             await login(email, password)
             navigate('/dashboard')
-        } catch (err: any) {
-            setError(err.message || 'Login failed. Please check your credentials.')
+        } catch (err: unknown) {
+            console.error('Login error:', err);
+            let message = 'Login gagal. Silakan periksa email dan password Anda.';
+
+            if (err instanceof Error) {
+                if (err.message.includes('User not found') || err.message.includes('Invalid password')) {
+                    message = 'Email atau password salah. Silakan coba lagi.';
+                } else if (err.message.includes('Network Error')) {
+                    message = 'Terjadi kesalahan jaringan. Periksa koneksi internet Anda.';
+                } else if (err.message.includes('Too many requests')) {
+                    message = 'Terlalu banyak percobaan login. Silakan tunggu beberapa saat.';
+                } else {
+                    message = err.message;
+                }
+            } else if (typeof err === 'object' && err !== null && 'message' in err) {
+                message = (err as { message: string }).message;
+            }
+
+            setError(message)
         } finally {
             setLoading(false)
         }

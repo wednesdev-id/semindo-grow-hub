@@ -14,7 +14,7 @@ export default function Dashboard() {
     }
 
     // Get primary role
-    const primaryRole = roles[0]?.name
+    const primaryRole = roles[0]
 
     // Route to appropriate dashboard based on role
     switch (primaryRole) {

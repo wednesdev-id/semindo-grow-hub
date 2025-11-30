@@ -2,14 +2,17 @@
 export interface User {
   id: string
   email: string
-  full_name: string
+  fullName: string
   phone?: string
-  is_active: boolean
-  is_verified: boolean
-  email_verified_at?: Date
-  last_login_at?: Date
-  created_at: Date
-  updated_at: Date
+  businessName?: string
+  isActive: boolean
+  isVerified: boolean
+  emailVerifiedAt?: Date
+  lastLoginAt?: Date
+  createdAt: Date
+  updatedAt: Date
+  roles?: string[]
+  permissions?: string[]
 }
 
 export interface Role {
@@ -72,8 +75,8 @@ export interface LoginResponse {
 
 export interface AuthState {
   user: User | null
-  roles: Role[]
-  permissions: Permission[]
+  roles: string[]
+  permissions: string[]
   isAuthenticated: boolean
   isLoading: boolean
 }

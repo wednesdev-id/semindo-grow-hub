@@ -23,7 +23,7 @@ export default function AssessmentFormPage() {
     useEffect(() => {
         const initAssessment = async () => {
             try {
-                const token = localStorage.getItem('token')
+                const token = localStorage.getItem('auth_token')
                 // Create new assessment or get existing draft
                 // For now, we always create new or get the latest draft
                 // Ideally we should check if there is an active draft first
@@ -96,7 +96,7 @@ export default function AssessmentFormPage() {
 
         // Auto-save to backend
         try {
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem('auth_token')
             await fetch(`/api/v1/assessment/${assessment.id}/responses`, {
                 method: 'POST',
                 headers: {
@@ -154,7 +154,7 @@ export default function AssessmentFormPage() {
 
     const handleSubmit = async () => {
         try {
-            const token = localStorage.getItem('token')
+            const token = localStorage.getItem('auth_token')
             const res = await fetch(`/api/v1/assessment/${assessment.id}/submit`, {
                 method: 'POST',
                 headers: {

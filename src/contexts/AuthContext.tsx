@@ -18,8 +18,8 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null)
-    const [roles, setRoles] = useState<Role[]>([])
-    const [permissions, setPermissions] = useState<Permission[]>([])
+    const [roles, setRoles] = useState<string[]>([])
+    const [permissions, setPermissions] = useState<string[]>([])
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
 
@@ -54,8 +54,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, [])
 
     const login = async (email: string, password: string) => {
+        console.log(`[Auth] Attempting login for: ${email} at ${new Date().toISOString()}`)
         setIsLoading(true)
         try {
+            // Using fetch directly here to avoid circular dependency if api.ts uses AuthContext
+            // But ideally should use api service. For now, improving logging.
             const response = await fetch('/api/v1/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -65,17 +68,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const data = await response.json()
 
             if (!response.ok) {
-                throw new Error(data.error || 'Login failed')
+                console.error(`[Auth] Login failed. Status: ${response.status} ${response.statusText}. Error:`, data.error)
+                console.error(`[Auth] Response body:`, data)
+                throw new Error(data.error || `Login failed (${response.status})`)
             }
 
+            console.log(`[Auth] Login successful for user: ${data.data.user.email}`)
             const { user: userData, token } = data.data
 
-            localStorage.setItem('token', token)
+            // Extract roles and permissions from user data
+            const userRoles = userData.roles || []
+            const userPermissions = userData.permissions || []
+
+            // Store in localStorage
+            localStorage.setItem('auth_token', token)
+            localStorage.setItem('auth_user', JSON.stringify(userData))
+            localStorage.setItem('auth_roles', JSON.stringify(userRoles))
+            localStorage.setItem('auth_permissions', JSON.stringify(userPermissions))
+
+            // Update state
             setUser(userData)
-            setIsAuthenticated(true) // Set isAuthenticated on successful login
+            setRoles(userRoles)
+            setPermissions(userPermissions)
+            setIsAuthenticated(true)
+
             return userData
         } catch (error) {
-            console.error('Login error:', error)
+            console.error(`[Auth] Login error at ${new Date().toISOString()}:`, error)
             throw error
         } finally {
             setIsLoading(false)
@@ -97,11 +116,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const hasPermission = (permissionName: string): boolean => {
-        return permissions.some(p => p.name === permissionName)
+        return permissions.includes(permissionName)
     }
 
     const hasRole = (roleName: string): boolean => {
-        return roles.some(r => r.name === roleName)
+        return roles.includes(roleName)
     }
 
     const hasAnyPermission = (permissionNames: string[]): boolean => {

@@ -25,9 +25,9 @@ const Navigation = () => {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
-              <img 
-                src="/logo.jpg" 
-                alt="Sinergi Logo" 
+              <img
+                src="/logo.jpg"
+                alt="Sinergi Logo"
                 className="h-10 w-auto"
               />
             </Link>
@@ -47,7 +47,12 @@ const Navigation = () => {
           </div>
 
           {/* CTA Button */}
-          <div className="hidden lg:flex items-center">
+          <div className="hidden lg:flex items-center space-x-4">
+            <Link to="/login">
+              <Button variant="ghost" className="text-foreground hover:text-primary font-medium">
+                Masuk
+              </Button>
+            </Link>
             <Button className="bg-gradient-primary hover:opacity-90 text-white font-medium">
               Mulai Konsultasi
             </Button>
@@ -78,7 +83,12 @@ const Navigation = () => {
                   {item.name}
                 </Link>
               ))}
-              <div className="pt-4">
+              <div className="pt-4 space-y-2">
+                <Link to="/login" onClick={() => setIsOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
+                    Masuk
+                  </Button>
+                </Link>
                 <Button className="w-full bg-gradient-primary hover:opacity-90 text-white">
                   Mulai Konsultasi
                 </Button>

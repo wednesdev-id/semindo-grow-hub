@@ -153,38 +153,117 @@ const AppHeader: React.FC = () => {
             } w-full items-center justify-between gap-4 px-5 py-4 shadow-theme-md lg:flex lg:justify-end lg:px-0 lg:shadow-none`}
         >
           <div className="flex items-center gap-2 2xsm:gap-3">
-            {/* Theme Toggle - Simple version */}
+            {/* Theme Toggle */}
             <button
               onClick={() => {
                 document.documentElement.classList.toggle('dark')
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-muted hover:bg-accent"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 dark:border-gray-800 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]"
               aria-label="Toggle Theme"
             >
-              <svg className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-              <svg className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
             </button>
+
+            {/* User Dropdown */}
+            <UserDropdown />
           </div>
-          {/* User Info - Simple version */}
-          <Link
-            to="/profile"
-            className="flex items-center gap-3 rounded-lg border border-border bg-muted px-3 py-2 hover:bg-accent"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <span className="text-sm font-semibold">U</span>
-            </div>
-            <div className="hidden lg:block">
-              <p className="text-sm font-medium text-foreground">User Name</p>
-              <p className="text-xs text-muted-foreground">View Profile</p>
-            </div>
-          </Link>
         </div>
       </div>
     </header>
+  );
+};
+
+const UserDropdown = () => {
+  const { user, logout, roles } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 hover:bg-gray-100 dark:border-gray-800 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]"
+      >
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white">
+          <span className="text-sm font-semibold">
+            {user?.fullName ? getInitials(user.fullName) : "U"}
+          </span>
+        </div>
+        <div className="hidden lg:block text-left">
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+            {user?.fullName || "Guest User"}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {roles?.[0] || "Visitor"}
+          </p>
+        </div>
+        <svg
+          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 dark:bg-gray-800 dark:ring-gray-700 z-50">
+          <div className="py-1" role="menu" aria-orientation="vertical">
+            <Link
+              to="/profile"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+            >
+              Your Profile
+            </Link>
+            <Link
+              to="/settings"
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+              role="menuitem"
+              onClick={() => setIsOpen(false)}
+            >
+              Settings
+            </Link>
+            <button
+              onClick={() => {
+                logout();
+                setIsOpen(false);
+              }}
+              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:text-red-400 dark:hover:bg-gray-700"
+              role="menuitem"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

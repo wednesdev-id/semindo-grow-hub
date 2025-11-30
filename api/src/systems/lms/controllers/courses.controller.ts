@@ -1,0 +1,94 @@
+import { Request, Response } from 'express';
+import { CoursesService } from '../services/courses.service';
+import { Prisma } from '@prisma/client';
+
+const coursesService = new CoursesService();
+
+export class CoursesController {
+    async create(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const data: Prisma.CourseCreateInput = {
+                ...req.body,
+                author: { connect: { id: userId } },
+                slug: req.body.title.toLowerCase().replace(/ /g, '-') + '-' + Date.now(),
+            };
+            const course = await coursesService.create(data);
+            res.status(201).json({ data: course });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async findAll(req: Request, res: Response) {
+        try {
+            const { skip, take, category, level, search } = req.query;
+
+            const where: Prisma.CourseWhereInput = {};
+            if (category) where.category = String(category);
+            if (level) where.level = String(level);
+            if (search) {
+                where.OR = [
+                    { title: { contains: String(search), mode: 'insensitive' } },
+                    { description: { contains: String(search), mode: 'insensitive' } },
+                ];
+            }
+
+            const courses = await coursesService.findAll({
+                skip: skip ? Number(skip) : undefined,
+                take: take ? Number(take) : undefined,
+                where,
+                orderBy: { createdAt: 'desc' },
+            });
+            res.json({ data: courses });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async findOne(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const course = await coursesService.findOne(id);
+            if (!course) return res.status(404).json({ error: 'Course not found' });
+            res.json({ data: course });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async findBySlug(req: Request, res: Response) {
+        try {
+            const { slug } = req.params;
+            const course = await coursesService.findBySlug(slug);
+            if (!course) return res.status(404).json({ error: 'Course not found' });
+            res.json({ data: course });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async update(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const data = req.body;
+            const course = await coursesService.update({
+                where: { id },
+                data,
+            });
+            res.json({ data: course });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async delete(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            await coursesService.delete({ id });
+            res.status(204).send();
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+}

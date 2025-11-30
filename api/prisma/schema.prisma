@@ -29,6 +29,11 @@ model User {
   // Relations
   userRoles    UserRole[]
   assessments  Assessment[]
+  umkmProfile  UMKMProfile?
+  mentorProfile MentorProfile?
+  auditLogs    AuditLog[]
+  authoredCourses Course[]
+  enrollments  Enrollment[]
 
   @@map("users")
 }
@@ -221,4 +226,218 @@ model AssessmentRecommendation {
   assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
 
   @@map("assessment_recommendations")
+}
+
+// ============================================
+// PROFILES & DOCUMENTS
+// ============================================
+
+model UMKMProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  
+  // Business Details
+  businessName String  @map("business_name")
+  ownerName    String  @map("owner_name")
+  address      String?
+  city         String?
+  province     String?
+  postalCode   String? @map("postal_code")
+  phone        String?
+  email        String?
+  website      String?
+  
+  // Business Metrics
+  sector       String? // Kuliner, Fashion, etc.
+  turnover     Decimal? @db.Decimal(15, 2) // Omzet per tahun
+  assets       Decimal? @db.Decimal(15, 2) // Total aset
+  employees    Int?
+  foundedYear  Int?    @map("founded_year")
+  
+  // Status
+  level        String? // Mikro, Kecil, Menengah (Calculated)
+  isVerified   Boolean @default(false) @map("is_verified")
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents Document[]
+
+  @@map("umkm_profiles")
+}
+
+model MentorProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  
+  title       String?  // e.g., "Senior Business Consultant"
+  bio         String?  @db.Text
+  expertise   String[] // Array of strings: ["Marketing", "Finance"]
+  experience  Int?     // Years of experience
+  linkedIn    String?  @map("linkedin_url")
+  
+  isVerified  Boolean  @default(false) @map("is_verified")
+  rating      Decimal  @default(0) @db.Decimal(3, 2)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mentor_profiles")
+}
+
+model Document {
+  id            String   @id @default(uuid())
+  umkmProfileId String?  @map("umkm_profile_id")
+  
+  type          String   // NIB, NPWP, KTP, SKU, Other
+  number        String?  // Document number
+  fileUrl       String   @map("file_url")
+  fileName      String   @map("file_name")
+  fileSize      Int?     @map("file_size")
+  mimeType      String?  @map("mime_type")
+  
+  status        String   @default("pending") // pending, verified, rejected
+  verifiedAt    DateTime? @map("verified_at")
+  verifiedBy    String?   @map("verified_by")
+  rejectionReason String? @map("rejection_reason")
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  umkmProfile UMKMProfile? @relation(fields: [umkmProfileId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+// ============================================
+// SYSTEM & LOGS
+// ============================================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  
+  action      String   // LOGIN, CREATE, UPDATE, DELETE
+  resource    String   // users, assessments, etc.
+  resourceId  String?  @map("resource_id")
+  
+  oldValue    Json?    @map("old_value")
+  newValue    Json?    @map("new_value")
+  
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([resource, resourceId])
+  @@map("audit_logs")
+}
+
+// ============================================
+// LEARNING HUB (LMS)
+// ============================================
+
+model Course {
+  id           String   @id @default(uuid())
+  title        String
+  slug         String   @unique
+  description  String?  @db.Text
+  thumbnailUrl String?  @map("thumbnail_url")
+  level        String   @default("beginner") // beginner, intermediate, advanced
+  category     String
+  price        Decimal  @default(0) @db.Decimal(10, 2)
+  isPublished  Boolean  @default(false) @map("is_published")
+  authorId     String   @map("author_id")
+  
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  author      User         @relation(fields: [authorId], references: [id])
+  modules     Module[]
+  enrollments Enrollment[]
+
+  @@map("courses")
+}
+
+model Module {
+  id        String   @id @default(uuid())
+  courseId  String   @map("course_id")
+  title     String
+  order     Int      @default(0)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id        String   @id @default(uuid())
+  moduleId  String   @map("module_id")
+  title     String
+  slug      String   @unique
+  type      String   @default("video") // video, article, quiz
+  content   String?  @db.Text // For articles
+  videoUrl  String?  @map("video_url")
+  duration  Int      @default(0) // in minutes
+  order     Int      @default(0)
+  isFree    Boolean  @default(false) @map("is_free") // Preview allowed
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  module   Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@map("lessons")
+}
+
+model Enrollment {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  courseId    String    @map("course_id")
+  status      String    @default("active") // active, completed, dropped
+  progress    Int       @default(0) // 0-100
+  enrolledAt  DateTime  @default(now()) @map("enrolled_at")
+  completedAt DateTime? @map("completed_at")
+
+  // Relations
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course   Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonProgress LessonProgress[]
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model LessonProgress {
+  id           String    @id @default(uuid())
+  enrollmentId String    @map("enrollment_id")
+  lessonId     String    @map("lesson_id")
+  isCompleted  Boolean   @default(false) @map("is_completed")
+  completedAt  DateTime? @map("completed_at")
+  lastWatched  Int       @default(0) @map("last_watched") // timestamp in seconds
+
+  // Relations
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@map("lesson_progress")
 }
