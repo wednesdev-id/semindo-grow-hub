@@ -5,6 +5,15 @@ import { RecommendationService } from '../services/recommendation.service';
 const assessmentService = new AssessmentService()
 
 export class AssessmentController {
+    async getTemplates(req: Request, res: Response) {
+        try {
+            const templates = await assessmentService.getTemplates()
+            res.json({ data: templates })
+        } catch (error: any) {
+            res.status(400).json({ error: error.message })
+        }
+    }
+
     async create(req: Request, res: Response) {
         try {
             const userId = (req as any).user.userId

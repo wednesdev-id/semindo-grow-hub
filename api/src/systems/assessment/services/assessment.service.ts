@@ -1,8 +1,21 @@
 import { db } from '../../utils/db';
 import { PrismaClient, Assessment, AssessmentQuestion, AssessmentResponse, AssessmentScore } from '@prisma/client';
 import { RecommendationService } from './recommendation.service'
+import { ScoringEngine } from './scoring.service'
+import { LevelDeterminationService } from './level.service'
 
 export class AssessmentService {
+    async getTemplates() {
+        return db.assessmentTemplate.findMany({
+            where: { isActive: true },
+            include: {
+                _count: {
+                    select: { questions: true }
+                }
+            }
+        })
+    }
+
     async createAssessment(userId: string, templateId?: string) {
         // If no template provided, use the default active one
         let targetTemplateId = templateId
@@ -119,49 +132,12 @@ export class AssessmentService {
         if (!assessment) throw new Error('Assessment not found')
         if (assessment.userId !== userId) throw new Error('Unauthorized')
 
-        // Calculate Score
-        let totalWeight = 0
-        let totalScore = 0
-        const categoryScores: Record<string, { name: string, score: number, maxScore: number }> = {}
+        // Calculate Score using ScoringEngine
+        // Cast responses to the expected type as Prisma types can be slightly different
+        const { totalScore, categoryScores } = ScoringEngine.calculateScore(assessment.responses as any);
 
-        for (const response of assessment.responses) {
-            const question = response.question
-            const weight = Number(question.weight)
-            const categoryId = question.categoryId
-            const categoryName = question.category.name
-
-            // Initialize category score
-            if (!categoryScores[categoryId]) {
-                categoryScores[categoryId] = { name: categoryName, score: 0, maxScore: 0 }
-            }
-
-            // Simple scoring logic for now (assuming 1-5 scale or similar)
-            // This needs to be refined based on question type
-            let scoreValue = 0
-            if (typeof response.answerValue === 'number') {
-                scoreValue = response.answerValue
-            } else if (typeof response.answerValue === 'object' && response.answerValue !== null) {
-                // Handle other types
-                scoreValue = (response.answerValue as any).value || 0
-            }
-
-            // Normalize to 0-100 for this question
-            // Assuming max raw score is 5
-            const normalizedScore = (scoreValue / 5) * 100
-
-            totalScore += normalizedScore * weight
-            totalWeight += weight
-
-            categoryScores[categoryId].score += normalizedScore * weight
-            categoryScores[categoryId].maxScore += 100 * weight
-        }
-
-        const finalScore = totalWeight > 0 ? totalScore / totalWeight : 0
-
-        // Determine Level
-        let umkmLevel = 'mikro'
-        if (finalScore > 70) umkmLevel = 'menengah'
-        else if (finalScore > 40) umkmLevel = 'kecil'
+        // Determine Level using LevelDeterminationService
+        const umkmLevel = LevelDeterminationService.determineLevel(totalScore);
 
         // Save Score
         // Check if score already exists (e.g. re-submit)
@@ -172,7 +148,7 @@ export class AssessmentService {
             savedScore = await db.assessmentScore.update({
                 where: { assessmentId: id },
                 data: {
-                    totalScore: finalScore,
+                    totalScore,
                     umkmLevel,
                     categoryScores: categoryScores as any,
                     calculatedAt: new Date()
@@ -182,7 +158,7 @@ export class AssessmentService {
             savedScore = await db.assessmentScore.create({
                 data: {
                     assessmentId: id,
-                    totalScore: finalScore,
+                    totalScore,
                     umkmLevel,
                     confidenceScore: 0.9,
                     categoryScores: categoryScores as any

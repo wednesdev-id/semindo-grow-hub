@@ -4,6 +4,7 @@ import ScoreVisualization from '../components/results/ScoreVisualization'
 import RecommendationList from '../components/results/RecommendationList'
 import { AssessmentScore, Recommendation } from '../types'
 import { useToast } from '@/components/ui/use-toast'
+import { pdfService } from '@/services/pdfService'
 
 export default function AssessmentResultsPage() {
     const { id } = useParams<{ id: string }>()
@@ -31,26 +32,21 @@ export default function AssessmentResultsPage() {
                 const backendScore = assessment.score || {}
                 const categoryScoresObj = backendScore.categoryScores || {}
 
-                const mappedCategoryScores = Object.values(categoryScoresObj).map((cs: any) => ({
-                    category: cs.name,
-                    score: cs.maxScore > 0 ? Math.round((cs.score / cs.maxScore) * 100) : 0,
-                    weight: 1, // Placeholder as backend doesn't return weight per category in score yet
-                    questions_count: 0 // Placeholder
-                }))
+                // Ensure categoryScores matches the expected Record format
+                const mappedCategoryScores: Record<string, { name: string, score: number, maxScore: number }> = {};
+                Object.values(categoryScoresObj).forEach((cs: any) => {
+                    mappedCategoryScores[cs.name] = {
+                        name: cs.name,
+                        score: cs.score,
+                        maxScore: cs.maxScore
+                    };
+                });
 
                 const mappedScore: AssessmentScore = {
                     id: assessment.id,
-                    assessment_id: assessment.id,
-                    total_score: Number(backendScore.totalScore) || 0, // Assuming totalScore is raw score, need percentage? 
-                    // Actually backend totalScore seems to be raw. We might need a global max score or just use it if it's already 0-100.
-                    // Looking at previous logs, totalScore was "20". If max is not known, this might be an issue.
-                    // However, for now let's assume the backend might return a percentage or we treat it as is.
-                    // Wait, the backend logic: const finalScore = (totalScore / maxPossibleScore) * 100. 
-                    // So backendScore.totalScore IS the percentage (0-100).
-                    umkm_level: (backendScore.umkmLevel || 'Mikro').toLowerCase(),
-                    confidence_score: Number(backendScore.confidenceScore) || 0.9,
-                    calculated_at: new Date(backendScore.calculatedAt || assessment.updatedAt),
-                    category_scores: mappedCategoryScores
+                    totalScore: Number(backendScore.totalScore) || 0,
+                    umkmLevel: (backendScore.umkmLevel || 'Mikro').toLowerCase() as 'mikro' | 'kecil' | 'menengah',
+                    categoryScores: mappedCategoryScores
                 }
 
                 setScore(mappedScore)
@@ -152,7 +148,10 @@ export default function AssessmentResultsPage() {
                                 Kembali ke Dashboard
                             </Link>
 
-                            <button className="flex w-full items-center justify-center gap-2 rounded-md bg-secondary px-4 py-2.5 font-medium text-secondary-foreground transition-colors hover:bg-secondary/90">
+                            <button
+                                onClick={() => pdfService.generateAssessmentPDF(score, recommendations)}
+                                className="flex w-full items-center justify-center gap-2 rounded-md bg-secondary px-4 py-2.5 font-medium text-secondary-foreground transition-colors hover:bg-secondary/90"
+                            >
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>

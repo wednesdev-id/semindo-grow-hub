@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AssessmentController } from '../controllers/assessment.controller';
 import { authenticate } from '../../middlewares/auth.middleware';
+import { cacheMiddleware } from '../../middlewares/cache.middleware';
 
 const router = Router()
 const controller = new AssessmentController()
@@ -12,6 +13,7 @@ router.post('/', (req, res, next) => {
     console.log('Assessment POST / hit')
     next()
 }, controller.create)
+router.get('/templates', cacheMiddleware(300), controller.getTemplates)
 router.get('/me', controller.getMyAssessments)
 router.get('/:id', controller.getOne)
 router.post('/:id/responses', controller.saveResponse)

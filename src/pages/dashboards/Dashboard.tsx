@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext'
 import UMKMDashboard from './UMKMDashboard'
 import { Navigate } from 'react-router-dom'
+import AdminDashboard from './AdminDashboard'
 
 export default function Dashboard() {
     const { roles, isLoading } = useAuth()
@@ -27,8 +28,7 @@ export default function Dashboard() {
 
         case 'admin':
         case 'super_admin':
-            // TODO: Implement AdminDashboard
-            return <div>Admin Dashboard - Coming Soon</div>
+            return <AdminDashboard />
 
         case 'finance_partner':
             // TODO: Implement FinancePartnerDashboard

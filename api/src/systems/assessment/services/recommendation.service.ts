@@ -1,11 +1,10 @@
-import { PrismaClient, AssessmentScore, Prisma } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { db } from '../../utils/db';
+import { AssessmentScore, Prisma } from '@prisma/client';
 
 export class RecommendationService {
     static async generateRecommendations(assessmentId: string, score: AssessmentScore) {
         // 1. Get the assessment to find the templateId
-        const assessment = await prisma.assessment.findUnique({
+        const assessment = await db.assessment.findUnique({
             where: { id: assessmentId },
             include: { template: true }
         })
@@ -15,9 +14,13 @@ export class RecommendationService {
         }
 
         // 2. Get all rules for this template
-        const rules = await prisma.recommendationRule.findMany({
+        const rules = await db.recommendationRule.findMany({
             where: { templateId: assessment.templateId }
         })
+
+        // Pre-fetch categories to avoid N+1
+        const categories = await db.assessmentCategory.findMany();
+        const categoryMap = new Map(categories.map(c => [c.id, c.name]));
 
         const recommendationsToCreate: Prisma.AssessmentRecommendationCreateManyInput[] = []
 
@@ -59,7 +62,7 @@ export class RecommendationService {
                     title: rule.title,
                     description: rule.description,
                     priority: rule.priority,
-                    category: rule.categoryId ? (await this.getCategoryName(rule.categoryId)) : 'General',
+                    category: rule.categoryId ? (categoryMap.get(rule.categoryId) || 'General') : 'General',
                     actionItems: rule.actionItems ?? [],
                     resources: rule.resources ?? []
                 })
@@ -68,18 +71,11 @@ export class RecommendationService {
 
         // 4. Save recommendations
         if (recommendationsToCreate.length > 0) {
-            await prisma.assessmentRecommendation.createMany({
+            await db.assessmentRecommendation.createMany({
                 data: recommendationsToCreate
             })
         }
 
         return recommendationsToCreate
-    }
-
-    private static async getCategoryName(categoryId: string): Promise<string> {
-        const category = await prisma.assessmentCategory.findUnique({
-            where: { id: categoryId }
-        })
-        return category ? category.name : 'General'
     }
 }

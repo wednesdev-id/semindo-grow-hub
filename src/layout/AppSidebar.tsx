@@ -122,7 +122,7 @@ const getMenuItems = (): {
         { name: "Daftar UMKM", path: "/umkm/list", roles: ["admin", "management", "mentor"] },
         { name: "Segmentasi (Pemula / Madya / Utama)", path: "/umkm/segmentation", roles: ["admin", "management", "mentor"] },
         { name: "Region Mapping (Provinsi / Kota)", path: "/umkm/region", roles: ["admin", "management"] },
-        { name: "Status Self-Assessment", path: "/umkm/assessment-status" }, // All can view
+        { name: "Self-Assessment", path: "/assessment" }, // All can view
         { name: "Status Program", path: "/umkm/program-status" }, // All can view
         { name: "Histori Pendampingan UMKM", path: "/umkm/history", roles: ["admin", "management", "mentor", "umkm"] },
         { name: "Dokumen & Verifikasi UMKM", path: "/umkm/documents", roles: ["admin", "management", "umkm"] },

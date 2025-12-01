@@ -202,8 +202,10 @@ const Marketplace = () => {
               </div>
 
               <div className="text-center mt-8">
-                <Button variant="outline" size="lg">
-                  Lihat Semua Produk
+                <Button variant="outline" size="lg" asChild>
+                  <Link to="/marketplace/products">
+                    Lihat Semua Produk
+                  </Link>
                 </Button>
               </div>
             </div>

@@ -1,4 +1,6 @@
 import express, { Application } from 'express'
+import compression from 'compression';
+import { apiLimiter } from './systems/middlewares/rateLimit.middleware';
 import { healthRouter } from './systems/health'
 import { assessmentRouter } from './systems/assessment'
 import { authRouter } from './systems/auth'
@@ -9,12 +11,17 @@ import { auditMiddleware } from './systems/middlewares/audit'
 import { corsMiddleware } from './systems/middlewares/cors'
 import { lmsRouter } from './systems/lms'
 import { dashboardRouter } from './systems/dashboard'
-import { marketplaceRouter } from './systems/marketplace';
+import { marketplaceRouter } from './systems/marketplace'
+import { financingRouter } from './systems/financing'
+  ;
 
 export function createServer(): Application {
   const app = express()
 
   app.disable('x-powered-by')
+  // Global Middleware
+  app.use(compression())
+  app.use(apiLimiter)
   app.use(express.json({ limit: '1mb' }))
   app.use(corsMiddleware)
   app.use(securityMiddleware)
@@ -41,6 +48,7 @@ export function createServer(): Application {
   app.use('/api/v1/lms', lmsRouter)
   app.use('/api/v1/dashboard', dashboardRouter)
   app.use('/api/v1/marketplace', marketplaceRouter)
+  app.use('/api/v1/financing', financingRouter);
 
   app.get('/', (_req, res) => {
     res.json({ name: 'Semindo API', version: '0.1.0' })

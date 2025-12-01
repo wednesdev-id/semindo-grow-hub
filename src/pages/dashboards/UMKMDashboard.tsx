@@ -4,11 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, ShoppingBag, Package, Star, TrendingUp, BookOpen, Award } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
+import { financingService } from '@/services/financingService';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 export default function UMKMDashboard() {
     const { data, isLoading } = useQuery({
         queryKey: ['dashboard-overview'],
         queryFn: dashboardService.getOverview
+    });
+
+    const { data: loanApplications } = useQuery({
+        queryKey: ['my-loan-applications'],
+        queryFn: financingService.getMyApplications
     });
 
     if (isLoading) {
@@ -168,6 +177,38 @@ export default function UMKMDashboard() {
                                     <div className="text-xs text-muted-foreground">Sertifikat</div>
                                 </div>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Status Pembiayaan</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {loanApplications && loanApplications.length > 0 ? (
+                                <div className="space-y-4">
+                                    {loanApplications.slice(0, 2).map((app) => (
+                                        <div key={app.id} className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium">{app.partner.name}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Rp {app.amount.toLocaleString('id-ID')}
+                                                </p>
+                                            </div>
+                                            <Badge variant={app.status === 'APPROVED' ? 'default' : 'secondary'}>
+                                                {app.status}
+                                            </Badge>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <p className="text-sm text-muted-foreground mb-2">Belum ada pengajuan</p>
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link to="/financing-hub">Ajukan Sekarang</Link>
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </div>

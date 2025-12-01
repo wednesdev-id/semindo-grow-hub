@@ -11,62 +11,30 @@ import { Slider } from "@/components/ui/slider";
 import { Calculator, CreditCard, TrendingUp, Shield, Clock, CheckCircle, AlertCircle, DollarSign, PieChart, BarChart3 } from "lucide-react";
 import SEOHead from "@/components/ui/seo-head";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+
+import { useQuery } from "@tanstack/react-query";
+import { financingService } from "@/services/financingService";
 
 const FinancingHub = () => {
   const [loanAmount, setLoanAmount] = useState([50000000]);
   const [loanTerm, setLoanTerm] = useState([24]);
   const [interestRate] = useState(12); // Fixed rate for simulation
 
-  const financingOptions = [
-    {
-      id: "kur",
-      name: "Kredit Usaha Rakyat (KUR)",
-      provider: "Bank Mandiri, BRI, BNI",
-      maxAmount: "Rp 500 Juta",
-      interestRate: "6% - 7%",
-      term: "3 - 5 Tahun",
-      requirements: ["NPWP", "Izin Usaha", "Laporan Keuangan"],
-      features: ["Tanpa Agunan", "Bunga Rendah", "Proses Cepat"],
-      description: "Program pemerintah untuk mendukung UMKM dengan bunga subsidi",
-      status: "available"
-    },
-    {
-      id: "fintech",
-      name: "Pinjaman Fintech P2P",
-      provider: "Investree, Amartha, Modalku",
-      maxAmount: "Rp 2 Miliar",
-      interestRate: "12% - 24%",
-      term: "6 Bulan - 3 Tahun",
-      requirements: ["Rekening Bank", "Data Usaha", "Omzet Minimal"],
-      features: ["Online 100%", "Pencairan Cepat", "Fleksibel"],
-      description: "Platform digital untuk pinjaman modal usaha dengan proses online",
-      status: "available"
-    },
-    {
-      id: "crowdfunding",
-      name: "Crowdfunding Equity",
-      provider: "Bizhare, Santara, LandX",
-      maxAmount: "Rp 10 Miliar",
-      interestRate: "Bagi Hasil",
-      term: "3 - 7 Tahun",
-      requirements: ["Business Plan", "Pitch Deck", "Legal Documents"],
-      features: ["Tanpa Bunga", "Investor Strategis", "Mentoring"],
-      description: "Pendanaan dari investor dengan sistem bagi hasil atau equity",
-      status: "coming_soon"
-    },
-    {
-      id: "microfinance",
-      name: "Lembaga Keuangan Mikro",
-      provider: "Pegadaian, BPR, Koperasi",
-      maxAmount: "Rp 100 Juta",
-      interestRate: "18% - 36%",
-      term: "6 Bulan - 2 Tahun",
-      requirements: ["KTP", "Jaminan", "Slip Gaji/Omzet"],
-      features: ["Proses Mudah", "Jangkauan Luas", "Syarat Ringan"],
-      description: "Lembaga keuangan untuk kebutuhan modal usaha skala kecil",
-      status: "available"
+  const { data: partners, isLoading } = useQuery({
+    queryKey: ['financing-partners'],
+    queryFn: financingService.getPartners
+  });
+
+  const formatCurrency = (value: string | number) => {
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (num >= 1000000000) {
+      return `Rp ${(num / 1000000000).toFixed(0)} Miliar`;
+    } else if (num >= 1000000) {
+      return `Rp ${(num / 1000000).toFixed(0)} Juta`;
     }
-  ];
+    return `Rp ${num.toLocaleString('id-ID')}`;
+  };
 
   const creditScoreFactors = [
     {
@@ -110,10 +78,10 @@ const FinancingHub = () => {
     const principal = loanAmount[0];
     const monthlyRate = interestRate / 100 / 12;
     const numPayments = loanTerm[0];
-    
-    const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
-                          (Math.pow(1 + monthlyRate, numPayments) - 1);
-    
+
+    const monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+      (Math.pow(1 + monthlyRate, numPayments) - 1);
+
     return monthlyPayment;
   };
 
@@ -143,13 +111,13 @@ const FinancingHub = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead 
+      <SEOHead
         title="Financing Hub – Akses Pembiayaan & Simulasi Kredit UMKM"
         description="Temukan KUR, pinjaman fintech, crowdfunding, dan simulasi pembiayaan. Dilengkapi credit scoring berbasis data usaha Anda."
         keywords="financing hub, KUR, pinjaman UMKM, fintech, crowdfunding, simulasi kredit, credit scoring"
       />
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="pt-20 pb-12 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-7xl mx-auto text-center">
@@ -185,73 +153,86 @@ const FinancingHub = () => {
           <TabsContent value="financing" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Pilihan Pembiayaan UMKM</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {financingOptions.map((option) => (
-                  <Card key={option.id} className="relative overflow-hidden">
-                    {option.status === 'coming_soon' && (
-                      <div className="absolute top-4 right-4">
-                        <Badge variant="secondary">Segera Hadir</Badge>
-                      </div>
-                    )}
-                    
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <CreditCard className="h-5 w-5 text-primary" />
-                        {option.name}
-                      </CardTitle>
-                      <CardDescription>{option.provider}</CardDescription>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-4">
-                      <p className="text-sm text-muted-foreground">{option.description}</p>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
+              {isLoading ? (
+                <div className="flex justify-center py-20">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {partners?.map((option) => (
+                    <Card key={option.id} className="relative overflow-hidden">
+                      {!option.isActive && (
+                        <div className="absolute top-4 right-4">
+                          <Badge variant="secondary">Segera Hadir</Badge>
+                        </div>
+                      )}
+
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <CreditCard className="h-5 w-5 text-primary" />
+                          {option.name}
+                        </CardTitle>
+                        <CardDescription>{option.provider}</CardDescription>
+                      </CardHeader>
+
+                      <CardContent className="space-y-4">
+                        <p className="text-sm text-muted-foreground">{option.description}</p>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Maksimal Pinjaman</Label>
+                            <p className="font-semibold">{formatCurrency(option.maxAmount)}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Suku Bunga</Label>
+                            <p className="font-semibold">{option.interestRate}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Jangka Waktu</Label>
+                            <p className="font-semibold">{option.term}</p>
+                          </div>
+                        </div>
+
                         <div>
-                          <Label className="text-xs text-muted-foreground">Maksimal Pinjaman</Label>
-                          <p className="font-semibold">{option.maxAmount}</p>
+                          <Label className="text-xs text-muted-foreground">Persyaratan</Label>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {option.requirements.map((req, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {req}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
+
                         <div>
-                          <Label className="text-xs text-muted-foreground">Suku Bunga</Label>
-                          <p className="font-semibold">{option.interestRate}</p>
+                          <Label className="text-xs text-muted-foreground">Keunggulan</Label>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {option.features.map((feature, index) => (
+                              <Badge key={index} variant="secondary" className="text-xs">
+                                {feature}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Jangka Waktu</Label>
-                          <p className="font-semibold">{option.term}</p>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Persyaratan</Label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {option.requirements.map((req, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {req}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs text-muted-foreground">Keunggulan</Label>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {option.features.map((feature, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {feature}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        className="w-full" 
-                        disabled={option.status === 'coming_soon'}
-                      >
-                        {option.status === 'coming_soon' ? 'Segera Hadir' : 'Ajukan Sekarang'}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+
+                        <Button
+                          className="w-full"
+                          disabled={!option.isActive}
+                          asChild={option.isActive}
+                        >
+                          {!option.isActive ? (
+                            'Segera Hadir'
+                          ) : (
+                            <Link to={`/financing/apply/${option.slug}`}>
+                              Ajukan Sekarang
+                            </Link>
+                          )}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -259,7 +240,7 @@ const FinancingHub = () => {
           <TabsContent value="simulator" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Simulasi Kredit UMKM</h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Input Form */}
                 <Card>
@@ -290,7 +271,7 @@ const FinancingHub = () => {
                         <span>Rp 500 Juta</span>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>Jangka Waktu (Bulan)</Label>
                       <div className="px-3">
@@ -311,7 +292,7 @@ const FinancingHub = () => {
                         <span>60 Bulan</span>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>Suku Bunga (per tahun)</Label>
                       <Input value={`${interestRate}%`} disabled />
@@ -319,7 +300,7 @@ const FinancingHub = () => {
                         *Suku bunga estimasi berdasarkan rata-rata pasar
                       </p>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>Jenis Usaha</Label>
                       <Select>
@@ -337,7 +318,7 @@ const FinancingHub = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 {/* Results */}
                 <Card>
                   <CardHeader>
@@ -354,7 +335,7 @@ const FinancingHub = () => {
                           Rp {monthlyPayment.toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                         </p>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-muted/50 p-3 rounded-lg">
                           <Label className="text-xs text-muted-foreground">Total Pembayaran</Label>
@@ -370,7 +351,7 @@ const FinancingHub = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Breakdown Pembayaran</Label>
                       <div className="space-y-2">
@@ -389,7 +370,7 @@ const FinancingHub = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="space-y-3">
                       <Label className="text-sm font-medium">Rekomendasi</Label>
                       <div className="space-y-2">
@@ -403,7 +384,7 @@ const FinancingHub = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <Button className="w-full">
                       <CreditCard className="h-4 w-4 mr-2" />
                       Ajukan Pinjaman
@@ -418,7 +399,7 @@ const FinancingHub = () => {
           <TabsContent value="credit-score" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Credit Scoring UMKM</h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Credit Score Overview */}
                 <Card className="lg:col-span-1">
@@ -445,7 +426,7 @@ const FinancingHub = () => {
                     </Button>
                   </CardContent>
                 </Card>
-                
+
                 {/* Score Factors */}
                 <Card className="lg:col-span-2">
                   <CardHeader>
@@ -468,18 +449,17 @@ const FinancingHub = () => {
                             </span>
                             <Badge className={`${getScoreBg(factor.status)} ${getScoreColor(factor.status)}`}>
                               {factor.status === 'excellent' ? 'Sangat Baik' :
-                               factor.status === 'good' ? 'Baik' :
-                               factor.status === 'fair' ? 'Cukup' : 'Kurang'}
+                                factor.status === 'good' ? 'Baik' :
+                                  factor.status === 'fair' ? 'Cukup' : 'Kurang'}
                             </Badge>
                           </div>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              factor.status === 'excellent' ? 'bg-green-500' :
+                          <div
+                            className={`h-2 rounded-full ${factor.status === 'excellent' ? 'bg-green-500' :
                               factor.status === 'good' ? 'bg-blue-500' :
-                              factor.status === 'fair' ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
+                                factor.status === 'fair' ? 'bg-yellow-500' : 'bg-red-500'
+                              }`}
                             style={{ width: `${factor.score}%` }}
                           />
                         </div>
@@ -489,7 +469,7 @@ const FinancingHub = () => {
                   </CardContent>
                 </Card>
               </div>
-              
+
               {/* Credit Score Benefits */}
               <Card>
                 <CardHeader>
@@ -534,7 +514,7 @@ const FinancingHub = () => {
           <TabsContent value="tips" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Tips & Panduan Pembiayaan</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
@@ -556,7 +536,7 @@ const FinancingHub = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -577,7 +557,7 @@ const FinancingHub = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -598,7 +578,7 @@ const FinancingHub = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">

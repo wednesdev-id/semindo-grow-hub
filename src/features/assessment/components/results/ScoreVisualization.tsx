@@ -38,7 +38,7 @@ export default function ScoreVisualization({ score }: ScoreVisualizationProps) {
     // Calculate circle progress
     const radius = 80
     const circumference = 2 * Math.PI * radius
-    const dashOffset = circumference - (score.total_score / 100) * circumference
+    const dashOffset = circumference - (score.totalScore / 100) * circumference
 
     return (
         <div className="rounded-lg bg-white p-6 shadow-soft dark:bg-card">
@@ -70,15 +70,15 @@ export default function ScoreVisualization({ score }: ScoreVisualizationProps) {
                             strokeWidth="16"
                             strokeDasharray={circumference}
                             strokeDashoffset={dashOffset}
-                            className={`transition-all duration-1000 ${getLevelColor(score.umkm_level)}`}
+                            className={`transition-all duration-1000 ${getLevelColor(score.umkmLevel)}`}
                             strokeLinecap="round"
                         />
                     </svg>
 
                     {/* Center Content */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className={`text-5xl font-bold ${getLevelColor(score.umkm_level)}`}>
-                            {Math.round(score.total_score)}
+                        <span className={`text-5xl font-bold ${getLevelColor(score.umkmLevel)}`}>
+                            {Math.round(score.totalScore)}
                         </span>
                         <span className="text-sm text-muted-foreground">dari 100</span>
                     </div>
@@ -87,9 +87,9 @@ export default function ScoreVisualization({ score }: ScoreVisualizationProps) {
 
             {/* Level Badge */}
             <div className="mb-6 flex items-center justify-center">
-                <div className={`rounded-full px-6 py-2 ${getLevelBgColor(score.umkm_level)}`}>
-                    <span className={`text-lg font-semibold ${getLevelColor(score.umkm_level)}`}>
-                        Level: {getLevelLabel(score.umkm_level)}
+                <div className={`rounded-full px-6 py-2 ${getLevelBgColor(score.umkmLevel)}`}>
+                    <span className={`text-lg font-semibold ${getLevelColor(score.umkmLevel)}`}>
+                        Level: {getLevelLabel(score.umkmLevel)}
                     </span>
                 </div>
             </div>
@@ -97,36 +97,24 @@ export default function ScoreVisualization({ score }: ScoreVisualizationProps) {
             {/* Category Breakdown */}
             <div className="space-y-4">
                 <h4 className="text-sm font-semibold text-foreground">Category Scores</h4>
-                {score.category_scores.map((category) => (
-                    <div key={category.category}>
+                {Object.values(score.categoryScores).map((category) => (
+                    <div key={category.name}>
                         <div className="mb-2 flex items-center justify-between">
                             <span className="text-sm font-medium text-foreground">
-                                {category.category}
+                                {category.name}
                             </span>
                             <span className="text-sm font-semibold text-primary">
-                                {Math.round(category.score)}
+                                {Math.round((category.score / category.maxScore) * 100)}
                             </span>
                         </div>
                         <div className="h-2 w-full rounded-full bg-muted">
                             <div
                                 className="h-2 rounded-full bg-primary transition-all duration-500"
-                                style={{ width: `${category.score}%` }}
+                                style={{ width: `${(category.score / category.maxScore) * 100}%` }}
                             />
                         </div>
                     </div>
                 ))}
-            </div>
-
-            {/* Confidence Score */}
-            <div className="mt-6 rounded-lg bg-muted p-4">
-                <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                        Confidence Level
-                    </span>
-                    <span className="text-sm font-semibold text-foreground">
-                        {Math.round(score.confidence_score * 100)}%
-                    </span>
-                </div>
             </div>
         </div>
     )

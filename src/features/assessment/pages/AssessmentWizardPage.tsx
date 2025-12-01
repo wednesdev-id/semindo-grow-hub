@@ -1,85 +1,80 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import QuestionCard from '../components/forms/QuestionCard'
 import MultipleChoiceQuestion from '../components/forms/question-types/MultipleChoiceQuestion'
 import ScaleQuestion from '../components/forms/question-types/ScaleQuestion'
 import BooleanQuestion from '../components/forms/question-types/BooleanQuestion'
 import TextInputQuestion from '../components/forms/question-types/TextInputQuestion'
 import ProgressIndicator from '../components/shared/ProgressIndicator'
-import { AssessmentQuestion, AnswerValue } from '../types'
-import { useAuth } from '@/contexts/AuthContext'
+import { AnswerValue } from '../types'
+import { assessmentService } from '../services/assessmentService'
 import { useToast } from '@/components/ui/use-toast'
+import { Loader2 } from 'lucide-react'
 
-export default function AssessmentFormPage() {
+export default function AssessmentWizardPage() {
+    const { id } = useParams<{ id: string }>()
     const navigate = useNavigate()
     const { toast } = useToast()
     const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
     const [responses, setResponses] = useState<Record<string, AnswerValue>>({})
     const [errors, setErrors] = useState<Record<string, string>>({})
-    const [assessment, setAssessment] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
-    const [sections, setSections] = useState<any[]>([])
 
-    useEffect(() => {
-        const initAssessment = async () => {
-            try {
-                const token = localStorage.getItem('auth_token')
-                // Create new assessment or get existing draft
-                // For now, we always create new or get the latest draft
-                // Ideally we should check if there is an active draft first
-                const res = await fetch('/api/v1/assessment', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({})
-                })
+    const { data: assessment, isLoading, error } = useQuery({
+        queryKey: ['assessment', id],
+        queryFn: () => assessmentService.getAssessment(id!),
+        enabled: !!id
+    })
 
-                if (!res.ok) throw new Error('Failed to initialize assessment')
-
-                const data = await res.json()
-                setAssessment(data.data)
-
-                // Group questions by category to form sections
-                const questions = data.data.template.questions
-                const grouped = questions.reduce((acc: any, q: any) => {
-                    const category = q.category.name
-                    if (!acc[category]) {
-                        acc[category] = {
-                            id: q.category.id,
-                            title: category,
-                            questions: []
-                        }
-                    }
-                    acc[category].questions.push(q)
-                    return acc
-                }, {})
-
-                setSections(Object.values(grouped))
-
-                // Load existing responses if any (for draft)
-                // TODO: Map existing responses to state
-
-            } catch (error) {
-                console.error('Error initializing assessment:', error)
-                toast({
-                    title: "Error",
-                    description: "Gagal memuat assessment. Silakan coba lagi.",
-                    variant: "destructive"
-                })
-            } finally {
-                setLoading(false)
+    const sections = assessment?.template?.questions
+        ? Object.values(assessment.template.questions.reduce((acc: any, q: any) => {
+            const category = q.category.name
+            if (!acc[category]) {
+                acc[category] = {
+                    id: q.category.id,
+                    title: category,
+                    questions: []
+                }
             }
-        }
+            acc[category].questions.push(q)
+            return acc
+        }, {})) as any[]
+        : []
 
-        initAssessment()
-    }, [])
+    // Initialize responses from existing assessment data
+    useEffect(() => {
+        if (assessment?.responses) {
+            const initialResponses: Record<string, AnswerValue> = {}
+            assessment.responses.forEach((r: any) => {
+                initialResponses[r.questionId] = r.answerValue
+            })
+            setResponses(initialResponses)
+        }
+    }, [assessment])
+
+    const saveResponseMutation = useMutation({
+        mutationFn: ({ questionId, value }: { questionId: string, value: AnswerValue }) =>
+            assessmentService.saveResponse(assessment.id, questionId, value)
+    })
+
+    const submitAssessmentMutation = useMutation({
+        mutationFn: () => assessmentService.submitAssessment(assessment.id),
+        onSuccess: () => {
+            navigate(`/assessment/results/${assessment.id}`)
+        },
+        onError: (error: any) => {
+            toast({
+                title: "Gagal mengirim",
+                description: error.message || "Terjadi kesalahan saat mengirim assessment.",
+                variant: "destructive"
+            })
+        }
+    })
 
     const currentSection = sections[currentSectionIndex]
     const sectionTitles = sections.map(s => s.title)
 
-    const handleAnswerChange = async (questionId: string, value: AnswerValue) => {
+    const handleAnswerChange = (questionId: string, value: AnswerValue) => {
         setResponses(prev => ({
             ...prev,
             [questionId]: value
@@ -94,34 +89,22 @@ export default function AssessmentFormPage() {
             })
         }
 
-        // Auto-save to backend
-        try {
-            const token = localStorage.getItem('auth_token')
-            await fetch(`/api/v1/assessment/${assessment.id}/responses`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    questionId,
-                    answerValue: value
-                })
-            })
-        } catch (error) {
-            console.error('Failed to save response:', error)
+        // Auto-save
+        if (assessment) {
+            saveResponseMutation.mutate({ questionId, value })
         }
     }
 
     const validateSection = () => {
         const newErrors: Record<string, string> = {}
 
-        // Simple validation: check if required (assuming all are required for now)
-        currentSection.questions.forEach((question: any) => {
-            if (!responses[question.id]) {
-                newErrors[question.id] = 'Pertanyaan ini wajib diisi'
-            }
-        })
+        if (currentSection) {
+            currentSection.questions.forEach((question: any) => {
+                if (!responses[question.id]) {
+                    newErrors[question.id] = 'Pertanyaan ini wajib diisi'
+                }
+            })
+        }
 
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
@@ -141,7 +124,7 @@ export default function AssessmentFormPage() {
             setCurrentSectionIndex(prev => prev + 1)
             window.scrollTo({ top: 0, behavior: 'smooth' })
         } else {
-            handleSubmit()
+            submitAssessmentMutation.mutate()
         }
     }
 
@@ -152,37 +135,11 @@ export default function AssessmentFormPage() {
         }
     }
 
-    const handleSubmit = async () => {
-        try {
-            const token = localStorage.getItem('auth_token')
-            const res = await fetch(`/api/v1/assessment/${assessment.id}/submit`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            })
-
-            if (!res.ok) throw new Error('Failed to submit')
-
-            navigate(`/assessment/results/${assessment.id}`)
-        } catch (error) {
-            console.error('Submit error:', error)
-            toast({
-                title: "Gagal mengirim",
-                description: "Terjadi kesalahan saat mengirim assessment.",
-                variant: "destructive"
-            })
-        }
-    }
-
     const renderQuestion = (question: any) => {
         const value = responses[question.id]
         const error = errors[question.id]
 
         const questionInput = (() => {
-            // Map backend types to frontend components
-            // Backend types: multiple_choice, scale, boolean, text
             switch (question.type) {
                 case 'multiple_choice':
                     return (
@@ -190,10 +147,9 @@ export default function AssessmentFormPage() {
                             question={question}
                             value={value as string | string[]}
                             onChange={(val) => handleAnswerChange(question.id, val)}
-                            multiSelect={false} // Assuming single select for now based on seed
+                            multiSelect={false}
                         />
                     )
-
                 case 'scale':
                     return (
                         <ScaleQuestion
@@ -202,7 +158,6 @@ export default function AssessmentFormPage() {
                             onChange={(val) => handleAnswerChange(question.id, val)}
                         />
                     )
-
                 case 'boolean':
                     return (
                         <BooleanQuestion
@@ -210,7 +165,6 @@ export default function AssessmentFormPage() {
                             onChange={(val) => handleAnswerChange(question.id, val)}
                         />
                     )
-
                 case 'text':
                     return (
                         <TextInputQuestion
@@ -220,7 +174,6 @@ export default function AssessmentFormPage() {
                             maxLength={500}
                         />
                     )
-
                 default:
                     return null
             }
@@ -239,18 +192,15 @@ export default function AssessmentFormPage() {
         )
     }
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Memuat assessment...</p>
-                </div>
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         )
     }
 
-    if (!assessment || sections.length === 0) {
+    if (error || !assessment) {
         return (
             <div className="flex min-h-screen items-center justify-center">
                 <div className="text-center">
@@ -263,16 +213,26 @@ export default function AssessmentFormPage() {
         )
     }
 
+    if (sections.length === 0) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="text-center">
+                    <p className="text-muted-foreground">Template assessment tidak memiliki pertanyaan.</p>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="min-h-screen bg-background p-4 md:p-6">
             <div className="mx-auto max-w-5xl">
                 {/* Header */}
                 <div className="mb-6 rounded-lg bg-white p-6 shadow-soft dark:bg-card">
                     <h1 className="mb-2 text-3xl font-bold text-foreground">
-                        {assessment.template.title}
+                        {assessment.template?.title}
                     </h1>
                     <p className="text-muted-foreground">
-                        {assessment.template.description}
+                        {assessment.template?.description}
                     </p>
                 </div>
 
@@ -326,9 +286,12 @@ export default function AssessmentFormPage() {
 
                                 <button
                                     onClick={handleNext}
-                                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                                    disabled={submitAssessmentMutation.isPending}
+                                    className="flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-70"
                                 >
-                                    {currentSectionIndex === sections.length - 1 ? (
+                                    {submitAssessmentMutation.isPending ? (
+                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                    ) : currentSectionIndex === sections.length - 1 ? (
                                         <>
                                             Kirim Jawaban
                                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

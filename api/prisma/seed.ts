@@ -505,6 +505,58 @@ async function main() {
     }
     console.log("✅ Sample products created");
 
+    // 10. Create Financing Partners
+    const partners = [
+        {
+            name: "Kredit Usaha Rakyat (KUR)",
+            slug: "kur",
+            provider: "Bank Mandiri, BRI, BNI",
+            type: "Government",
+            maxAmount: 500000000,
+            interestRate: "6% - 7%",
+            term: "3 - 5 Tahun",
+            requirements: ["NPWP", "Izin Usaha", "Laporan Keuangan"],
+            features: ["Tanpa Agunan", "Bunga Rendah", "Proses Cepat"],
+            description: "Program pemerintah untuk mendukung UMKM dengan bunga subsidi",
+            isActive: true,
+        },
+        {
+            name: "Pinjaman Fintech P2P",
+            slug: "fintech",
+            provider: "Investree, Amartha, Modalku",
+            type: "Fintech",
+            maxAmount: 2000000000,
+            interestRate: "12% - 24%",
+            term: "6 Bulan - 3 Tahun",
+            requirements: ["Rekening Bank", "Data Usaha", "Omzet Minimal"],
+            features: ["Online 100%", "Pencairan Cepat", "Fleksibel"],
+            description: "Platform digital untuk pinjaman modal usaha dengan proses online",
+            isActive: true,
+        },
+        {
+            name: "Lembaga Keuangan Mikro",
+            slug: "microfinance",
+            provider: "Pegadaian, BPR, Koperasi",
+            type: "Microfinance",
+            maxAmount: 100000000,
+            interestRate: "18% - 36%",
+            term: "6 Bulan - 2 Tahun",
+            requirements: ["KTP", "Jaminan", "Slip Gaji/Omzet"],
+            features: ["Proses Mudah", "Jangkauan Luas", "Syarat Ringan"],
+            description: "Lembaga keuangan untuk kebutuhan modal usaha skala kecil",
+            isActive: true,
+        },
+    ];
+
+    for (const partner of partners) {
+        await prisma.financingPartner.upsert({
+            where: { slug: partner.slug },
+            update: {},
+            create: partner,
+        });
+    }
+    console.log("✅ Financing Partners created");
+
     console.log("✅ Seeding completed successfully!");
 }
 
