@@ -73,6 +73,45 @@ export interface LoginResponse {
   permissions: Permission[]
 }
 
+export interface UMKMProfile {
+  id: string
+  userId: string
+  businessName?: string
+  ownerName?: string
+  address?: string
+  city?: string
+  province?: string
+  postalCode?: string
+  phone?: string
+  email?: string
+  website?: string
+  description?: string
+  sector?: string
+  yearEstablished?: number
+  employeeCount?: number
+  annualRevenue?: number
+  assetsValue?: number
+  legalEntity?: string
+  nib?: string
+  level?: string
+  isVerified: boolean
+}
+
+export interface MentorProfile {
+  id: string
+  userId: string
+  specialization?: string
+  experience?: number
+  bio?: string
+  isVerified: boolean
+}
+
+export interface ProfileResponse {
+  user: User
+  umkm?: UMKMProfile
+  mentor?: MentorProfile
+}
+
 export interface AuthState {
   user: User | null
   roles: string[]

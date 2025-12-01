@@ -3,6 +3,7 @@ import { User, Role, Permission, AuthState, LoginResponse } from '@/types/auth'
 
 interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<void>
+    register: (data: any) => Promise<void>
     logout: () => void
     hasPermission: (permission: string) => boolean
     hasRole: (role: string) => boolean
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, [])
 
     const login = async (email: string, password: string) => {
-        console.log(`[Auth] Attempting login for: ${email} at ${new Date().toISOString()}`)
+        console.log(`[Auth] Attempting login for: ${email} at ${new Date().toISOString()} `)
         setIsLoading(true)
         try {
             // Using fetch directly here to avoid circular dependency if api.ts uses AuthContext
@@ -68,12 +69,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const data = await response.json()
 
             if (!response.ok) {
-                console.error(`[Auth] Login failed. Status: ${response.status} ${response.statusText}. Error:`, data.error)
-                console.error(`[Auth] Response body:`, data)
-                throw new Error(data.error || `Login failed (${response.status})`)
+                console.error(`[Auth] Login failed.Status: ${response.status} ${response.statusText}.Error: `, data.error)
+                console.error(`[Auth] Response body: `, data)
+                throw new Error(data.error || `Login failed(${response.status})`)
             }
 
-            console.log(`[Auth] Login successful for user: ${data.data.user.email}`)
+            console.log(`[Auth] Login successful for user: ${data.data.user.email} `)
             const { user: userData, token } = data.data
 
             // Extract roles and permissions from user data
@@ -94,7 +95,55 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             return userData
         } catch (error) {
-            console.error(`[Auth] Login error at ${new Date().toISOString()}:`, error)
+            console.error(`[Auth] Login error at ${new Date().toISOString()}: `, error)
+            throw error
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const register = async (data: any) => {
+        console.log(`[Auth] Attempting registration for: ${data.email} `)
+        setIsLoading(true)
+        try {
+            const response = await fetch('/api/v1/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+
+            const responseData = await response.json()
+
+            if (!response.ok) {
+                throw new Error(responseData.error || `Registration failed(${response.status})`)
+            }
+
+            console.log(`[Auth] Registration successful for user: ${responseData.data.user.email} `)
+            // Auto login after register? Usually yes, or redirect to login.
+            // The backend register response might include token.
+            // AuthService.ts says it stores tokens.
+
+            const { user: userData, token } = responseData.data
+
+            // Extract roles and permissions from user data
+            const userRoles = userData.roles || []
+            const userPermissions = userData.permissions || []
+
+            // Store in localStorage
+            localStorage.setItem('auth_token', token)
+            localStorage.setItem('auth_user', JSON.stringify(userData))
+            localStorage.setItem('auth_roles', JSON.stringify(userRoles))
+            localStorage.setItem('auth_permissions', JSON.stringify(userPermissions))
+
+            // Update state
+            setUser(userData)
+            setRoles(userRoles)
+            setPermissions(userPermissions)
+            setIsAuthenticated(true)
+
+            return userData
+        } catch (error) {
+            console.error(`[Auth] Registration error: `, error)
             throw error
         } finally {
             setIsLoading(false)
@@ -138,6 +187,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isAuthenticated,
         isLoading,
         login,
+        register,
         logout,
         hasPermission,
         hasRole,

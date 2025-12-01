@@ -1,6 +1,5 @@
-import { PrismaClient, Product, Order, Prisma } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Product, Order, Prisma } from '@prisma/client';
+import { prisma } from '../../../lib/prisma';
 
 export class MarketplaceService {
     async createProduct(data: Prisma.ProductCreateInput): Promise<Product> {
@@ -108,6 +107,74 @@ export class MarketplaceService {
                 },
             },
             orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    async updateProduct(id: string, userId: string, data: Prisma.ProductUpdateInput): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        return prisma.product.update({
+            where: { id },
+            data,
+        });
+    }
+
+    async deleteProduct(id: string, userId: string): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        return prisma.product.delete({
+            where: { id },
+        });
+    }
+
+    async getMyProducts(userId: string): Promise<Product[]> {
+        return prisma.product.findMany({
+            where: { sellerId: userId },
+            orderBy: { createdAt: 'desc' },
+        });
+    }
+
+    async getOrder(id: string, userId: string): Promise<Order | null> {
+        const order = await prisma.order.findUnique({
+            where: { id },
+            include: {
+                items: {
+                    include: {
+                        product: true,
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                    }
+                }
+            },
+        });
+
+        if (!order) return null;
+        // Allow if user is the buyer OR the seller of ANY item in the order
+        // For MVP, let's just check if user is buyer. Seller view might need more complex logic or separate endpoint.
+        // Actually, for "My Orders" detail, it's the buyer.
+        if (order.userId !== userId) {
+            // Check if user is seller of any product in the order?
+            // For now, strict check for buyer.
+            // TODO: Allow sellers to view orders containing their products.
+            throw new Error('Unauthorized');
+        }
+
+        return order;
+    }
+
+    async updateOrderStatus(id: string, status: string): Promise<Order> {
+        return prisma.order.update({
+            where: { id },
+            data: { status },
         });
     }
 }

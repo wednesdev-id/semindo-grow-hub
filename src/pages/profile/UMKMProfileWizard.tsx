@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { profileService } from '@/services/profileService'
+import { documentService, Document } from '@/services/documentService'
+import { FileUpload } from '@/components/ui/file-upload'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -33,8 +35,11 @@ export default function UMKMProfileWizard() {
         nib: ''
     })
 
+    const [documents, setDocuments] = useState<Document[]>([])
+
     useEffect(() => {
         fetchProfile()
+        fetchDocuments()
     }, [])
 
     const fetchProfile = async () => {
@@ -69,6 +74,45 @@ export default function UMKMProfileWizard() {
             setLoading(false)
         }
     }
+
+    const fetchDocuments = async () => {
+        try {
+            const docs = await documentService.list()
+            setDocuments(docs)
+        } catch (error) {
+            console.error('Failed to fetch documents', error)
+        }
+    }
+
+    const handleUpload = async (file: File, type: string) => {
+        try {
+            await documentService.upload(file, type)
+            toast({ title: 'Success', description: 'Document uploaded successfully' })
+            fetchDocuments()
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to upload document',
+                variant: 'destructive',
+            })
+        }
+    }
+
+    const handleDeleteDocument = async (id: string) => {
+        try {
+            await documentService.delete(id)
+            toast({ title: 'Success', description: 'Document deleted successfully' })
+            fetchDocuments()
+        } catch (error: any) {
+            toast({
+                title: 'Error',
+                description: error.message || 'Failed to delete document',
+                variant: 'destructive',
+            })
+        }
+    }
+
+    const getDocumentByType = (type: string) => documents.find(d => d.type === type)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
@@ -222,6 +266,41 @@ export default function UMKMProfileWizard() {
                         <div className="grid gap-2">
                             <Label htmlFor="nib">NIB (Nomor Induk Berusaha)</Label>
                             <Input id="nib" name="nib" value={formData.nib} onChange={handleChange} />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Documents</CardTitle>
+                        <CardDescription>Upload required legal documents.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-2">
+                            <Label>NIB Document</Label>
+                            <FileUpload
+                                label="Upload NIB"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                value={getDocumentByType('NIB')?.fileUrl}
+                                onUpload={(file) => handleUpload(file, 'NIB')}
+                                onDelete={() => {
+                                    const doc = getDocumentByType('NIB')
+                                    if (doc) handleDeleteDocument(doc.id)
+                                }}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label>NPWP Document</Label>
+                            <FileUpload
+                                label="Upload NPWP"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                value={getDocumentByType('NPWP')?.fileUrl}
+                                onUpload={(file) => handleUpload(file, 'NPWP')}
+                                onDelete={() => {
+                                    const doc = getDocumentByType('NPWP')
+                                    if (doc) handleDeleteDocument(doc.id)
+                                }}
+                            />
                         </div>
                     </CardContent>
                 </Card>

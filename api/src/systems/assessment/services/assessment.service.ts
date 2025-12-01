@@ -9,8 +9,22 @@ export class AssessmentService {
         return db.assessmentTemplate.findMany({
             where: { isActive: true },
             include: {
-                _count: {
-                    select: { questions: true }
+                questions: {
+                    orderBy: { order: 'asc' }
+                }
+            }
+        })
+    }
+
+    async getTemplatesByCategory(category: string) {
+        return db.assessmentTemplate.findMany({
+            where: {
+                isActive: true,
+                category: category
+            },
+            include: {
+                questions: {
+                    orderBy: { order: 'asc' }
                 }
             }
         })

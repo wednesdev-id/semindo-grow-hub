@@ -1,12 +1,19 @@
 import { Request, Response } from 'express';
 import { AssessmentService } from '../services/assessment.service';
 import { RecommendationService } from '../services/recommendation.service';
+import { PdfService } from '../services/pdf.service';
 
 const assessmentService = new AssessmentService()
+const pdfService = new PdfService()
 
 export class AssessmentController {
     async getTemplates(req: Request, res: Response) {
         try {
+            const { category } = req.query;
+            if (category) {
+                const templates = await assessmentService.getTemplatesByCategory(String(category));
+                return res.json({ data: templates });
+            }
             const templates = await assessmentService.getTemplates()
             res.json({ data: templates })
         } catch (error: any) {
@@ -69,6 +76,29 @@ export class AssessmentController {
             res.json({ data: result })
         } catch (error: any) {
             res.status(400).json({ error: error.message })
+        }
+    }
+
+    async downloadPdf(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const { id } = req.params;
+
+            // Get full assessment data
+            const assessment = await assessmentService.getAssessment(id, userId);
+            if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
+
+            // Generate PDF
+            const pdfBuffer = await pdfService.generateAssessmentReport({
+                assessment: assessment as any // Type assertion needed due to complex Prisma include
+            });
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=assessment-${id}.pdf`);
+            res.send(pdfBuffer);
+        } catch (error: any) {
+            console.error('PDF Generation Error:', error);
+            res.status(500).json({ error: 'Failed to generate PDF report' });
         }
     }
 }

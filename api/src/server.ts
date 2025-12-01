@@ -5,7 +5,7 @@ import { healthRouter } from './systems/health'
 import { assessmentRouter } from './systems/assessment'
 import { authRouter } from './systems/auth'
 import { usersRouter } from './systems/users'
-import { profileRouter } from './systems/profile'
+import { profileRouter, documentRouter } from './systems/profile'
 import { securityMiddleware } from './systems/middlewares/security'
 import { auditMiddleware } from './systems/middlewares/audit'
 import { corsMiddleware } from './systems/middlewares/cors'
@@ -49,6 +49,10 @@ export function createServer(): Application {
   app.use('/api/v1/dashboard', dashboardRouter)
   app.use('/api/v1/marketplace', marketplaceRouter)
   app.use('/api/v1/financing', financingRouter);
+  app.use('/api/v1/documents', documentRouter);
+
+  // Serve uploaded files
+  app.use('/uploads', express.static('uploads'));
 
   app.get('/', (_req, res) => {
     res.json({ name: 'Semindo API', version: '0.1.0' })

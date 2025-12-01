@@ -14,9 +14,11 @@ router.post('/', (req, res, next) => {
     next()
 }, controller.create)
 router.get('/templates', cacheMiddleware(300), controller.getTemplates)
+router.get('/templates/:category', cacheMiddleware(300), controller.getTemplates)
 router.get('/me', controller.getMyAssessments)
 router.get('/:id', controller.getOne)
 router.post('/:id/responses', controller.saveResponse)
 router.post('/:id/submit', controller.submit)
+router.get('/:id/pdf', controller.downloadPdf)
 
 export const assessmentRouter = router

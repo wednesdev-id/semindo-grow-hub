@@ -1,6 +1,5 @@
-import { PrismaClient, Course, Prisma, Enrollment, LessonProgress } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Course, Prisma, Enrollment, LessonProgress } from '@prisma/client';
+import { prisma } from '../../../lib/prisma';
 
 export class CoursesService {
     async create(data: Prisma.CourseCreateInput): Promise<Course> {

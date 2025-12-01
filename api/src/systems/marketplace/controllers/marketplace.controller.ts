@@ -84,4 +84,58 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async updateProduct(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const { id } = req.params;
+            const product = await marketplaceService.updateProduct(id, userId, req.body);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async deleteProduct(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const { id } = req.params;
+            await marketplaceService.deleteProduct(id, userId);
+            res.status(204).send();
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getMyProducts(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const products = await marketplaceService.getMyProducts(userId);
+            res.json({ data: products });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getOrder(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const { id } = req.params;
+            const order = await marketplaceService.getOrder(id, userId);
+            res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async updateOrderStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+            const order = await marketplaceService.updateOrderStatus(id, status);
+            res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
