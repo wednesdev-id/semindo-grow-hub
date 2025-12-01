@@ -348,6 +348,163 @@ async function main() {
 
     console.log("✅ Super Admin user created:", adminUser.email);
 
+    // Create requested admin user
+    const requestedAdminPassword = await bcrypt.hash("password123", 10);
+    const requestedAdminUser = await prisma.user.upsert({
+        where: { email: "admin@semindo.id" },
+        update: {},
+        create: {
+            email: "admin@semindo.id",
+            passwordHash: requestedAdminPassword,
+            fullName: "Admin Semindo",
+            userRoles: {
+                create: {
+                    role: {
+                        connect: { name: "admin" }
+                    }
+                }
+            }
+        },
+    });
+    console.log("✅ Requested Admin user created:", requestedAdminUser.email);
+
+    // 7. Create Mentor User
+    const mentorPassword = await bcrypt.hash("mentor123", 10);
+    const mentorUser = await prisma.user.upsert({
+        where: { email: "mentor@example.com" },
+        update: {},
+        create: {
+            email: "mentor@example.com",
+            passwordHash: mentorPassword,
+            fullName: "Budi Santoso",
+            userRoles: {
+                create: {
+                    role: { connect: { name: "konsultan" } }
+                }
+            }
+        },
+    });
+    console.log("✅ Mentor user created:", mentorUser.email);
+
+    // 8. Create Courses
+    const courses = [
+        {
+            title: "Digital Marketing 101",
+            slug: "digital-marketing-101",
+            description: "Panduan lengkap pemasaran digital untuk UMKM pemula. Pelajari cara menggunakan media sosial, SEO dasar, dan iklan berbayar untuk meningkatkan penjualan.",
+            level: "Beginner",
+            category: "Marketing",
+            price: 0,
+            thumbnailUrl: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+            authorId: mentorUser.id,
+            isPublished: true,
+            modules: {
+                create: [
+                    {
+                        title: "Pengenalan Digital Marketing",
+                        order: 1,
+                        lessons: {
+                            create: [
+                                { title: "Apa itu Digital Marketing?", slug: "apa-itu-digital-marketing", order: 1, content: "Digital marketing adalah...", isFree: true, duration: 10 },
+                                { title: "Mindset Pemasaran Online", slug: "mindset-pemasaran-online", order: 2, content: "Pentingnya mindset...", isFree: true, duration: 15 }
+                            ]
+                        }
+                    },
+                    {
+                        title: "Social Media Marketing",
+                        order: 2,
+                        lessons: {
+                            create: [
+                                { title: "Memilih Platform yang Tepat", slug: "memilih-platform", order: 1, content: "Instagram vs Facebook vs TikTok...", isFree: false, duration: 20 },
+                                { title: "Membuat Konten Menarik", slug: "membuat-konten", order: 2, content: "Tips copywriting dan visual...", isFree: false, duration: 25 }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            title: "Manajemen Keuangan UMKM",
+            slug: "manajemen-keuangan-umkm",
+            description: "Kelola arus kas dan laporan keuangan bisnis Anda dengan lebih profesional. Hindari kebangkrutan dengan pencatatan yang rapi.",
+            level: "Intermediate",
+            category: "Finance",
+            price: 150000,
+            thumbnailUrl: "https://images.unsplash.com/photo-1554224155-98406852d009?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+            authorId: mentorUser.id,
+            isPublished: true,
+            modules: {
+                create: [
+                    {
+                        title: "Dasar Akuntansi",
+                        order: 1,
+                        lessons: {
+                            create: [
+                                { title: "Pentingnya Pencatatan", slug: "pentingnya-pencatatan", order: 1, content: "Kenapa harus mencatat?", isFree: true, duration: 12 },
+                                { title: "Memisahkan Uang Pribadi & Bisnis", slug: "memisahkan-uang", order: 2, content: "Tips praktis...", isFree: true, duration: 18 }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ];
+
+    for (const course of courses) {
+        await prisma.course.upsert({
+            where: { slug: course.slug },
+            update: {},
+            create: course
+        });
+    }
+    console.log("✅ Sample courses created");
+
+    // 9. Create Products (Marketplace)
+    const products = [
+        {
+            title: "Kopi Arabica Gayo Premium",
+            slug: "kopi-arabica-gayo-premium",
+            description: "Kopi asli dari dataran tinggi Gayo, Aceh. Dipetik merah dan diproses dengan standar ekspor. Notes: Chocolate, Caramel, Fruity.",
+            price: 85000,
+            stock: 100,
+            category: "Kuliner",
+            images: ["https://images.unsplash.com/photo-1559056199-641a0ac8b55e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"],
+            sellerId: demoUser.id,
+            isPublished: true
+        },
+        {
+            title: "Kemeja Batik Pria Slimfit",
+            slug: "kemeja-batik-pria-slimfit",
+            description: "Kemeja batik modern dengan motif parang. Bahan katun primisima yang adem dan nyaman dipakai. Tersedia ukuran M, L, XL.",
+            price: 175000,
+            stock: 50,
+            category: "Fashion",
+            images: ["https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"],
+            sellerId: demoUser.id,
+            isPublished: true
+        },
+        {
+            title: "Keripik Pisang Coklat Lumer",
+            slug: "keripik-pisang-coklat-lumer",
+            description: "Camilan kekinian, keripik pisang renyah berbalut coklat premium yang lumer di mulut. Tanpa pengawet.",
+            price: 15000,
+            stock: 200,
+            category: "Kuliner",
+            images: ["https://images.unsplash.com/photo-1599639668312-38b1b064af76?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"],
+            sellerId: demoUser.id,
+            isPublished: true
+        }
+    ];
+
+    for (const product of products) {
+        await prisma.product.upsert({
+            where: { slug: product.slug },
+            update: {},
+            create: product
+        });
+    }
+    console.log("✅ Sample products created");
+
     console.log("✅ Seeding completed successfully!");
 }
 

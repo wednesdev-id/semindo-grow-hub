@@ -91,4 +91,37 @@ export class CoursesController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async enroll(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const { id } = req.params;
+            const enrollment = await coursesService.enroll(userId, id);
+            res.status(201).json({ data: enrollment });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getMyCourses(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const courses = await coursesService.getMyCourses(userId);
+            res.json({ data: courses });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async updateProgress(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const { id } = req.params; // lessonId
+            const { completed } = req.body;
+            const progress = await coursesService.updateProgress(userId, id, completed);
+            res.json({ data: progress });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }

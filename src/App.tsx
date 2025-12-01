@@ -32,6 +32,11 @@ import AppLayout from "./layout/AppLayout";
 import { AuthProvider as NewAuthProvider } from "./contexts/AuthContext";
 import PlaceholderPage from "./components/PlaceholderPage";
 import CourseCatalogPage from "./features/lms/pages/CourseCatalogPage";
+import MyCoursesPage from "./features/lms/pages/MyCoursesPage";
+import CourseDetailPage from "./features/lms/pages/CourseDetailPage";
+import LearningLayout from "./layout/LearningLayout";
+import LessonView from "./features/lms/pages/LessonView";
+import ProductDetailPage from "./features/marketplace/pages/ProductDetailPage";
 
 const queryClient = new QueryClient();
 
@@ -139,6 +144,8 @@ const App = () => {
 
                     {/* LMS Manager */}
                     <Route path="/lms/catalog" element={<CourseCatalogPage />} />
+                    <Route path="/lms/my-courses" element={<MyCoursesPage />} />
+                    <Route path="/lms/courses/:slug" element={<CourseDetailPage />} />
                     <Route path="/lms/create" element={<PlaceholderPage title="Buat Kelas Baru" />} />
                     <Route path="/lms/modules" element={<PlaceholderPage title="Modul & Materi" />} />
                     <Route path="/lms/videos" element={<PlaceholderPage title="Video Library" />} />
@@ -150,6 +157,7 @@ const App = () => {
 
                     {/* Marketplace Manager */}
                     <Route path="/marketplace/products" element={<PlaceholderPage title="Produk UMKM" />} />
+                    <Route path="/marketplace/product/:slug" element={<ProductDetailPage />} />
                     <Route path="/marketplace/verification" element={<PlaceholderPage title="Verifikasi Produk" />} />
                     <Route path="/marketplace/stores" element={<PlaceholderPage title="Toko UMKM" />} />
                     <Route path="/marketplace/orders" element={<PlaceholderPage title="Transaksi & Order" />} />
@@ -233,6 +241,12 @@ const App = () => {
                     <Route path="/profile" element={<UMKMProfileWizard />} />
                     <Route path="/consultation" element={<PlaceholderPage title="Consultation" />} />
                     <Route path="/financing" element={<PlaceholderPage title="Financing" />} />
+                  </Route>
+
+                  {/* Learning Routes - Distraction Free */}
+                  <Route element={<LearningLayout />}>
+                    <Route path="/lms/learn/:slug" element={<LessonView />} />
+                    <Route path="/lms/learn/:slug/lesson/:lessonId" element={<LessonView />} />
                   </Route>
 
                   <Route path="*" element={<NotFound />} />

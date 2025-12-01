@@ -100,29 +100,17 @@ run_dev() {
     kill_port $BACKEND_PORT
     kill_port $FRONTEND_PORT
     
-    # Set trap untuk Ctrl+C
-    trap cleanup SIGINT SIGTERM
+    echo -e "${BLUE}Starting Backend & Frontend...${NC}"
     
-    # 2. Jalankan Backend
-    echo -e "${BLUE}Starting Backend Server on port $BACKEND_PORT...${NC}"
-    (cd api && npm run dev) &
-    BACKEND_PID=$!
-    
-    # Tunggu sebentar agar backend inisialisasi
-    sleep 2
-    
-    # 3. Jalankan Frontend
-    echo -e "${BLUE}Starting Frontend Server on port $FRONTEND_PORT...${NC}"
-    npm run dev &
-    FRONTEND_PID=$!
-    
-    echo -e "${GREEN}✅ Fullstack Environment Berjalan!${NC}"
-    echo -e "   - Backend:  http://localhost:$BACKEND_PORT"
-    echo -e "   - Frontend: http://localhost:$FRONTEND_PORT"
-    echo -e "${YELLOW}Tekan Ctrl+C untuk menghentikan semua service.${NC}"
-    
-    # Tunggu kedua process
-    wait $BACKEND_PID $FRONTEND_PID
+    # Use concurrently for better logging
+    # -n: Names for the processes
+    # -c: Colors for the processes
+    # --kill-others: Kill all if one dies (optional, but good for dev)
+    npx concurrently \
+        -n "BACKEND,FRONTEND" \
+        -c "blue,green" \
+        "cd api && npm run dev" \
+        "npm run dev"
 }
 
 # Fungsi untuk build project

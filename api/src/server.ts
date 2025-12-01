@@ -8,6 +8,8 @@ import { securityMiddleware } from './systems/middlewares/security'
 import { auditMiddleware } from './systems/middlewares/audit'
 import { corsMiddleware } from './systems/middlewares/cors'
 import { lmsRouter } from './systems/lms'
+import { dashboardRouter } from './systems/dashboard'
+import { marketplaceRouter } from './systems/marketplace';
 
 export function createServer(): Application {
   const app = express()
@@ -34,9 +36,11 @@ export function createServer(): Application {
   app.use('/api/v1/auth', authRouter)
   app.use('/api/v1/users', usersRouter)
   app.use('/api/v1/profile', profileRouter)
-  console.log('Mounting /assessment route', assessmentRouter)
+
   app.use('/api/v1/assessment', assessmentRouter)
   app.use('/api/v1/lms', lmsRouter)
+  app.use('/api/v1/dashboard', dashboardRouter)
+  app.use('/api/v1/marketplace', marketplaceRouter)
 
   app.get('/', (_req, res) => {
     res.json({ name: 'Semindo API', version: '0.1.0' })

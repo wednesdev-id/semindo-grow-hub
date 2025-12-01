@@ -34,6 +34,8 @@ model User {
   auditLogs    AuditLog[]
   authoredCourses Course[]
   enrollments  Enrollment[]
+  products     Product[]
+  orders       Order[]
 
   @@map("users")
 }
@@ -440,4 +442,60 @@ model LessonProgress {
 
   @@unique([enrollmentId, lessonId])
   @@map("lesson_progress")
+}
+
+// ============================================
+// MARKETPLACE
+// ============================================
+
+model Product {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  description String?  @db.Text
+  price       Decimal  @default(0) @db.Decimal(10, 2)
+  stock       Int      @default(0)
+  category    String
+  images      Json?    // Array of strings (URLs)
+  sellerId    String   @map("seller_id")
+  
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  seller      User     @relation(fields: [sellerId], references: [id])
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  status      String   @default("pending") // pending, paid, shipped, completed, cancelled
+  totalAmount Decimal  @map("total_amount") @db.Decimal(10, 2)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id])
+  items       OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  productId String   @map("product_id")
+  quantity  Int      @default(1)
+  price     Decimal  @db.Decimal(10, 2) // Price at the time of purchase
+  
+  // Relations
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
 }

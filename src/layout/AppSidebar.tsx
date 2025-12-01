@@ -162,6 +162,7 @@ const getMenuItems = (): {
       name: "LMS Manager",
       subItems: [
         { name: "Katalog Kelas", path: "/lms/catalog" }, // All can view
+        { name: "Kelas Saya", path: "/lms/my-courses" }, // All can view
         { name: "Buat Kelas Baru", path: "/lms/create", roles: ["admin", "management", "trainer"] },
         { name: "Modul & Materi", path: "/lms/modules" }, // All can access learning materials
         { name: "Video Library", path: "/lms/videos" }, // All can view
