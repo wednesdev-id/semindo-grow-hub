@@ -8,87 +8,61 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Globe, FileText, Calculator, Truck, Users, Award, CheckCircle, AlertTriangle, MapPin, Clock } from "lucide-react";
+import { Search, Globe, FileText, Calculator, Truck, Users, Award, CheckCircle, MapPin, Clock } from "lucide-react";
 import SEOHead from "@/components/ui/seo-head";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { exportService, ExportHSCode, ExportCountry, ExportBuyer } from "@/services/exportService";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useToast } from "@/components/ui/use-toast";
 
 const ExportHub = () => {
   const [searchHSCode, setSearchHSCode] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("");
+  const [hsCodes, setHsCodes] = useState<ExportHSCode[]>([]);
+  const [countries, setCountries] = useState<ExportCountry[]>([]);
+  const [buyers, setBuyers] = useState<ExportBuyer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  const hsCodeData = [
-    {
-      code: "0901.11.00",
-      description: "Kopi tidak dipanggang, tidak dikafeinasi",
-      tariff: "5%",
-      requirements: ["Sertifikat Fitosanitari", "Certificate of Origin"],
-      category: "Pertanian"
-    },
-    {
-      code: "6204.62.00",
-      description: "Celana panjang wanita dari katun",
-      tariff: "12%",
-      requirements: ["Certificate of Origin", "Textile Declaration"],
-      category: "Tekstil"
-    },
-    {
-      code: "4602.12.00",
-      description: "Keranjang dan barang anyaman dari rotan",
-      tariff: "8%",
-      requirements: ["Phytosanitary Certificate", "CITES Permit"],
-      category: "Kerajinan"
-    },
-    {
-      code: "3304.99.00",
-      description: "Sediaan kosmetik lainnya",
-      tariff: "10%",
-      requirements: ["Health Certificate", "BPOM Certificate"],
-      category: "Kosmetik"
-    }
-  ];
+  // Load initial data
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const [hsData, countryData, buyerData] = await Promise.all([
+          exportService.getHSCodes(),
+          exportService.getCountries(),
+          exportService.getBuyers()
+        ]);
+        setHsCodes(hsData);
+        setCountries(countryData);
+        setBuyers(buyerData);
+      } catch (error) {
+        console.error("Failed to load export data", error);
+        toast({
+          title: "Error",
+          description: "Gagal memuat data ekspor. Silakan coba lagi.",
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadData();
+  }, [toast]);
 
-  const exportCountries = [
-    {
-      country: "Malaysia",
-      flag: "🇲🇾",
-      market: "ASEAN",
-      distance: "1,200 km",
-      shippingTime: "3-5 hari",
-      avgTariff: "0-5%",
-      requirements: ["ATIGA Certificate", "Halal Certificate"],
-      topProducts: ["Kopi", "Tekstil", "Kerajinan"]
-    },
-    {
-      country: "Singapura",
-      flag: "🇸🇬",
-      market: "ASEAN",
-      distance: "900 km",
-      shippingTime: "2-4 hari",
-      avgTariff: "0%",
-      requirements: ["Certificate of Origin", "Health Certificate"],
-      topProducts: ["F&B", "Kosmetik", "Elektronik"]
-    },
-    {
-      country: "Jepang",
-      flag: "🇯🇵",
-      market: "Asia Pasifik",
-      distance: "5,800 km",
-      shippingTime: "7-10 hari",
-      avgTariff: "3-8%",
-      requirements: ["JAS Organic", "Halal Certificate", "Health Certificate"],
-      topProducts: ["Kopi", "Makanan Halal", "Kerajinan"]
-    },
-    {
-      country: "Australia",
-      flag: "🇦🇺",
-      market: "Oceania",
-      distance: "4,200 km",
-      shippingTime: "5-8 hari",
-      avgTariff: "0-5%",
-      requirements: ["AQIS Certificate", "Organic Certificate"],
-      topProducts: ["Kopi", "Makanan Organik", "Tekstil"]
+  // Handle HS Code Search
+  const handleSearchHSCode = async () => {
+    setIsLoading(true);
+    try {
+      const results = await exportService.getHSCodes(searchHSCode);
+      setHsCodes(results);
+    } catch (error) {
+      console.error("Search failed", error);
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const exportSteps = [
     {
@@ -121,39 +95,6 @@ const ExportHub = () => {
     }
   ];
 
-  const buyerMatching = [
-    {
-      company: "Pacific Trading Co.",
-      country: "Malaysia",
-      category: "F&B Importer",
-      products: ["Kopi", "Teh", "Rempah"],
-      volume: "50-100 ton/bulan",
-      contact: "verified",
-      rating: 4.8,
-      established: "2015"
-    },
-    {
-      company: "Asia Craft Import",
-      country: "Jepang",
-      category: "Handicraft Distributor",
-      products: ["Kerajinan Tangan", "Furniture", "Dekorasi"],
-      volume: "1000-5000 pcs/bulan",
-      contact: "verified",
-      rating: 4.9,
-      established: "2010"
-    },
-    {
-      company: "Textile Solutions Ltd",
-      country: "Australia",
-      category: "Fashion Retailer",
-      products: ["Batik", "Tekstil", "Fashion"],
-      volume: "2000-10000 pcs/bulan",
-      contact: "verified",
-      rating: 4.7,
-      established: "2018"
-    }
-  ];
-
   const logisticCalculator = {
     origin: "Jakarta, Indonesia",
     destinations: [
@@ -164,20 +105,23 @@ const ExportHub = () => {
     ]
   };
 
-  const filteredHSCodes = hsCodeData.filter(item =>
-    item.description.toLowerCase().includes(searchHSCode.toLowerCase()) ||
-    item.code.includes(searchHSCode)
-  );
+  if (isLoading && countries.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead 
+      <SEOHead
         title="Export Hub – Info Sertifikasi, Buyer Matching, & Logistik"
         description="Pelajari regulasi ekspor, cek HS code, hitung biaya logistik, dan temukan buyer B2B. Bantu UMKM Anda go international."
         keywords="export hub, HS code, buyer matching, logistik ekspor, sertifikasi ekspor, regulasi ekspor"
       />
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="pt-20 pb-12 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-7xl mx-auto text-center">
@@ -214,7 +158,7 @@ const ExportHub = () => {
           <TabsContent value="hs-code" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">HS Code Checker</h2>
-              
+
               <Card className="mb-6">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -232,10 +176,11 @@ const ExportHub = () => {
                         placeholder="Contoh: kopi, tekstil, kerajinan..."
                         value={searchHSCode}
                         onChange={(e) => setSearchHSCode(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearchHSCode()}
                       />
                     </div>
-                    <Button>
-                      <Search className="h-4 w-4 mr-2" />
+                    <Button onClick={handleSearchHSCode} disabled={isLoading}>
+                      {isLoading ? <LoadingSpinner size="sm" className="mr-2" /> : <Search className="h-4 w-4 mr-2" />}
                       Cari
                     </Button>
                   </div>
@@ -258,25 +203,33 @@ const ExportHub = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredHSCodes.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell className="font-mono">{item.code}</TableCell>
-                          <TableCell>{item.description}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.category}</Badge>
-                          </TableCell>
-                          <TableCell className="font-semibold">{item.tariff}</TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              {item.requirements.map((req, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs mr-1">
-                                  {req}
-                                </Badge>
-                              ))}
-                            </div>
+                      {hsCodes.length > 0 ? (
+                        hsCodes.map((item, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono">{item.code}</TableCell>
+                            <TableCell>{item.description}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{item.category}</Badge>
+                            </TableCell>
+                            <TableCell className="font-semibold">{item.tariff}</TableCell>
+                            <TableCell>
+                              <div className="space-y-1">
+                                {item.requirements.map((req, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs mr-1">
+                                    {req}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            Tidak ada data HS Code ditemukan.
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -288,15 +241,15 @@ const ExportHub = () => {
           <TabsContent value="countries" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Negara Tujuan Ekspor</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {exportCountries.map((country, index) => (
+                {countries.map((country, index) => (
                   <Card key={index} className="hover:shadow-lg transition-shadow">
                     <CardHeader>
                       <CardTitle className="flex items-center gap-3">
                         <span className="text-2xl">{country.flag}</span>
                         <div>
-                          <div>{country.country}</div>
+                          <div>{country.name}</div>
                           <Badge variant="outline" className="text-xs">{country.market}</Badge>
                         </div>
                       </CardTitle>
@@ -316,7 +269,7 @@ const ExportHub = () => {
                           <p className="font-semibold text-green-600">{country.avgTariff}</p>
                         </div>
                       </div>
-                      
+
                       <div>
                         <Label className="text-xs text-muted-foreground">Persyaratan Utama</Label>
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -327,7 +280,7 @@ const ExportHub = () => {
                           ))}
                         </div>
                       </div>
-                      
+
                       <div>
                         <Label className="text-xs text-muted-foreground">Produk Populer</Label>
                         <div className="flex flex-wrap gap-1 mt-1">
@@ -338,7 +291,7 @@ const ExportHub = () => {
                           ))}
                         </div>
                       </div>
-                      
+
                       <Button className="w-full">
                         <FileText className="h-4 w-4 mr-2" />
                         Lihat Detail Regulasi
@@ -354,7 +307,7 @@ const ExportHub = () => {
           <TabsContent value="logistics" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Kalkulator Biaya Logistik</h2>
-              
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <Card>
                   <CardHeader>
@@ -368,7 +321,7 @@ const ExportHub = () => {
                       <Label>Asal Pengiriman</Label>
                       <Input value={logisticCalculator.origin} disabled />
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>Negara Tujuan</Label>
                       <Select value={selectedCountry} onValueChange={setSelectedCountry}>
@@ -384,7 +337,7 @@ const ExportHub = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Berat (kg)</Label>
@@ -395,7 +348,7 @@ const ExportHub = () => {
                         <Input type="number" placeholder="1.5" />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <Label>Jenis Barang</Label>
                       <Select>
@@ -413,7 +366,7 @@ const ExportHub = () => {
                     </div>
                   </CardContent>
                 </Card>
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -435,7 +388,7 @@ const ExportHub = () => {
                             </div>
                             <p className="text-sm text-blue-600">15-30 hari pengiriman</p>
                           </div>
-                          
+
                           <div className="bg-green-50 p-4 rounded-lg">
                             <div className="flex items-center gap-2 mb-2">
                               <Globe className="h-4 w-4 text-green-600" />
@@ -447,7 +400,7 @@ const ExportHub = () => {
                             <p className="text-sm text-green-600">3-7 hari pengiriman</p>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-3">
                           <Label className="text-sm font-medium">Biaya Tambahan</Label>
                           <div className="space-y-2 text-sm">
@@ -472,7 +425,7 @@ const ExportHub = () => {
                         </div>
                       </>
                     )}
-                    
+
                     <Button className="w-full">
                       <Calculator className="h-4 w-4 mr-2" />
                       Hitung Detail
@@ -487,18 +440,18 @@ const ExportHub = () => {
           <TabsContent value="buyers" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Buyer Matching B2B</h2>
-              
+
               <div className="grid grid-cols-1 gap-6">
-                {buyerMatching.map((buyer, index) => (
+                {buyers.map((buyer, index) => (
                   <Card key={index} className="hover:shadow-lg transition-shadow">
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start mb-4">
                         <div>
-                          <h3 className="text-xl font-semibold mb-2">{buyer.company}</h3>
+                          <h3 className="text-xl font-semibold mb-2">{buyer.companyName}</h3>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <MapPin className="h-4 w-4" />
-                              {buyer.country}
+                              {buyer.countryName}
                             </div>
                             <div className="flex items-center gap-1">
                               <Clock className="h-4 w-4" />
@@ -512,13 +465,15 @@ const ExportHub = () => {
                             <span className="text-sm font-medium">Rating:</span>
                             <span className="font-bold text-yellow-600">{buyer.rating}</span>
                           </div>
-                          <Badge className="bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Verified
-                          </Badge>
+                          {buyer.isVerified && (
+                            <Badge className="bg-green-100 text-green-800">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Verified
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                           <Label className="text-sm text-muted-foreground">Produk yang Dicari</Label>
@@ -535,7 +490,7 @@ const ExportHub = () => {
                           <p className="font-semibold">{buyer.volume}</p>
                         </div>
                       </div>
-                      
+
                       <div className="flex gap-2">
                         <Button className="flex-1">
                           <Users className="h-4 w-4 mr-2" />
@@ -550,8 +505,8 @@ const ExportHub = () => {
                   </Card>
                 ))}
               </div>
-              
-              <div className="text-center">
+
+              <div className="text-center mt-6">
                 <Button variant="outline" size="lg">
                   Lihat Semua Buyer
                 </Button>
@@ -563,7 +518,7 @@ const ExportHub = () => {
           <TabsContent value="guide" className="space-y-8">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold mb-6">Panduan Lengkap Ekspor</h2>
-              
+
               <div className="space-y-6">
                 {exportSteps.map((step, index) => (
                   <Card key={index}>
@@ -580,7 +535,7 @@ const ExportHub = () => {
                             <Badge variant="outline">{step.duration}</Badge>
                           </div>
                           <p className="text-muted-foreground mb-4">{step.description}</p>
-                          
+
                           <div>
                             <Label className="text-sm font-medium">Checklist:</Label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
@@ -598,8 +553,8 @@ const ExportHub = () => {
                   </Card>
                 ))}
               </div>
-              
-              <Card className="bg-primary/5">
+
+              <Card className="bg-primary/5 mt-8">
                 <CardContent className="p-6 text-center">
                   <Award className="h-12 w-12 text-primary mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">Butuh Bantuan Ekspor?</h3>

@@ -20,5 +20,6 @@ router.get('/:id', controller.getOne)
 router.post('/:id/responses', controller.saveResponse)
 router.post('/:id/submit', controller.submit)
 router.get('/:id/pdf', controller.downloadPdf)
+router.get('/:id/preview', controller.previewPdf)
 
 export const assessmentRouter = router

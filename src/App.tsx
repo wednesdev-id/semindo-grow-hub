@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useEffect, useMemo, useState } from "react";
 import { AuthProvider } from "@core/auth/hooks/useAuth";
@@ -15,6 +15,8 @@ import FeaturePreviewPage from "./components/dashboard/FeaturePreviewPage";
 import LearningLayout from "./layout/LearningLayout";
 import { Suspense, lazy } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import AdminDashboard from "./pages/dashboards/AdminDashboard";
 
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -25,7 +27,16 @@ const LearningHub = lazy(() => import("./pages/LearningHub"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const FinancingHub = lazy(() => import("./pages/FinancingHub"));
 const ExportHub = lazy(() => import("./pages/ExportHub"));
-const Community = lazy(() => import("./pages/Community"));
+const CommunityLayout = lazy(() => import("./components/layouts/CommunityLayout").then(module => ({ default: module.CommunityLayout })));
+const ForumLandingPage = lazy(() => import("./pages/community/ForumLandingPage").then(module => ({ default: module.ForumLandingPage })));
+const ThreadListPage = lazy(() => import("./pages/community/ThreadListPage").then(module => ({ default: module.ThreadListPage })));
+const ThreadDetailPage = lazy(() => import("./pages/community/ThreadDetailPage").then(module => ({ default: module.ThreadDetailPage })));
+const EventListPage = lazy(() => import("./pages/community/EventListPage").then(module => ({ default: module.EventListPage })));
+const EventDetailPage = lazy(() => import("./pages/community/EventDetailPage").then(module => ({ default: module.EventDetailPage })));
+const ProgramListPage = lazy(() => import("./pages/admin/program/ProgramListPage").then(module => ({ default: module.ProgramListPage })));
+const ProgramDetailPage = lazy(() => import("./pages/admin/program/ProgramDetailPage").then(module => ({ default: module.ProgramDetailPage })));
+const ProgramLandingPage = lazy(() => import("./pages/program/ProgramLandingPage").then(module => ({ default: module.ProgramLandingPage })));
+const MyProgramsPage = lazy(() => import("./pages/program/MyProgramsPage").then(module => ({ default: module.MyProgramsPage })));
 const Blog = lazy(() => import("./pages/Blog"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Dashboard = lazy(() => import("./pages/dashboards/Dashboard"));
@@ -58,6 +69,9 @@ const UserRoleManagement = lazy(() => import("./pages/admin/UserRoleManagement")
 const UMKMDocumentVerification = lazy(() => import("./pages/admin/UMKMDocumentVerification"));
 const ProgramList = lazy(() => import("./pages/programs/ProgramList"));
 const ProgramCreate = lazy(() => import("./pages/programs/ProgramCreate"));
+const UMKMListPage = lazy(() => import("./pages/admin/umkm/UMKMListPage"));
+const UMKMFormPage = lazy(() => import("./pages/admin/umkm/UMKMFormPage"));
+const UMKMDetailPage = lazy(() => import("./pages/admin/umkm/UMKMDetailPage"));
 
 const queryClient = new QueryClient();
 
@@ -108,13 +122,43 @@ const App = () => {
                     <Route path="/marketplace" element={<Marketplace />} />
                     <Route path="/financing-hub" element={<FinancingHub />} />
                     <Route path="/export-hub" element={<ExportHub />} />
-                    <Route path="/community" element={<Community />} />
+                    <Route path="/community" element={<CommunityLayout />}>
+                      <Route index element={<Navigate to="forum" replace />} />
+                      <Route path="forum" element={<ForumLandingPage />} />
+                      <Route path="forum/category/:categoryId" element={<ThreadListPage />} />
+                      <Route path="forum/thread/:id" element={<ThreadDetailPage />} />
+                      <Route path="events" element={<EventListPage />} />
+                      <Route path="events/:id" element={<EventDetailPage />} />
+                    </Route>
                     <Route path="/blog" element={<Blog />} />
                     <Route path="/contact" element={<Contact />} />
 
                     {/* Auth Routes */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+
+                    {/* Program Routes */}
+                    <Route path="programs" element={<ProgramLandingPage />} />
+                    <Route path="my-programs" element={
+                      <ProtectedRoute>
+                        <MyProgramsPage />
+                      </ProtectedRoute>
+                    } />
+
+                    {/* Admin Routes */}
+                    <Route path="admin" element={
+                      <ProtectedRoute requiredRole="admin">
+                        <AppLayout />
+                      </ProtectedRoute>
+                    }>
+                      <Route index element={<Navigate to="dashboard" replace />} />
+                      <Route path="dashboard" element={<AdminDashboard />} />
+                      <Route path="users" element={<UserManagement />} />
+                      <Route path="umkm" element={<UMKMListPage />} />
+                      <Route path="umkm/:id" element={<UMKMDetailPage />} />
+                      <Route path="programs" element={<ProgramListPage />} />
+                      <Route path="programs/:id" element={<ProgramDetailPage />} />
+                    </Route>
 
                     {/* Dashboard Routes with Sidebar Layout */}
                     <Route element={<AppLayout />}>
@@ -162,6 +206,11 @@ const App = () => {
                       />} />
 
                       {/* UMKM Database */}
+                      <Route path="/admin/umkm" element={<UMKMListPage />} />
+                      <Route path="/admin/umkm/create" element={<UMKMFormPage />} />
+                      <Route path="/admin/umkm/:id" element={<UMKMDetailPage />} />
+                      <Route path="/admin/umkm/:id/edit" element={<UMKMFormPage />} />
+
                       <Route path="/umkm/list" element={<UserManagement defaultRole="umkm" />} />
                       <Route path="/umkm/segmentation" element={<FeaturePreviewPage
                         title="Segmentasi UMKM"
@@ -391,6 +440,11 @@ const App = () => {
                         description="Arsip sesi konsultasi."
                         features={["Session logs", "Recording access", "Outcome notes"]}
                       />} />
+                      {/* UMKM Management */}
+                      <Route path="/umkm" element={<UMKMListPage />} />
+                      <Route path="/umkm/new" element={<UMKMFormPage />} />
+                      <Route path="/umkm/:id" element={<UMKMDetailPage />} />
+                      <Route path="/umkm/:id/edit" element={<UMKMFormPage />} />
                       <Route path="/consultation/chat" element={<FeaturePreviewPage
                         title="Chat Monitoring"
                         description="Monitoring interaksi chat konsultasi."

@@ -28,7 +28,9 @@ const statusMap: Record<string, StatusVariant> = {
     pending: "warning",
     draft: "secondary",
     review: "warning",
+    in_review: "warning",
     submitted: "info",
+    unverified: "secondary",
 
     inactive: "destructive",
     rejected: "destructive",

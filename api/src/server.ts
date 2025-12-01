@@ -13,7 +13,11 @@ import { lmsRouter } from './systems/lms'
 import { dashboardRouter } from './systems/dashboard'
 import { marketplaceRouter } from './systems/marketplace'
 import { financingRouter } from './systems/financing'
-  ;
+import { exportRouter } from './systems/export'
+import { communityRouter } from './systems/community'
+import { programRouter } from './systems/program';
+import { umkmRouter } from './systems/umkm';
+;
 
 export function createServer(): Application {
   const app = express()
@@ -50,6 +54,10 @@ export function createServer(): Application {
   app.use('/api/v1/marketplace', marketplaceRouter)
   app.use('/api/v1/financing', financingRouter);
   app.use('/api/v1/documents', documentRouter);
+  app.use('/api/v1/export', exportRouter);
+  app.use('/api/v1/community', communityRouter);
+  app.use('/api/v1/programs', programRouter);
+  app.use('/api/v1/umkm', umkmRouter);
 
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));

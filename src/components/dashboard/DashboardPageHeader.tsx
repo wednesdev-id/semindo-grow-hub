@@ -18,6 +18,7 @@ interface DashboardPageHeaderProps {
         href?: string;
         icon?: React.ReactNode;
     };
+    actions?: React.ReactNode;
 }
 
 export function DashboardPageHeader({
@@ -25,6 +26,7 @@ export function DashboardPageHeader({
     description,
     breadcrumbs,
     action,
+    actions,
 }: DashboardPageHeaderProps) {
     return (
         <div className="space-y-4 mb-6">
@@ -72,6 +74,7 @@ export function DashboardPageHeader({
                         )}
                     </div>
                 )}
+                {actions && <div>{actions}</div>}
             </div>
             <Separator />
         </div>

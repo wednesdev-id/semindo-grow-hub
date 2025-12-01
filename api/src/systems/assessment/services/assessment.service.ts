@@ -3,40 +3,24 @@ import { PrismaClient, Assessment, AssessmentQuestion, AssessmentResponse, Asses
 import { RecommendationService } from './recommendation.service'
 import { ScoringEngine } from './scoring.service'
 import { LevelDeterminationService } from './level.service'
+import { TemplateService } from './template.service'
+import { ValidationService } from './validation.service'
+import { ProblemMappingService } from './problem.service'
 
 export class AssessmentService {
     async getTemplates() {
-        return db.assessmentTemplate.findMany({
-            where: { isActive: true },
-            include: {
-                questions: {
-                    orderBy: { order: 'asc' }
-                }
-            }
-        })
+        return TemplateService.getTemplates();
     }
 
     async getTemplatesByCategory(category: string) {
-        return db.assessmentTemplate.findMany({
-            where: {
-                isActive: true,
-                category: category
-            },
-            include: {
-                questions: {
-                    orderBy: { order: 'asc' }
-                }
-            }
-        })
+        return TemplateService.getTemplatesByCategory(category);
     }
 
     async createAssessment(userId: string, templateId?: string) {
         // If no template provided, use the default active one
         let targetTemplateId = templateId
         if (!targetTemplateId) {
-            const defaultTemplate = await db.assessmentTemplate.findFirst({
-                where: { isActive: true }
-            })
+            const defaultTemplate = await TemplateService.getDefaultTemplate();
             if (defaultTemplate) {
                 targetTemplateId = defaultTemplate.id
             }
@@ -109,9 +93,18 @@ export class AssessmentService {
         if (assessment.userId !== userId) throw new Error('Unauthorized')
         if (assessment.status === 'completed') throw new Error('Assessment already completed')
 
+        // Validate Response
+        const question = await db.assessmentQuestion.findUnique({ where: { id: questionId } });
+        if (!question) throw new Error('Question not found');
+
+        const validationError = ValidationService.validateResponse(question, answerValue);
+        if (validationError) {
+            throw new Error(`Validation failed: ${validationError.message}`);
+        }
+
         return db.assessmentResponse.upsert({
             where: {
-                assessmentId_questionId: { // This composite unique constraint needs to be added to schema if not exists, or handle differently
+                assessmentId_questionId: {
                     assessmentId,
                     questionId
                 }
@@ -153,6 +146,16 @@ export class AssessmentService {
         // Determine Level using LevelDeterminationService
         const umkmLevel = LevelDeterminationService.determineLevel(totalScore);
 
+        // Identify Problems
+        // We need a temporary score object to pass to ProblemMappingService
+        const tempScore = {
+            totalScore,
+            categoryScores,
+            umkmLevel
+        } as any;
+
+        const problems = ProblemMappingService.identifyProblems(assessment, tempScore, assessment.responses);
+
         // Save Score
         // Check if score already exists (e.g. re-submit)
         const existingScore = await db.assessmentScore.findUnique({ where: { assessmentId: id } })
@@ -192,6 +195,9 @@ export class AssessmentService {
         // Generate Recommendations
         // First delete existing recommendations if any (for re-submit)
         await db.assessmentRecommendation.deleteMany({ where: { assessmentId: id } })
+
+        // Pass problems to recommendation service if needed, or let it generate based on score
+        // For now, we'll stick to the existing rule-based generation but we could enhance it to use the identified problems
         await RecommendationService.generateRecommendations(id, savedScore)
 
         return this.getAssessment(id, userId)

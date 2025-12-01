@@ -101,4 +101,27 @@ export class AssessmentController {
             res.status(500).json({ error: 'Failed to generate PDF report' });
         }
     }
+
+    async previewPdf(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const { id } = req.params;
+
+            // Get full assessment data
+            const assessment = await assessmentService.getAssessment(id, userId);
+            if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
+
+            // Generate PDF
+            const pdfBuffer = await pdfService.generateAssessmentReport({
+                assessment: assessment as any // Type assertion needed due to complex Prisma include
+            });
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename=assessment-${id}.pdf`);
+            res.send(pdfBuffer);
+        } catch (error: any) {
+            console.error('PDF Preview Error:', error);
+            res.status(500).json({ error: 'Failed to generate PDF preview' });
+        }
+    }
 }

@@ -1,4 +1,4 @@
-export type AnswerValue = string | number | boolean | string[];
+export type AnswerValue = string | number | boolean | string[] | number[] | null;
 
 export interface AssessmentQuestion {
     id: string;

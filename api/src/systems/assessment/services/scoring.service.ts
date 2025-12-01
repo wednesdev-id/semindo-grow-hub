@@ -76,22 +76,29 @@ export class ScoringEngine {
 
     private static getMaxRawScore(question: AssessmentQuestion): number {
         if (question.type === 'scale') {
+            // Check if options has max value
+            if (question.options) {
+                const opts = question.options as any;
+                if (opts.max) return Number(opts.max);
+            }
             return 5; // Default max for scale
         }
-        // For boolean and multiple choice, we assume the value itself is the score (e.g. 0 or 1, or 0-5 mapped)
-        // If multiple choice values are 0-5, max is 5. If 0-1, max is 1.
-        // For now, let's assume standard normalization where "best" answer is 5 or 1.
-        // To be safe and consistent with previous logic, let's assume max is 5 for everything if we want 0-100 scale
-        // BUT, if boolean returns 1, and max is 5, then max score is 20%. That might be wrong.
-
-        // Refined logic:
-        // If boolean, max is 1.
-        // If scale, max is 5.
-        // If multiple choice, we need to know the max possible value from options.
-        // For MVP, let's assume the 'value' stored in answer is already 0-5 scale equivalent.
 
         if (question.type === 'boolean') return 1;
 
-        return 5; // Default fallback
+        if (question.type === 'multiple_choice') {
+            if (question.options) {
+                const opts = question.options as any[];
+                if (Array.isArray(opts)) {
+                    // Find max value among options
+                    // Assuming values are numbers or can be parsed
+                    const values = opts.map(o => Number(o.value) || 0);
+                    return Math.max(...values, 0) || 1; // Default to 1 if all 0
+                }
+            }
+            return 1; // Default fallback
+        }
+
+        return 0;
     }
 }

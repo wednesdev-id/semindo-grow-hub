@@ -13,6 +13,8 @@ export interface User {
   updatedAt: Date
   roles?: string[]
   permissions?: string[]
+  umkmProfile?: UMKMProfile
+  mentorProfile?: MentorProfile
 }
 
 export interface Role {
