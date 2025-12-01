@@ -125,5 +125,87 @@ export const marketplaceService = {
         } catch (error) {
             return undefined;
         }
+    },
+
+    // Admin Methods
+    getAdminStats: async () => {
+        // Mock implementation
+        return {
+            totalSales: 150000000,
+            totalOrders: 450,
+            activeProducts: 120,
+            pendingVerifications: 8,
+            salesTrend: { value: 15, positive: true },
+            ordersTrend: { value: 8, positive: true },
+            productsTrend: { value: 5, positive: true },
+            verificationTrend: { value: 2, positive: false }, // Decreased pending is good? Or increased load? Let's say trend is count change.
+        };
+        // const response = await api.get<{ data: any }>('/marketplace/admin/stats');
+        // return response.data;
+    },
+
+    getAllOrders: async () => {
+        // Mock implementation
+        return [
+            {
+                id: "ORD-001",
+                customer: "Budi Santoso",
+                date: "2024-03-15",
+                total: "Rp 450.000",
+                status: "completed",
+                items: 3,
+            },
+            {
+                id: "ORD-002",
+                customer: "Siti Aminah",
+                date: "2024-03-14",
+                total: "Rp 1.250.000",
+                status: "processing",
+                items: 1,
+            },
+            {
+                id: "ORD-003",
+                customer: "Rudi Hartono",
+                date: "2024-03-14",
+                total: "Rp 75.000",
+                status: "cancelled",
+                items: 2,
+            },
+        ];
+        // const response = await api.get<{ data: any[] }>('/marketplace/admin/orders');
+        // return response.data;
+    },
+
+    getPendingProducts: async () => {
+        // Mock implementation
+        return [
+            {
+                id: 1,
+                name: "Kopi Gayo Premium",
+                seller: "CV Kopi Nusantara",
+                category: "Kuliner",
+                price: "Rp 85.000",
+                submittedAt: "2024-03-15",
+                status: "pending",
+            },
+            {
+                id: 2,
+                name: "Batik Tulis Solo",
+                seller: "Batik Heritage",
+                category: "Fashion",
+                price: "Rp 450.000",
+                submittedAt: "2024-03-14",
+                status: "pending",
+            },
+        ];
+        // const response = await api.get<{ data: any[] }>('/marketplace/admin/products/pending');
+        // return response.data;
+    },
+
+    verifyProduct: async (productId: number, approved: boolean) => {
+        // Mock implementation
+        return { success: true };
+        // const response = await api.post(`/marketplace/admin/products/${productId}/verify`, { approved });
+        // return response.data;
     }
 };

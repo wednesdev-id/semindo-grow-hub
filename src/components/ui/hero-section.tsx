@@ -7,9 +7,9 @@ const HeroSection = () => {
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src={heroImage} 
-          alt="Tech consulting for SMEs" 
+        <img
+          src={heroImage}
+          alt="Tech consulting for SMEs"
           className="w-full h-full object-cover opacity-20"
         />
         <div className="absolute inset-0 bg-gradient-hero opacity-80"></div>
@@ -22,25 +22,25 @@ const HeroSection = () => {
             Beyond Solutions
             <span className="block text-secondary">for SMEs</span>
           </h1>
-          
+
           <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-6 sm:mb-8 max-w-3xl mx-auto leading-relaxed px-4">
-            Platform konsultasi berbasis teknologi yang membantu UMKM Indonesia 
+            Platform konsultasi berbasis teknologi yang membantu UMKM Indonesia
             berkembang melalui solusi digital, keuangan, dan strategi bisnis terintegrasi.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4">
-            <Button 
+            <Button
               variant="hero"
-              size="lg" 
+              size="lg"
               className="w-full sm:w-auto text-lg px-8 py-4 rounded-xl group"
             >
               Mulai Konsultasi Gratis
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-200" />
             </Button>
-            
-            <Button 
-              variant="outline" 
-              size="lg" 
+
+            <Button
+              variant="outline"
+              size="lg"
               className="w-full sm:w-auto border-white/40 text-white hover:bg-white/15 hover:border-white/60 font-semibold text-lg px-8 py-4 rounded-xl group backdrop-blur-sm"
             >
               <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform duration-200" />

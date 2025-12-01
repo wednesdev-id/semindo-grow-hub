@@ -11,7 +11,7 @@ import { AuthService } from "@core/auth/services/AuthService";
 import { TokenService } from "@core/auth/services/TokenService";
 import AppLayout from "./layout/AppLayout";
 import { AuthProvider as NewAuthProvider } from "./contexts/AuthContext";
-import PlaceholderPage from "./components/PlaceholderPage";
+import FeaturePreviewPage from "./components/dashboard/FeaturePreviewPage";
 import LearningLayout from "./layout/LearningLayout";
 import { Suspense, lazy } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -44,6 +44,20 @@ const LessonView = lazy(() => import("./features/lms/pages/LessonView"));
 const ProductDetailPage = lazy(() => import("./features/marketplace/pages/ProductDetailPage"));
 const ProductListPage = lazy(() => import("./features/marketplace/pages/ProductListPage"));
 const LoanApplicationForm = lazy(() => import("./pages/financing/LoanApplicationForm"));
+
+// New Dashboard Pages
+const LMSStats = lazy(() => import("./features/lms/pages/admin/LMSStats"));
+const LMSCreateCourse = lazy(() => import("./features/lms/pages/admin/LMSCreateCourse"));
+const LMSModuleManagement = lazy(() => import("./features/lms/pages/admin/LMSModuleManagement"));
+const MarketplaceStats = lazy(() => import("./features/marketplace/pages/admin/MarketplaceStats"));
+const MarketplaceOrderList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceOrderList"));
+const MarketplaceProductVerification = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductVerification"));
+const FinancingApplicationList = lazy(() => import("./pages/financing/admin/FinancingApplicationList"));
+const FinancingPartnerList = lazy(() => import("./pages/financing/admin/FinancingPartnerList"));
+const UserRoleManagement = lazy(() => import("./pages/admin/UserRoleManagement"));
+const UMKMDocumentVerification = lazy(() => import("./pages/admin/UMKMDocumentVerification"));
+const ProgramList = lazy(() => import("./pages/programs/ProgramList"));
+const ProgramCreate = lazy(() => import("./pages/programs/ProgramCreate"));
 
 const queryClient = new QueryClient();
 
@@ -106,152 +120,488 @@ const App = () => {
                     <Route element={<AppLayout />}>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/dashboard/overview" element={<Dashboard />} />
-                      <Route path="/dashboard/activity" element={<PlaceholderPage title="Aktivitas Terbaru" />} />
-                      <Route path="/dashboard/user-stats" element={<PlaceholderPage title="Statistik Pengguna" />} />
-                      <Route path="/dashboard/server-status" element={<PlaceholderPage title="Status Server & API" />} />
-                      <Route path="/dashboard/notifications" element={<PlaceholderPage title="Notifikasi Sistem" />} />
+                      <Route path="/dashboard/activity" element={<FeaturePreviewPage
+                        title="Aktivitas Terbaru"
+                        description="Monitor semua aktivitas user dan sistem secara real-time."
+                        features={["Real-time activity feed", "Filter by user type", "Export activity logs"]}
+                      />} />
+                      <Route path="/dashboard/user-stats" element={<FeaturePreviewPage
+                        title="Statistik Pengguna"
+                        description="Analisis mendalam tentang pertumbuhan dan perilaku pengguna."
+                        features={["User growth charts", "Demographic breakdown", "Engagement metrics"]}
+                      />} />
+                      <Route path="/dashboard/server-status" element={<FeaturePreviewPage
+                        title="Status Server & API"
+                        description="Monitoring kesehatan sistem dan uptime server."
+                        features={["Uptime monitoring", "API latency tracking", "Error rate alerts"]}
+                      />} />
+                      <Route path="/dashboard/notifications" element={<FeaturePreviewPage
+                        title="Notifikasi Sistem"
+                        description="Pusat pengaturan dan pengiriman notifikasi."
+                        features={["Push notification manager", "Email templates", "Notification history"]}
+                      />} />
 
                       {/* User Management */}
                       <Route path="/admin/users" element={<UserManagement />} />
                       <Route path="/users/all" element={<UserManagement />} />
-                      <Route path="/users/roles" element={<PlaceholderPage title="Manajemen Role & Permission" />} />
+                      <Route path="/users/roles" element={<UserRoleManagement />} />
                       <Route path="/users/umkm" element={<UserManagement defaultRole="umkm" />} />
                       <Route path="/users/mentors" element={<UserManagement defaultRole="mentor" />} />
                       <Route path="/users/trainers" element={<UserManagement defaultRole="trainer" />} />
                       <Route path="/users/staff" element={<UserManagement defaultRole="staff" />} />
                       <Route path="/users/admins" element={<UserManagement defaultRole="admin" />} />
-                      <Route path="/users/import-export" element={<PlaceholderPage title="Import / Export Data User" />} />
-                      <Route path="/users/audit" element={<PlaceholderPage title="Audit User Activity" />} />
+                      <Route path="/users/import-export" element={<FeaturePreviewPage
+                        title="Import / Export Data User"
+                        description="Kelola data user secara massal."
+                        features={["Bulk user import (CSV/Excel)", "Export user data", "Data validation"]}
+                      />} />
+                      <Route path="/users/audit" element={<FeaturePreviewPage
+                        title="Audit User Activity"
+                        description="Log audit lengkap untuk keamanan dan compliance."
+                        features={["Detailed audit trails", "Searchable logs", "Security alerts"]}
+                      />} />
 
                       {/* UMKM Database */}
                       <Route path="/umkm/list" element={<UserManagement defaultRole="umkm" />} />
-                      <Route path="/umkm/segmentation" element={<PlaceholderPage title="Segmentasi UMKM" />} />
-                      <Route path="/umkm/region" element={<PlaceholderPage title="Region Mapping" />} />
-                      <Route path="/umkm/assessment-status" element={<PlaceholderPage title="Status Self-Assessment" />} />
-                      <Route path="/umkm/program-status" element={<PlaceholderPage title="Status Program" />} />
-                      <Route path="/umkm/history" element={<PlaceholderPage title="Histori Pendampingan" />} />
-                      <Route path="/umkm/documents" element={<PlaceholderPage title="Dokumen & Verifikasi" />} />
+                      <Route path="/umkm/segmentation" element={<FeaturePreviewPage
+                        title="Segmentasi UMKM"
+                        description="Analisis dan pengelompokan UMKM berdasarkan kriteria."
+                        features={["Automated segmentation", "Custom segment rules", "Targeted campaigns"]}
+                      />} />
+                      <Route path="/umkm/region" element={<FeaturePreviewPage
+                        title="Region Mapping"
+                        description="Peta persebaran UMKM di seluruh Indonesia."
+                        features={["Interactive map", "Regional statistics", "Heatmaps"]}
+                      />} />
+                      <Route path="/umkm/assessment-status" element={<FeaturePreviewPage
+                        title="Status Self-Assessment"
+                        description="Monitor progres assessment UMKM."
+                        features={["Assessment completion rates", "Score distribution", "Follow-up triggers"]}
+                      />} />
+                      <Route path="/umkm/program-status" element={<FeaturePreviewPage
+                        title="Status Program"
+                        description="Pelacakan partisipasi UMKM dalam program."
+                        features={["Program enrollment tracking", "Completion status", "Impact analysis"]}
+                      />} />
+                      <Route path="/umkm/history" element={<FeaturePreviewPage
+                        title="Histori Pendampingan"
+                        description="Rekam jejak pendampingan yang diterima UMKM."
+                        features={["Mentoring timeline", "Session notes", "Outcome tracking"]}
+                      />} />
+                      <Route path="/umkm/documents" element={<UMKMDocumentVerification />} />
 
                       {/* Mentor Management */}
                       <Route path="/mentors/list" element={<UserManagement defaultRole="mentor" />} />
-                      <Route path="/mentors/assign" element={<PlaceholderPage title="Assign UMKM ke Mentor" />} />
-                      <Route path="/mentors/activity" element={<PlaceholderPage title="Status & Aktivitas Mentor" />} />
-                      <Route path="/mentors/schedule" element={<PlaceholderPage title="Jadwal Pendampingan" />} />
-                      <Route path="/mentors/reports" element={<PlaceholderPage title="Laporan & KPI Mentor" />} />
-                      <Route path="/mentors/approval" element={<PlaceholderPage title="Approval Laporan" />} />
+                      <Route path="/mentors/assign" element={<FeaturePreviewPage
+                        title="Assign UMKM ke Mentor"
+                        description="Sistem matching dan assignment mentor."
+                        features={["Smart matching algorithm", "Bulk assignment", "Workload balancing"]}
+                      />} />
+                      <Route path="/mentors/activity" element={<FeaturePreviewPage
+                        title="Status & Aktivitas Mentor"
+                        description="Monitor kinerja dan aktivitas mentor."
+                        features={["Activity dashboard", "Performance metrics", "Feedback collection"]}
+                      />} />
+                      <Route path="/mentors/schedule" element={<FeaturePreviewPage
+                        title="Jadwal Pendampingan"
+                        description="Kalender dan penjadwalan sesi mentoring."
+                        features={["Integrated calendar", "Session booking", "Reminders"]}
+                      />} />
+                      <Route path="/mentors/reports" element={<FeaturePreviewPage
+                        title="Laporan & KPI Mentor"
+                        description="Evaluasi kinerja mentor berdasarkan KPI."
+                        features={["KPI dashboard", "Report generation", "Performance reviews"]}
+                      />} />
+                      <Route path="/mentors/approval" element={<FeaturePreviewPage
+                        title="Approval Laporan"
+                        description="Review dan approval laporan mentor."
+                        features={["Report submission workflow", "Feedback loops", "Approval history"]}
+                      />} />
 
                       {/* Program Management */}
-                      <Route path="/programs/list" element={<PlaceholderPage title="Daftar Program" />} />
-                      <Route path="/programs/create" element={<PlaceholderPage title="Buat Program Baru" />} />
-                      <Route path="/programs/batches" element={<PlaceholderPage title="Batch Management" />} />
-                      <Route path="/programs/curriculum" element={<PlaceholderPage title="Kurikulum Program" />} />
-                      <Route path="/programs/schedule" element={<PlaceholderPage title="Jadwal Training & Event" />} />
-                      <Route path="/programs/participants" element={<PlaceholderPage title="Peserta per Program" />} />
-                      <Route path="/programs/evaluation" element={<PlaceholderPage title="Outcome & Evaluasi" />} />
-                      <Route path="/programs/import-export" element={<PlaceholderPage title="Import / Export Program" />} />
+                      <Route path="/programs/list" element={<ProgramList />} />
+                      <Route path="/programs/create" element={<ProgramCreate />} />
+                      <Route path="/programs/batches" element={<FeaturePreviewPage
+                        title="Batch Management"
+                        description="Kelola batch dan cohort program."
+                        features={["Batch creation", "Participant allocation", "Timeline management"]}
+                      />} />
+                      <Route path="/programs/curriculum" element={<FeaturePreviewPage
+                        title="Kurikulum Program"
+                        description="Desain dan kelola kurikulum program."
+                        features={["Curriculum builder", "Resource management", "Learning paths"]}
+                      />} />
+                      <Route path="/programs/schedule" element={<FeaturePreviewPage
+                        title="Jadwal Training & Event"
+                        description="Kalender kegiatan program."
+                        features={["Event scheduling", "Attendance tracking", "Resource booking"]}
+                      />} />
+                      <Route path="/programs/participants" element={<FeaturePreviewPage
+                        title="Peserta per Program"
+                        description="Manajemen data peserta program."
+                        features={["Participant database", "Progress tracking", "Certificate issuance"]}
+                      />} />
+                      <Route path="/programs/evaluation" element={<FeaturePreviewPage
+                        title="Outcome & Evaluasi"
+                        description="Evaluasi dampak dan hasil program."
+                        features={["Survey tools", "Impact metrics", "Feedback analysis"]}
+                      />} />
+                      <Route path="/programs/import-export" element={<FeaturePreviewPage
+                        title="Import / Export Program"
+                        description="Migrasi data program."
+                        features={["Data migration tools", "Template support", "Backup options"]}
+                      />} />
 
                       {/* LMS Manager */}
                       <Route path="/lms/catalog" element={<CourseCatalogPage />} />
                       <Route path="/lms/my-courses" element={<MyCoursesPage />} />
                       <Route path="/lms/courses/:slug" element={<CourseDetailPage />} />
-                      <Route path="/lms/create" element={<PlaceholderPage title="Buat Kelas Baru" />} />
-                      <Route path="/lms/modules" element={<PlaceholderPage title="Modul & Materi" />} />
-                      <Route path="/lms/videos" element={<PlaceholderPage title="Video Library" />} />
-                      <Route path="/lms/assignments" element={<PlaceholderPage title="Assignment & Quiz" />} />
-                      <Route path="/lms/certificates" element={<PlaceholderPage title="Sertifikasi" />} />
-                      <Route path="/lms/trainers" element={<PlaceholderPage title="Trainer Management" />} />
-                      <Route path="/lms/review" element={<PlaceholderPage title="Review & Moderasi Materi" />} />
-                      <Route path="/lms/stats" element={<PlaceholderPage title="Statistik LMS" />} />
+                      <Route path="/lms/create" element={<LMSCreateCourse />} />
+                      <Route path="/lms/modules" element={<LMSModuleManagement />} />
+                      <Route path="/lms/videos" element={<FeaturePreviewPage
+                        title="Video Library"
+                        description="Pusat penyimpanan dan manajemen video pembelajaran."
+                        features={["Video hosting", "Streaming optimization", "Subtitle support"]}
+                      />} />
+                      <Route path="/lms/assignments" element={<FeaturePreviewPage
+                        title="Assignment & Quiz"
+                        description="Buat dan kelola tugas serta kuis."
+                        features={["Quiz builder", "Assignment submission", "Automated grading"]}
+                      />} />
+                      <Route path="/lms/certificates" element={<FeaturePreviewPage
+                        title="Sertifikasi"
+                        description="Desain dan penerbitan sertifikat."
+                        features={["Certificate designer", "Auto-generation", "Verification system"]}
+                      />} />
+                      <Route path="/lms/trainers" element={<FeaturePreviewPage
+                        title="Trainer Management"
+                        description="Kelola data dan akses trainer."
+                        features={["Trainer profiles", "Course assignment", "Performance tracking"]}
+                      />} />
+                      <Route path="/lms/review" element={<FeaturePreviewPage
+                        title="Review & Moderasi Materi"
+                        description="Quality control materi pembelajaran."
+                        features={["Content review workflow", "Feedback tools", "Version control"]}
+                      />} />
+                      <Route path="/lms/stats" element={<LMSStats />} />
 
                       {/* Marketplace Manager */}
                       <Route path="/marketplace/products" element={<ProductListPage />} />
                       <Route path="/marketplace/product/:slug" element={<ProductDetailPage />} />
-                      <Route path="/marketplace/verification" element={<PlaceholderPage title="Verifikasi Produk" />} />
-                      <Route path="/marketplace/stores" element={<PlaceholderPage title="Toko UMKM" />} />
-                      <Route path="/marketplace/orders" element={<PlaceholderPage title="Transaksi & Order" />} />
-                      <Route path="/marketplace/complaints" element={<PlaceholderPage title="Komplain & Resolusi" />} />
-                      <Route path="/marketplace/fees" element={<PlaceholderPage title="Fee & Komisi Marketplace" />} />
-                      <Route path="/marketplace/integration" element={<PlaceholderPage title="Integrasi Marketplace Eksternal" />} />
-                      <Route path="/marketplace/reports" element={<PlaceholderPage title="Laporan Marketplace" />} />
+                      <Route path="/marketplace/verification" element={<MarketplaceProductVerification />} />
+                      <Route path="/marketplace/stores" element={<FeaturePreviewPage
+                        title="Toko UMKM"
+                        description="Manajemen toko dan penjual."
+                        features={["Store profiles", "Verification status", "Performance metrics"]}
+                      />} />
+                      <Route path="/marketplace/orders" element={<MarketplaceOrderList />} />
+                      <Route path="/marketplace/complaints" element={<FeaturePreviewPage
+                        title="Komplain & Resolusi"
+                        description="Pusat resolusi masalah transaksi."
+                        features={["Dispute resolution center", "Chat history", "Refund management"]}
+                      />} />
+                      <Route path="/marketplace/fees" element={<FeaturePreviewPage
+                        title="Fee & Komisi Marketplace"
+                        description="Pengaturan biaya layanan dan komisi."
+                        features={["Fee structure configuration", "Revenue sharing", "Payout management"]}
+                      />} />
+                      <Route path="/marketplace/integration" element={<FeaturePreviewPage
+                        title="Integrasi Marketplace Eksternal"
+                        description="Hubungkan dengan platform e-commerce lain."
+                        features={["API integrations", "Inventory sync", "Order consolidation"]}
+                      />} />
+                      <Route path="/marketplace/reports" element={<MarketplaceStats />} />
 
                       {/* Financing Manager */}
                       <Route path="/financing/apply/:partnerSlug" element={<LoanApplicationForm />} />
-                      <Route path="/financing/products" element={<PlaceholderPage title="Produk Pembiayaan" />} />
-                      <Route path="/financing/applications" element={<PlaceholderPage title="Pengajuan UMKM" />} />
-                      <Route path="/financing/verification" element={<PlaceholderPage title="Tahapan Verifikasi" />} />
-                      <Route path="/financing/approval" element={<PlaceholderPage title="Approval Pembiayaan" />} />
-                      <Route path="/financing/documents" element={<PlaceholderPage title="Dokumen Pembiayaan" />} />
-                      <Route path="/financing/partners" element={<PlaceholderPage title="Kerjasama Bank / Lembaga Keuangan" />} />
-                      <Route path="/financing/reports" element={<PlaceholderPage title="Reporting Pembiayaan" />} />
+                      <Route path="/financing/products" element={<FinancingPartnerList />} />
+                      <Route path="/financing/applications" element={<FinancingApplicationList />} />
+                      <Route path="/financing/verification" element={<FeaturePreviewPage
+                        title="Tahapan Verifikasi"
+                        description="Proses verifikasi pengajuan pembiayaan."
+                        features={["Document checking", "Credit scoring", "Field verification"]}
+                      />} />
+                      <Route path="/financing/approval" element={<FeaturePreviewPage
+                        title="Approval Pembiayaan"
+                        description="Workflow persetujuan pinjaman."
+                        features={["Approval hierarchy", "Digital signing", "Disbursement trigger"]}
+                      />} />
+                      <Route path="/financing/documents" element={<FeaturePreviewPage
+                        title="Dokumen Pembiayaan"
+                        description="Manajemen dokumen legal pembiayaan."
+                        features={["Secure storage", "Document generation", "E-signature"]}
+                      />} />
+                      <Route path="/financing/partners" element={<FinancingPartnerList />} />
+                      <Route path="/financing/reports" element={<FeaturePreviewPage
+                        title="Reporting Pembiayaan"
+                        description="Laporan portofolio pembiayaan."
+                        features={["Portfolio performance", "NPL tracking", "Partner reports"]}
+                      />} />
 
                       {/* Export Hub Manager */}
-                      <Route path="/export/guide" element={<PlaceholderPage title="Panduan Ekspor" />} />
-                      <Route path="/export/buyers" element={<PlaceholderPage title="Buyer Directory" />} />
-                      <Route path="/export/checklist" element={<PlaceholderPage title="Checklist Ekspor" />} />
-                      <Route path="/export/documents" element={<PlaceholderPage title="Dokumen Ekspor" />} />
-                      <Route path="/export/facilitation" element={<PlaceholderPage title="Fasilitasi Ekspor" />} />
-                      <Route path="/export/approval" element={<PlaceholderPage title="Approval Permintaan Konsultasi" />} />
-                      <Route path="/export/reports" element={<PlaceholderPage title="Laporan Ekspor" />} />
+                      <Route path="/export/guide" element={<FeaturePreviewPage
+                        title="Panduan Ekspor"
+                        description="Materi edukasi dan panduan ekspor."
+                        features={["Step-by-step guides", "Regulatory info", "Market intelligence"]}
+                      />} />
+                      <Route path="/export/buyers" element={<FeaturePreviewPage
+                        title="Buyer Directory"
+                        description="Database pembeli potensial luar negeri."
+                        features={["Buyer search", "Contact details", "Requirement matching"]}
+                      />} />
+                      <Route path="/export/checklist" element={<FeaturePreviewPage
+                        title="Checklist Ekspor"
+                        description="Alat bantu kesiapan ekspor."
+                        features={["Readiness assessment", "Document checklist", "Compliance tracker"]}
+                      />} />
+                      <Route path="/export/documents" element={<FeaturePreviewPage
+                        title="Dokumen Ekspor"
+                        description="Template dan generator dokumen ekspor."
+                        features={["Document templates", "Auto-fill", "Validation"]}
+                      />} />
+                      <Route path="/export/facilitation" element={<FeaturePreviewPage
+                        title="Fasilitasi Ekspor"
+                        description="Program bantuan dan fasilitasi ekspor."
+                        features={["Program application", "Status tracking", "Success stories"]}
+                      />} />
+                      <Route path="/export/approval" element={<FeaturePreviewPage
+                        title="Approval Permintaan Konsultasi"
+                        description="Manajemen permintaan konsultasi ekspor."
+                        features={["Request queue", "Expert assignment", "Scheduling"]}
+                      />} />
+                      <Route path="/export/reports" element={<FeaturePreviewPage
+                        title="Laporan Ekspor"
+                        description="Statistik dan laporan kinerja ekspor."
+                        features={["Export volume", "Destination countries", "Commodity analysis"]}
+                      />} />
 
                       {/* Consultation Management */}
-                      <Route path="/consultation/schedule" element={<PlaceholderPage title="Jadwal Konsultasi" />} />
-                      <Route path="/consultation/assignment" element={<PlaceholderPage title="Mentor Assignment" />} />
-                      <Route path="/consultation/history" element={<PlaceholderPage title="Riwayat Konsultasi" />} />
-                      <Route path="/consultation/chat" element={<PlaceholderPage title="Chat Monitoring" />} />
-                      <Route path="/consultation/tickets" element={<PlaceholderPage title="Case Ticketing System" />} />
-                      <Route path="/consultation/specialized" element={<PlaceholderPage title="Konsultasi Ekspor / Legal / Digital" />} />
+                      <Route path="/consultation/schedule" element={<FeaturePreviewPage
+                        title="Jadwal Konsultasi"
+                        description="Manajemen jadwal konsultasi."
+                        features={["Calendar view", "Booking system", "Availability settings"]}
+                      />} />
+                      <Route path="/consultation/assignment" element={<FeaturePreviewPage
+                        title="Mentor Assignment"
+                        description="Penugasan mentor untuk konsultasi."
+                        features={["Expert matching", "Workload management", "Assignment history"]}
+                      />} />
+                      <Route path="/consultation/history" element={<FeaturePreviewPage
+                        title="Riwayat Konsultasi"
+                        description="Arsip sesi konsultasi."
+                        features={["Session logs", "Recording access", "Outcome notes"]}
+                      />} />
+                      <Route path="/consultation/chat" element={<FeaturePreviewPage
+                        title="Chat Monitoring"
+                        description="Monitoring interaksi chat konsultasi."
+                        features={["Real-time monitoring", "Keyword alerts", "Quality assurance"]}
+                      />} />
+                      <Route path="/consultation/tickets" element={<FeaturePreviewPage
+                        title="Case Ticketing System"
+                        description="Sistem tiket untuk kasus kompleks."
+                        features={["Ticket creation", "Status tracking", "Escalation workflow"]}
+                      />} />
+                      <Route path="/consultation/specialized" element={<FeaturePreviewPage
+                        title="Konsultasi Ekspor / Legal / Digital"
+                        description="Layanan konsultasi spesialis."
+                        features={["Specialist directory", "Booking flow", "Service packages"]}
+                      />} />
 
                       {/* Community Platform Manager */}
-                      <Route path="/community/forum" element={<PlaceholderPage title="Forum Diskusi" />} />
-                      <Route path="/community/topics" element={<PlaceholderPage title="Manajemen Topik" />} />
-                      <Route path="/community/posts" element={<PlaceholderPage title="Post & Komentar" />} />
-                      <Route path="/community/moderation" element={<PlaceholderPage title="Moderasi Konten" />} />
-                      <Route path="/community/events" element={<PlaceholderPage title="Event Komunitas" />} />
-                      <Route path="/community/reports" element={<PlaceholderPage title="Report Misconduct" />} />
+                      <Route path="/community/forum" element={<FeaturePreviewPage
+                        title="Forum Diskusi"
+                        description="Moderasi dan manajemen forum."
+                        features={["Thread management", "Moderation tools", "Analytics"]}
+                      />} />
+                      <Route path="/community/topics" element={<FeaturePreviewPage
+                        title="Manajemen Topik"
+                        description="Pengaturan kategori dan topik diskusi."
+                        features={["Topic hierarchy", "Tag management", "Trending topics"]}
+                      />} />
+                      <Route path="/community/posts" element={<FeaturePreviewPage
+                        title="Post & Komentar"
+                        description="Manajemen konten user."
+                        features={["Content moderation", "Report handling", "Featured posts"]}
+                      />} />
+                      <Route path="/community/moderation" element={<FeaturePreviewPage
+                        title="Moderasi Konten"
+                        description="Dashboard moderasi komunitas."
+                        features={["Automated filters", "Manual review queue", "User banning"]}
+                      />} />
+                      <Route path="/community/events" element={<FeaturePreviewPage
+                        title="Event Komunitas"
+                        description="Manajemen event komunitas."
+                        features={["Event calendar", "Registration", "Live streaming"]}
+                      />} />
+                      <Route path="/community/reports" element={<FeaturePreviewPage
+                        title="Report Misconduct"
+                        description="Laporan pelanggaran komunitas."
+                        features={["Report dashboard", "Investigation tools", "Action logs"]}
+                      />} />
 
                       {/* Analytics & Reporting */}
-                      <Route path="/analytics/umkm" element={<PlaceholderPage title="UMKM Analytics" />} />
-                      <Route path="/analytics/programs" element={<PlaceholderPage title="Program Analytics" />} />
-                      <Route path="/analytics/lms" element={<PlaceholderPage title="LMS Insights" />} />
-                      <Route path="/analytics/mentoring" element={<PlaceholderPage title="Pendampingan Analytics" />} />
-                      <Route path="/analytics/financing" element={<PlaceholderPage title="Pembiayaan Analytics" />} />
-                      <Route path="/analytics/marketplace" element={<PlaceholderPage title="Marketplace Analytics" />} />
-                      <Route path="/analytics/export" element={<PlaceholderPage title="Export Analytics" />} />
-                      <Route path="/analytics/kpi" element={<PlaceholderPage title="Performance KPI" />} />
-                      <Route path="/analytics/visualization" element={<PlaceholderPage title="Data Visualization & Export" />} />
+                      <Route path="/analytics/umkm" element={<FeaturePreviewPage
+                        title="UMKM Analytics"
+                        description="Analisis data UMKM."
+                        features={["Growth metrics", "Sector analysis", "Regional trends"]}
+                      />} />
+                      <Route path="/analytics/programs" element={<FeaturePreviewPage
+                        title="Program Analytics"
+                        description="Analisis efektivitas program."
+                        features={["Impact assessment", "ROI analysis", "Participant feedback"]}
+                      />} />
+                      <Route path="/analytics/lms" element={<FeaturePreviewPage
+                        title="LMS Insights"
+                        description="Wawasan pembelajaran."
+                        features={["Learning patterns", "Course popularity", "Completion rates"]}
+                      />} />
+                      <Route path="/analytics/mentoring" element={<FeaturePreviewPage
+                        title="Pendampingan Analytics"
+                        description="Analisis kegiatan mentoring."
+                        features={["Session volume", "Satisfaction scores", "Outcome tracking"]}
+                      />} />
+                      <Route path="/analytics/financing" element={<FeaturePreviewPage
+                        title="Pembiayaan Analytics"
+                        description="Analisis penyaluran pembiayaan."
+                        features={["Disbursement trends", "Risk analysis", "Partner performance"]}
+                      />} />
+                      <Route path="/analytics/marketplace" element={<FeaturePreviewPage
+                        title="Marketplace Analytics"
+                        description="Analisis transaksi marketplace."
+                        features={["Sales trends", "Product performance", "Customer behavior"]}
+                      />} />
+                      <Route path="/analytics/export" element={<FeaturePreviewPage
+                        title="Export Analytics"
+                        description="Analisis kinerja ekspor."
+                        features={["Export volume", "Market trends", "Success rate"]}
+                      />} />
+                      <Route path="/analytics/kpi" element={<FeaturePreviewPage
+                        title="Performance KPI"
+                        description="Key Performance Indicators dashboard."
+                        features={["Goal tracking", "Performance scorecards", "Trend analysis"]}
+                      />} />
+                      <Route path="/analytics/visualization" element={<FeaturePreviewPage
+                        title="Data Visualization & Export"
+                        description="Visualisasi data kustom."
+                        features={["Custom charts", "Report builder", "Data export"]}
+                      />} />
 
                       {/* System Settings */}
-                      <Route path="/settings/general" element={<PlaceholderPage title="General Settings" />} />
-                      <Route path="/settings/branding" element={<PlaceholderPage title="Branding & Identitas Visual" />} />
-                      <Route path="/settings/notifications" element={<PlaceholderPage title="Email & Notification Settings" />} />
-                      <Route path="/settings/api-keys" element={<PlaceholderPage title="API Key Manager" />} />
-                      <Route path="/settings/integrations" element={<PlaceholderPage title="Integrasi Pihak Ketiga" />} />
-                      <Route path="/settings/backup" element={<PlaceholderPage title="Backup & Restore" />} />
-                      <Route path="/settings/environment" element={<PlaceholderPage title="Environment Configuration" />} />
+                      <Route path="/settings/general" element={<FeaturePreviewPage
+                        title="General Settings"
+                        description="Pengaturan umum sistem."
+                        features={["Site configuration", "Localization", "Maintenance mode"]}
+                      />} />
+                      <Route path="/settings/branding" element={<FeaturePreviewPage
+                        title="Branding & Identitas Visual"
+                        description="Kustomisasi tampilan aplikasi."
+                        features={["Logo & colors", "Theme settings", "Email branding"]}
+                      />} />
+                      <Route path="/settings/notifications" element={<FeaturePreviewPage
+                        title="Email & Notification Settings"
+                        description="Konfigurasi notifikasi."
+                        features={["SMTP settings", "Template editor", "Delivery rules"]}
+                      />} />
+                      <Route path="/settings/api-keys" element={<FeaturePreviewPage
+                        title="API Key Manager"
+                        description="Manajemen akses API."
+                        features={["Key generation", "Usage quotas", "Access logs"]}
+                      />} />
+                      <Route path="/settings/integrations" element={<FeaturePreviewPage
+                        title="Integrasi Pihak Ketiga"
+                        description="Pengaturan integrasi eksternal."
+                        features={["Payment gateways", "Social login", "External services"]}
+                      />} />
+                      <Route path="/settings/backup" element={<FeaturePreviewPage
+                        title="Backup & Restore"
+                        description="Manajemen backup data."
+                        features={["Automated backups", "Restore points", "Disaster recovery"]}
+                      />} />
+                      <Route path="/settings/environment" element={<FeaturePreviewPage
+                        title="Environment Configuration"
+                        description="Konfigurasi environment server."
+                        features={["Env variables", "Feature flags", "System limits"]}
+                      />} />
 
                       {/* Logs & Security */}
-                      <Route path="/logs/login" element={<PlaceholderPage title="Login Log" />} />
-                      <Route path="/logs/activity" element={<PlaceholderPage title="Activity Log" />} />
-                      <Route path="/logs/error" element={<PlaceholderPage title="Error Log" />} />
-                      <Route path="/logs/security" element={<PlaceholderPage title="Security & Permission Audit" />} />
-                      <Route path="/logs/firewall" element={<PlaceholderPage title="Firewall Rules" />} />
-                      <Route path="/logs/api" element={<PlaceholderPage title="API Access Logs" />} />
-                      <Route path="/logs/backups" element={<PlaceholderPage title="Backup Logs" />} />
+                      <Route path="/logs/login" element={<FeaturePreviewPage
+                        title="Login Log"
+                        description="Riwayat login pengguna."
+                        features={["Login attempts", "IP tracking", "Device info"]}
+                      />} />
+                      <Route path="/logs/activity" element={<FeaturePreviewPage
+                        title="Activity Log"
+                        description="Log aktivitas sistem."
+                        features={["User actions", "System events", "Data changes"]}
+                      />} />
+                      <Route path="/logs/error" element={<FeaturePreviewPage
+                        title="Error Log"
+                        description="Log error aplikasi."
+                        features={["Error stack traces", "Impact analysis", "Resolution tracking"]}
+                      />} />
+                      <Route path="/logs/security" element={<FeaturePreviewPage
+                        title="Security & Permission Audit"
+                        description="Audit keamanan sistem."
+                        features={["Permission changes", "Security alerts", "Vulnerability scan"]}
+                      />} />
+                      <Route path="/logs/firewall" element={<FeaturePreviewPage
+                        title="Firewall Rules"
+                        description="Aturan firewall aplikasi."
+                        features={["IP blocking", "Rate limiting", "WAF rules"]}
+                      />} />
+                      <Route path="/logs/api" element={<FeaturePreviewPage
+                        title="API Access Logs"
+                        description="Log akses API."
+                        features={["Request/Response logs", "Latency metrics", "Usage patterns"]}
+                      />} />
+                      <Route path="/logs/backups" element={<FeaturePreviewPage
+                        title="Backup Logs"
+                        description="Riwayat proses backup."
+                        features={["Backup status", "Size metrics", "Verification results"]}
+                      />} />
 
                       {/* Tools */}
-                      <Route path="/tools/import-export" element={<PlaceholderPage title="Import / Export Tools" />} />
-                      <Route path="/tools/cleaner" element={<PlaceholderPage title="Data Cleaner" />} />
-                      <Route path="/tools/bulk-editor" element={<PlaceholderPage title="Bulk Editor" />} />
-                      <Route path="/tools/sandbox" element={<PlaceholderPage title="Sandbox Mode" />} />
-                      <Route path="/tools/cache" element={<PlaceholderPage title="Cache Manager" />} />
+                      <Route path="/tools/import-export" element={<FeaturePreviewPage
+                        title="Import / Export Tools"
+                        description="Alat migrasi data."
+                        features={["Data migration", "Format conversion", "Bulk operations"]}
+                      />} />
+                      <Route path="/tools/cleaner" element={<FeaturePreviewPage
+                        title="Data Cleaner"
+                        description="Pembersihan data sampah."
+                        features={["Duplicate removal", "Temp file cleanup", "Database optimization"]}
+                      />} />
+                      <Route path="/tools/bulk-editor" element={<FeaturePreviewPage
+                        title="Bulk Editor"
+                        description="Edit data massal."
+                        features={["Batch updates", "Search & replace", "Validation rules"]}
+                      />} />
+                      <Route path="/tools/sandbox" element={<FeaturePreviewPage
+                        title="Sandbox Mode"
+                        description="Mode pengujian aman."
+                        features={["Test environment", "Mock data", "Safe experimentation"]}
+                      />} />
+                      <Route path="/tools/cache" element={<FeaturePreviewPage
+                        title="Cache Manager"
+                        description="Manajemen cache sistem."
+                        features={["Cache clearing", "Performance tuning", "Storage analysis"]}
+                      />} />
 
                       <Route path="/assessment" element={<AssessmentLandingPage />} />
                       <Route path="/assessment/history" element={<AssessmentHistoryPage />} />
                       <Route path="/assessment/:id" element={<AssessmentWizardPage />} />
                       <Route path="/assessment/results/:id" element={<AssessmentResultsPage />} />
                       <Route path="/profile" element={<UMKMProfileWizard />} />
-                      <Route path="/consultation" element={<PlaceholderPage title="Consultation" />} />
-                      <Route path="/financing" element={<PlaceholderPage title="Financing" />} />
+                      <Route path="/consultation" element={<FeaturePreviewPage
+                        title="Consultation Management"
+                        description="Pusat manajemen layanan konsultasi."
+                        features={["Schedule management", "Mentor assignment", "Session history"]}
+                      />} />
+                      <Route path="/financing" element={<FeaturePreviewPage
+                        title="Financing Management"
+                        description="Pusat manajemen pembiayaan."
+                        features={["Application tracking", "Partner management", "Verification workflow"]}
+                      />} />
                     </Route>
 
                     {/* Learning Routes - Distraction Free */}
