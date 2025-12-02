@@ -23,6 +23,6 @@ router.post('/', requireRole(['admin', 'super_admin']), controller.create)
 router.patch('/:id', controller.update)
 
 // DELETE /api/v1/users/:id - Delete user (SuperAdmin only)
-router.delete('/:id', requireRole(['super_admin']), controller.delete)
+router.delete('/:id', requireRole(['admin', 'super_admin']), controller.delete)
 
 export const usersRouter = router

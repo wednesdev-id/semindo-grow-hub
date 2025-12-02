@@ -1,4 +1,12 @@
-export type AnswerValue = string | number | boolean | string[] | number[] | null;
+export interface FileUploadAnswer {
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    fileUrl?: string;
+    uploadedAt: Date;
+}
+
+export type AnswerValue = string | number | boolean | string[] | number[] | FileUploadAnswer | null;
 
 export interface AssessmentQuestion {
     id: string;
@@ -9,6 +17,7 @@ export interface AssessmentQuestion {
     options?: any;
     weight: number;
     order: number;
+    isRequired: boolean;
     category: {
         id: string;
         name: string;

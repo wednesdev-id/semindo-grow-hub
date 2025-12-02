@@ -27,7 +27,7 @@ export const userService = {
 
     update: (id: string, data: Partial<User>) => api.patch<ApiResponse<User>>(`/users/${id}`, data),
 
-    deleteUser: async (id: string): Promise<void> => {
+    delete: async (id: string): Promise<void> => {
         await api.delete(`/users/${id}`);
     },
 

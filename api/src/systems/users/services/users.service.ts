@@ -143,29 +143,15 @@ export class UsersService {
 
         // Handle Role Update if provided
         if (data.role) {
-            // First delete existing roles (simplified for single role system, or adjust for multi-role)
-            // For now, we assume replacing roles
-            await db.userRole.deleteMany({
-                where: { userId: id }
-            })
-
-            // Add new role
-            await db.userRole.create({
-                data: {
-                    userId: id,
-                    roleId: (await db.role.findUnique({ where: { name: data.role } }))?.id || '' // This is risky if role doesn't exist
-                }
-            })
-
-            // Better approach: connectOrCreate inside update, but deleting old ones is tricky in one go.
-            // Let's stick to simple property updates for now, and handle role update separately or carefully.
-            // Reverting role update logic here for safety, or implementing it properly.
-
-            // Proper Role Update:
-            // 1. Find role ID
             const role = await db.role.findUnique({ where: { name: data.role } })
+
             if (role) {
-                await db.userRole.deleteMany({ where: { userId: id } })
+                // Delete existing roles
+                await db.userRole.deleteMany({
+                    where: { userId: id }
+                })
+
+                // Add new role
                 await db.userRole.create({
                     data: {
                         userId: id,

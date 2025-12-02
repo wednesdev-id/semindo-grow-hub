@@ -7,6 +7,7 @@ import TextInputQuestion from '../components/forms/question-types/TextInputQuest
 import ProgressIndicator from '../components/shared/ProgressIndicator'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { useAssessmentForm } from '../hooks/useAssessmentForm'
+import { ErrorState } from '@/components/ui/error-state'
 
 export default function AssessmentWizardPage() {
     const { id } = useParams<{ id: string }>()
@@ -40,12 +41,11 @@ export default function AssessmentWizardPage() {
     if (error || !assessment) {
         return (
             <div className="flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <p className="text-muted-foreground">Gagal memuat data assessment.</p>
-                    <button onClick={() => window.location.reload()} className="mt-4 text-primary hover:underline">
-                        Coba lagi
-                    </button>
-                </div>
+                <ErrorState
+                    title="Gagal memuat data assessment"
+                    message={error instanceof Error ? error.message : "Terjadi kesalahan yang tidak diketahui"}
+                    onRetry={() => window.location.reload()}
+                />
             </div>
         )
     }
