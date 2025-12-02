@@ -843,6 +843,7 @@ model Program {
 
   organizer   User     @relation(fields: [organizerId], references: [id])
   batches     ProgramBatch[]
+  milestones  ProgramMilestone[]
 
   @@map("programs")
 }
@@ -877,4 +878,19 @@ model ProgramParticipant {
 
   @@unique([batchId, userId])
   @@map("program_participants")
+}
+
+model ProgramMilestone {
+  id          String   @id @default(uuid())
+  programId   String   @map("program_id")
+  title       String
+  description String?
+  order       Int      @default(0)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  program     Program  @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@map("program_milestones")
 }

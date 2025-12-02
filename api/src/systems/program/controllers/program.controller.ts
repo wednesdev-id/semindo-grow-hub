@@ -104,4 +104,24 @@ export class ProgramController {
             res.status(500).json({ error: 'Failed to fetch my participations' });
         }
     }
+
+    async createMilestone(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const milestone = await programService.createMilestone(id, req.body);
+            res.status(201).json(milestone);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to create milestone' });
+        }
+    }
+
+    async getProgramMilestones(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const milestones = await programService.getProgramMilestones(id);
+            res.json(milestones);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to fetch milestones' });
+        }
+    }
 }

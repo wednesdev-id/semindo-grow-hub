@@ -1,221 +1,69 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { z } from 'zod'
+import { useParams } from 'react-router-dom'
 import QuestionCard from '../components/forms/QuestionCard'
 import MultipleChoiceQuestion from '../components/forms/question-types/MultipleChoiceQuestion'
 import ScaleQuestion from '../components/forms/question-types/ScaleQuestion'
 import BooleanQuestion from '../components/forms/question-types/BooleanQuestion'
 import TextInputQuestion from '../components/forms/question-types/TextInputQuestion'
 import ProgressIndicator from '../components/shared/ProgressIndicator'
-import { AnswerValue } from '../types'
-import { assessmentService } from '../services/assessmentService'
-import { useToast } from '@/components/ui/use-toast'
 import { Loader2, RotateCcw } from 'lucide-react'
-import { useDebounce } from '@/hooks/useDebounce'
-
-// Helper to parse condition from question options
-const checkCondition = (question: any, allResponses: Record<string, AnswerValue>) => {
-    if (!question.options || !question.options.condition) return true;
-
-    const { questionId, operator, value } = question.options.condition;
-    const dependentAnswer = allResponses[questionId];
-
-    if (dependentAnswer === undefined) return false;
-
-    switch (operator) {
-        case 'equals': return dependentAnswer === value;
-        case 'not_equals': return dependentAnswer !== value;
-        case 'greater_than': return Number(dependentAnswer) > Number(value);
-        case 'less_than': return Number(dependentAnswer) < Number(value);
-        case 'contains': return Array.isArray(dependentAnswer) && dependentAnswer.includes(value);
-        default: return true;
-    }
-};
+import { useAssessmentForm } from '../hooks/useAssessmentForm'
 
 export default function AssessmentWizardPage() {
     const { id } = useParams<{ id: string }>()
-    const navigate = useNavigate()
-    const { toast } = useToast()
-    const [currentSectionIndex, setCurrentSectionIndex] = useState(0)
-    const [responses, setResponses] = useState<Record<string, AnswerValue>>({})
-    const [errors, setErrors] = useState<Record<string, string>>({})
 
-    // Auto-save state
-    const [pendingSave, setPendingSave] = useState<{ questionId: string, value: AnswerValue } | null>(null);
-    const debouncedSave = useDebounce(pendingSave, 1000);
+    const {
+        assessment,
+        isLoading,
+        error,
+        sections,
+        currentSection,
+        currentSectionIndex,
+        responses,
+        errors,
+        isSaving,
+        isSubmitting,
+        handleAnswerChange,
+        handleNext,
+        handleBack,
+        handleResetSection,
+        checkCondition
+    } = useAssessmentForm(id!)
 
-    const { data: assessment, isLoading, error } = useQuery({
-        queryKey: ['assessment', id],
-        queryFn: () => assessmentService.getAssessment(id!),
-        enabled: !!id
-    })
+    if (isLoading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        )
+    }
 
-    const sections = assessment?.template?.questions
-        ? Object.values(assessment.template.questions.reduce((acc: any, q: any) => {
-            const category = q.category.name
-            if (!acc[category]) {
-                acc[category] = {
-                    id: q.category.id,
-                    title: category,
-                    questions: []
-                }
-            }
-            acc[category].questions.push(q)
-            return acc
-        }, {})) as any[]
-        : []
+    if (error || !assessment) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="text-center">
+                    <p className="text-muted-foreground">Gagal memuat data assessment.</p>
+                    <button onClick={() => window.location.reload()} className="mt-4 text-primary hover:underline">
+                        Coba lagi
+                    </button>
+                </div>
+            </div>
+        )
+    }
 
-    // Initialize responses from existing assessment data
-    useEffect(() => {
-        if (assessment?.responses) {
-            const initialResponses: Record<string, AnswerValue> = {}
-            assessment.responses.forEach((r: any) => {
-                initialResponses[r.questionId] = r.answerValue
-            })
-            setResponses(initialResponses)
-        }
-    }, [assessment])
+    if (sections.length === 0) {
+        return (
+            <div className="flex min-h-screen items-center justify-center">
+                <div className="text-center">
+                    <p className="text-muted-foreground">Template assessment tidak memiliki pertanyaan.</p>
+                </div>
+            </div>
+        )
+    }
 
-    const saveResponseMutation = useMutation({
-        mutationFn: ({ questionId, value }: { questionId: string, value: AnswerValue }) =>
-            assessmentService.saveResponse(assessment.id, questionId, value),
-        onError: () => {
-            toast({
-                title: "Gagal menyimpan",
-                description: "Periksa koneksi internet Anda.",
-                variant: "destructive"
-            })
-        }
-    })
-
-    // Effect for debounced auto-save
-    useEffect(() => {
-        if (debouncedSave && assessment) {
-            saveResponseMutation.mutate(debouncedSave);
-        }
-    }, [debouncedSave]);
-
-    const submitAssessmentMutation = useMutation({
-        mutationFn: () => assessmentService.submitAssessment(assessment.id),
-        onSuccess: () => {
-            navigate(`/assessment/results/${assessment.id}`)
-        },
-        onError: (error: any) => {
-            toast({
-                title: "Gagal mengirim",
-                description: error.message || "Terjadi kesalahan saat mengirim assessment.",
-                variant: "destructive"
-            })
-        }
-    })
-
-    const currentSection = sections[currentSectionIndex]
     const sectionTitles = sections.map(s => s.title)
 
-    const handleAnswerChange = (questionId: string, value: AnswerValue) => {
-        setResponses(prev => ({
-            ...prev,
-            [questionId]: value
-        }))
-
-        // Clear error
-        if (errors[questionId]) {
-            setErrors(prev => {
-                const newErrors = { ...prev }
-                delete newErrors[questionId]
-                return newErrors
-            })
-        }
-
-        // Trigger auto-save via debounce
-        setPendingSave({ questionId, value });
-    }
-
-    const validateQuestion = (question: any, value: AnswerValue) => {
-        // Skip validation if question is hidden
-        if (!checkCondition(question, responses)) return null;
-
-        let schema;
-        switch (question.type) {
-            case 'multiple_choice':
-                schema = z.union([z.string(), z.array(z.string())]).refine(val => val.length > 0, "Pilihan wajib dipilih");
-                break;
-            case 'scale':
-                schema = z.number().min(1).max(10);
-                break;
-            case 'boolean':
-                schema = z.boolean();
-                break;
-            case 'text':
-                schema = z.string().min(1, "Jawaban wajib diisi").max(500, "Maksimal 500 karakter");
-                break;
-            default:
-                schema = z.any();
-        }
-
-        const result = schema.safeParse(value);
-        return result.success ? null : result.error.errors[0].message;
-    }
-
-    const validateSection = () => {
-        const newErrors: Record<string, string> = {}
-
-        if (currentSection) {
-            currentSection.questions.forEach((question: any) => {
-                const error = validateQuestion(question, responses[question.id]);
-                if (error) {
-                    newErrors[question.id] = error;
-                }
-            })
-        }
-
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
-    }
-
-    const handleNext = () => {
-        if (!validateSection()) {
-            toast({
-                title: "Mohon lengkapi jawaban",
-                description: "Masih ada pertanyaan yang belum dijawab di bagian ini.",
-                variant: "destructive"
-            })
-            return
-        }
-
-        if (currentSectionIndex < sections.length - 1) {
-            setCurrentSectionIndex(prev => prev + 1)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-        } else {
-            submitAssessmentMutation.mutate()
-        }
-    }
-
-    const handleBack = () => {
-        if (currentSectionIndex > 0) {
-            setCurrentSectionIndex(prev => prev - 1)
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-        }
-    }
-
-    const handleResetSection = () => {
-        if (confirm('Apakah Anda yakin ingin mereset jawaban di bagian ini?')) {
-            const newResponses = { ...responses };
-            currentSection.questions.forEach((q: any) => {
-                delete newResponses[q.id];
-            });
-            setResponses(newResponses);
-            setErrors({});
-            toast({
-                title: "Bagian direset",
-                description: "Jawaban di bagian ini telah dikosongkan."
-            });
-        }
-    }
-
     const renderQuestion = (question: any) => {
-        if (!checkCondition(question, responses)) return null;
+        if (!checkCondition(question)) return null;
 
         const value = responses[question.id]
         const error = errors[question.id]
@@ -270,37 +118,6 @@ export default function AssessmentWizardPage() {
             >
                 {questionInput}
             </QuestionCard>
-        )
-    }
-
-    if (isLoading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        )
-    }
-
-    if (error || !assessment) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <p className="text-muted-foreground">Gagal memuat data assessment.</p>
-                    <button onClick={() => window.location.reload()} className="mt-4 text-primary hover:underline">
-                        Coba lagi
-                    </button>
-                </div>
-            </div>
-        )
-    }
-
-    if (sections.length === 0) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <p className="text-muted-foreground">Template assessment tidak memiliki pertanyaan.</p>
-                </div>
-            </div>
         )
     }
 
@@ -376,17 +193,17 @@ export default function AssessmentWizardPage() {
                                 </button>
 
                                 <div className="flex items-center gap-2">
-                                    {saveResponseMutation.isPending && (
+                                    {isSaving && (
                                         <span className="text-sm text-muted-foreground animate-pulse">
                                             Menyimpan...
                                         </span>
                                     )}
                                     <button
                                         onClick={handleNext}
-                                        disabled={submitAssessmentMutation.isPending}
+                                        disabled={isSubmitting}
                                         className="flex items-center gap-2 rounded-md bg-primary px-6 py-2.5 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-70"
                                     >
-                                        {submitAssessmentMutation.isPending ? (
+                                        {isSubmitting ? (
                                             <Loader2 className="h-5 w-5 animate-spin" />
                                         ) : currentSectionIndex === sections.length - 1 ? (
                                             <>

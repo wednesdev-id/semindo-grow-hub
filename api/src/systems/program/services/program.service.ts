@@ -47,6 +47,9 @@ export class ProgramService {
                     },
                     orderBy: { startDate: 'desc' },
                 },
+                milestones: {
+                    orderBy: { order: 'asc' },
+                },
             },
         });
     }
@@ -184,6 +187,43 @@ export class ProgramService {
                 },
             },
             orderBy: { joinedAt: 'desc' },
+        });
+    }
+
+    async getProgramMilestones(programId: string) {
+        return prisma.programMilestone.findMany({
+            where: { programId },
+            orderBy: { order: 'asc' },
+        });
+    }
+
+    async createMilestone(programId: string, data: {
+        title: string;
+        description?: string;
+        order?: number;
+    }) {
+        return prisma.programMilestone.create({
+            data: {
+                ...data,
+                programId,
+            },
+        });
+    }
+
+    async updateMilestone(id: string, data: {
+        title?: string;
+        description?: string;
+        order?: number;
+    }) {
+        return prisma.programMilestone.update({
+            where: { id },
+            data,
+        });
+    }
+
+    async deleteMilestone(id: string) {
+        return prisma.programMilestone.delete({
+            where: { id },
         });
     }
 }

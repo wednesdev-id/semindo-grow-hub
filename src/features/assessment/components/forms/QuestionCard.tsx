@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import React, { ReactNode } from 'react'
 import { AssessmentQuestion, AssessmentResponse, AnswerValue } from '@core/assessment/types'
 
 interface QuestionCardProps {
@@ -9,7 +9,7 @@ interface QuestionCardProps {
     children: ReactNode
 }
 
-export default function QuestionCard({
+function QuestionCard({
     question,
     value,
     onChange,
@@ -73,3 +73,11 @@ export default function QuestionCard({
         </div>
     )
 }
+
+export default React.memo(QuestionCard, (prevProps, nextProps) => {
+    return (
+        prevProps.value === nextProps.value &&
+        prevProps.error === nextProps.error &&
+        prevProps.question.id === nextProps.question.id
+    );
+});
