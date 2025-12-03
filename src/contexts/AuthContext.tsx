@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { User, Role, Permission, AuthState, LoginResponse } from '@/types/auth'
+import { api } from '@/services/api'
 
 interface AuthContextType extends AuthState {
-    login: (email: string, password: string) => Promise<void>
-    register: (data: any) => Promise<void>
+    login: (email: string, password: string) => Promise<User>
+    register: (data: any) => Promise<User>
     logout: () => void
     hasPermission: (permission: string) => boolean
     hasRole: (role: string) => boolean
@@ -11,7 +12,7 @@ interface AuthContextType extends AuthState {
     hasAnyRole: (roles: string[]) => boolean
 }
 
-const AuthContext = createContext<AuthContextType | null>(null)
+export const AuthContext = createContext<AuthContextType | null>(null)
 
 interface AuthProviderProps {
     children: ReactNode
@@ -58,21 +59,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log(`[Auth] Attempting login for: ${email} at ${new Date().toISOString()} `)
         setIsLoading(true)
         try {
-            // Using fetch directly here to avoid circular dependency if api.ts uses AuthContext
-            // But ideally should use api service. For now, improving logging.
-            const response = await fetch('/api/v1/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password }),
-            })
-
-            const data = await response.json()
-
-            if (!response.ok) {
-                console.error(`[Auth] Login failed.Status: ${response.status} ${response.statusText}.Error: `, data.error)
-                console.error(`[Auth] Response body: `, data)
-                throw new Error(data.error || `Login failed(${response.status})`)
-            }
+            const data = await api.post<LoginResponse>('/auth/login', { email, password })
 
             console.log(`[Auth] Login successful for user: ${data.data.user.email} `)
             const { user: userData, token } = data.data
@@ -106,22 +93,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log(`[Auth] Attempting registration for: ${data.email} `)
         setIsLoading(true)
         try {
-            const response = await fetch('/api/v1/auth/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            })
-
-            const responseData = await response.json()
-
-            if (!response.ok) {
-                throw new Error(responseData.error || `Registration failed(${response.status})`)
-            }
+            const responseData = await api.post<LoginResponse>('/auth/register', data)
 
             console.log(`[Auth] Registration successful for user: ${responseData.data.user.email} `)
-            // Auto login after register? Usually yes, or redirect to login.
-            // The backend register response might include token.
-            // AuthService.ts says it stores tokens.
 
             const { user: userData, token } = responseData.data
 

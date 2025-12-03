@@ -69,10 +69,12 @@ export interface AuditLog {
 // Auth Response Types
 export interface LoginResponse {
   success: boolean
-  token: string
-  user: User
-  roles: Role[]
-  permissions: Permission[]
+  message?: string
+  data: {
+    token: string
+    user: User
+    expiresIn?: string
+  }
 }
 
 export interface UMKMProfile {

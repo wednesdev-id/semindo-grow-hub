@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, AuthContext } from "@/contexts/AuthContext";
+import { useContext } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +17,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
+  const logout = authContext?.logout;
 
   const navItems = [
     { name: "Beranda", href: "/" },
@@ -59,6 +62,9 @@ const Navigation = () => {
 
           {/* CTA Button */}
           <div className="hidden lg:flex items-center space-x-4">
+            <Button className="bg-gradient-primary hover:opacity-90 text-white font-medium">
+              Mulai Konsultasi
+            </Button>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -105,9 +111,6 @@ const Navigation = () => {
                 </Button>
               </Link>
             )}
-            <Button className="bg-gradient-primary hover:opacity-90 text-white font-medium">
-              Mulai Konsultasi
-            </Button>
           </div>
 
           {/* Mobile menu button */}
@@ -136,6 +139,9 @@ const Navigation = () => {
                 </Link>
               ))}
               <div className="pt-4 space-y-2">
+                <Button className="w-full bg-gradient-primary hover:opacity-90 text-white">
+                  Mulai Konsultasi
+                </Button>
                 {user ? (
                   <>
                     <div className="flex items-center px-3 py-2">
@@ -172,9 +178,6 @@ const Navigation = () => {
                     </Button>
                   </Link>
                 )}
-                <Button className="w-full bg-gradient-primary hover:opacity-90 text-white">
-                  Mulai Konsultasi
-                </Button>
               </div>
             </div>
           </div>
