@@ -10,6 +10,7 @@ export class UsersService {
         const skip = (page - 1) * limit
         const search = query.search || ''
         const roleFilter = query.role
+        const isActiveFilter = query.isActive
 
         const where: any = {
             OR: [
@@ -19,7 +20,7 @@ export class UsersService {
             ],
         }
 
-        if (roleFilter) {
+        if (roleFilter && roleFilter !== 'all') {
             where.userRoles = {
                 some: {
                     role: {
@@ -27,6 +28,10 @@ export class UsersService {
                     }
                 }
             }
+        }
+
+        if (isActiveFilter && isActiveFilter !== 'all') {
+            where.isActive = isActiveFilter === 'true'
         }
 
         const [users, total] = await Promise.all([
@@ -56,7 +61,7 @@ export class UsersService {
                 page,
                 limit,
                 total,
-                totalPages: Math.ceil(total / limit)
+                lastPage: Math.ceil(total / limit)
             }
         }
     }

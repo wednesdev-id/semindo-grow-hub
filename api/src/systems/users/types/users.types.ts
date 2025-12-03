@@ -21,4 +21,5 @@ export interface UserQueryDto {
     limit?: number
     search?: string
     role?: string
+    isActive?: string
 }

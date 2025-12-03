@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, ShoppingCart, MapPin, Star } from 'lucide-react';
+import { Search, Filter, ShoppingCart, MapPin, Star, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ProductListPage() {

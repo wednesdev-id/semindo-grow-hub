@@ -6,6 +6,7 @@ export interface UserQueryParams {
     limit?: number;
     search?: string;
     role?: string;
+    isActive?: string;
 }
 
 import { PaginatedResponse, ApiResponse } from '@/types/api';
@@ -17,6 +18,7 @@ export const userService = {
         if (params?.limit) query.append('limit', params.limit.toString());
         if (params?.search) query.append('search', params.search);
         if (params?.role) query.append('role', params.role);
+        if (params?.isActive) query.append('isActive', params.isActive);
 
         return api.get<PaginatedResponse<User>>(`/users?${query.toString()}`);
     },

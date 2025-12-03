@@ -70,7 +70,7 @@ export const exportService = {
 
         try {
             const countriesResponse = await api.get<{ data: ExportCountry[] }>('/export/countries');
-            const countries = countriesResponse.data.data;
+            const countries = countriesResponse.data;
             const country = countries.find(c => c.name === destinationCountry || c.code === destinationCountry);
 
             if (!country) throw new Error("Country not found");

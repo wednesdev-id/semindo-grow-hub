@@ -38,6 +38,18 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
     const { toast } = useToast()
 
+    const [roleFilter, setRoleFilter] = useState(defaultRole || 'all')
+    const [statusFilter, setStatusFilter] = useState('all')
+
+    // Sync roleFilter with defaultRole when it changes
+    useEffect(() => {
+        if (defaultRole) {
+            setRoleFilter(defaultRole)
+        } else {
+            setRoleFilter('all')
+        }
+    }, [defaultRole])
+
     // Form State
     const [formData, setFormData] = useState({
         email: '',
@@ -51,10 +63,27 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
     const fetchUsers = async () => {
         setLoading(true)
         try {
-            // Pass defaultRole to findAll if it exists
-            const res = await userService.findAll({ page, search, role: defaultRole })
-            setUsers(res.data.data)
-            setTotalPages(res.data.meta.totalPages)
+            // Pass filters to findAll
+            const res = await userService.findAll({
+                page,
+                search,
+                role: roleFilter === 'all' ? undefined : roleFilter,
+                isActive: statusFilter === 'all' ? undefined : statusFilter
+            })
+            console.log('UserManagement fetchUsers response:', res)
+
+            if (Array.isArray(res.data)) {
+                setUsers(res.data)
+            } else {
+                console.error('Invalid users data:', res.data)
+                setUsers([])
+            }
+
+            if (res.meta) {
+                setTotalPages(res.meta.lastPage || 1)
+            } else {
+                setTotalPages(1)
+            }
         } catch (error) {
             toast({
                 title: 'Error',
@@ -71,7 +100,7 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
             fetchUsers()
         }, 500)
         return () => clearTimeout(debounce)
-    }, [page, search, defaultRole])
+    }, [page, search, roleFilter, statusFilter])
 
     const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
         e.preventDefault()
@@ -238,8 +267,8 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                 </Dialog>
             </div>
 
-            <div className="flex items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input
                         placeholder="Search users..."
@@ -247,6 +276,33 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
+                </div>
+
+                {!defaultRole && (
+                    <div className="w-full md:w-48">
+                        <select
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={roleFilter}
+                            onChange={(e) => setRoleFilter(e.target.value)}
+                        >
+                            <option value="all">All Roles</option>
+                            <option value="umkm">UMKM</option>
+                            <option value="mentor">Mentor</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                )}
+
+                <div className="w-full md:w-48">
+                    <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="all">All Status</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
                 </div>
             </div>
 
