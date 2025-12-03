@@ -38,6 +38,11 @@ model User {
   orders       Order[]
   loanApplications LoanApplication[]
   
+  // Marketplace Relations
+  store        Store?
+  cart         Cart?
+  reviews      Review[]
+  
   // Community Relations
   forumThreads     ForumThread[]
   forumPosts       ForumPost[]
@@ -533,40 +538,155 @@ model LessonProgress {
 // MARKETPLACE
 // ============================================
 
-model Product {
+// ============================================
+// MARKETPLACE CORE
+// ============================================
+
+model Store {
   id          String   @id @default(uuid())
-  title       String
+  userId      String   @unique @map("user_id") // One store per user for now
+  name        String
   slug        String   @unique
   description String?  @db.Text
-  price       Decimal  @default(0) @db.Decimal(10, 2)
-  stock       Int      @default(0)
-  category    String
-  images      Json?    // Array of strings (URLs)
-  sellerId    String   @map("seller_id")
+  logoUrl     String?  @map("logo_url")
+  bannerUrl   String?  @map("banner_url")
   
-  isPublished Boolean  @default(false) @map("is_published")
+  // Policy
+  refundPolicy   String? @db.Text @map("refund_policy")
+  shippingPolicy String? @db.Text @map("shipping_policy")
+  
+  // Metrics
+  rating         Decimal @default(0) @db.Decimal(3, 2)
+  totalSales     Int     @default(0) @map("total_sales")
+  
+  isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  seller      User     @relation(fields: [sellerId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  products    Product[]
+  orders      Order[]
+  reviews     Review[]
+
+  @@map("stores")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  storeId     String?  @map("store_id") // Optional for migration, make required later
+  title       String
+  slug        String   @unique
+  description String?  @db.Text
+  price       Decimal  @default(0) @db.Decimal(15, 2)
+  stock       Int      @default(0)
+  weight      Int      @default(0) // in grams
+  category    String?  // Deprecated in favor of categoryId? Or keep for simple string
+  categoryId  String?  @map("category_id")
+  
+  status      String   @default("draft") // draft, active, suspended, rejected
+  images      Json?    // Array of strings
+  externalLinks Json?  @map("external_links") // { shopee: "url", tokopedia: "url" }
+  
+  // Legacy field to be migrated
+  sellerId    String?  @map("seller_id")
+  
+  // Analytics
+  viewCount   Int      @default(0) @map("view_count")
+  soldCount   Int      @default(0) @map("sold_count")
+  rating      Decimal  @default(0) @db.Decimal(3, 2)
+
+  isPublished Boolean  @default(false) @map("is_published")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at") // Soft delete
+
+  store       Store?   @relation(fields: [storeId], references: [id])
+  seller      User?    @relation(fields: [sellerId], references: [id]) // Keep for backward compat during migration
+  variants    ProductVariant[]
+  cartItems   CartItem[]
   orderItems  OrderItem[]
+  reviews     Review[]
+  channelProducts MarketplaceChannelProduct[]
 
   @@map("products")
+}
+
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  name      String   // e.g., "Red, XL"
+  sku       String?
+  price     Decimal  @db.Decimal(15, 2)
+  stock     Int      @default(0)
+  image     String?
+  
+  options   Json?    // { "Color": "Red", "Size": "XL" }
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@map("product_variants")
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String   @map("cart_id")
+  productId String   @map("product_id")
+  variantId String?  @map("variant_id")
+  quantity  Int      @default(1)
+  
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@map("cart_items")
 }
 
 model Order {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
-  status      String   @default("pending") // pending, paid, shipped, completed, cancelled
-  totalAmount Decimal  @map("total_amount") @db.Decimal(10, 2)
+  storeId     String?  @map("store_id") // Optional for migration
+  
+  // Status
+  status      String   @default("pending") 
+  // pending, awaiting_payment, paid, processing, shipped, completed, cancelled, refund_requested, refunded
+  
+  // Financials
+  totalAmount    Decimal @map("total_amount") @db.Decimal(15, 2)
+  shippingCost   Decimal @default(0) @map("shipping_cost") @db.Decimal(15, 2)
+  platformFee    Decimal @default(0) @map("platform_fee") @db.Decimal(15, 2)
+  discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(15, 2)
+  
+  paymentLink String?  @map("payment_link")
+  paymentStatus String @default("unpaid") @map("payment_status")
+  
+  // Shipping
+  shippingAddress Json?   // Snapshot of address
+  courier         String?
+  trackingNumber  String? @map("tracking_number")
   
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  // Relations
-  user        User        @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+  store       Store?   @relation(fields: [storeId], references: [id])
   items       OrderItem[]
+  payment     Payment?
+  shipment    Shipment?
+  reviews     Review[]
 
   @@map("orders")
 }
@@ -575,14 +695,113 @@ model OrderItem {
   id        String   @id @default(uuid())
   orderId   String   @map("order_id")
   productId String   @map("product_id")
-  quantity  Int      @default(1)
-  price     Decimal  @db.Decimal(10, 2) // Price at the time of purchase
+  variantId String?  @map("variant_id")
   
-  // Relations
+  quantity  Int      @default(1)
+  price     Decimal  @db.Decimal(15, 2) // Price at purchase time
+  name      String?   // Product name snapshot
+  
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  orderId       String   @unique @map("order_id")
+  
+  method        String   // midtrans, xendit, manual
+  provider      String?  // gopay, bca_va, etc.
+  externalId    String?  @map("external_id") // Transaction ID from gateway
+  status        String   // pending, success, failed, expired
+  amount        Decimal  @db.Decimal(15, 2)
+  paymentUrl    String?  @map("payment_url")
+  
+  paidAt        DateTime? @map("paid_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Shipment {
+  id            String   @id @default(uuid())
+  orderId       String   @unique @map("order_id")
+  
+  courier       String
+  service       String   // REG, YES, etc.
+  trackingNumber String? @map("tracking_number")
+  status        String   // pending, picked_up, in_transit, delivered, returned
+  
+  shippedAt     DateTime? @map("shipped_at")
+  deliveredAt   DateTime? @map("delivered_at")
+  
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  @@map("shipments")
+}
+
+model Review {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  storeId     String   @map("store_id")
+  productId   String   @map("product_id")
+  orderId     String   @map("order_id")
+  
+  rating      Int      // 1-5
+  comment     String?  @db.Text
+  images      Json?    // Array of strings
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User     @relation(fields: [userId], references: [id])
+  store       Store    @relation(fields: [storeId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+  order       Order    @relation(fields: [orderId], references: [id])
+
+  @@map("reviews")
+}
+
+// ============================================
+// EXTERNAL MARKETPLACE INTEGRATION
+// ============================================
+
+model MarketplaceChannelSync {
+  id          String   @id @default(uuid())
+  storeId     String   @map("store_id")
+  channel     String   // tokopedia, shopee, tiktok
+  
+  accessToken  String  @map("access_token") @db.Text
+  refreshToken String? @map("refresh_token") @db.Text
+  expiresAt    DateTime? @map("expires_at")
+  
+  shopId      String?  @map("shop_id") // External Shop ID
+  isActive    Boolean  @default(true) @map("is_active")
+  
+  lastSyncAt  DateTime? @map("last_sync_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("marketplace_channel_syncs")
+}
+
+model MarketplaceChannelProduct {
+  id          String   @id @default(uuid())
+  productId   String   @map("product_id")
+  channel     String   // tokopedia, shopee
+  externalId  String   @map("external_id") // ID in external platform
+  
+  syncStatus  String   @default("synced") // synced, error, pending
+  lastSyncAt  DateTime? @map("last_sync_at")
+  
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, channel])
+  @@map("marketplace_channel_products")
 }
 
 // ============================================

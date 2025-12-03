@@ -72,6 +72,10 @@ const ProgramCreate = lazy(() => import("./pages/programs/ProgramCreate"));
 const UMKMListPage = lazy(() => import("./pages/admin/umkm/UMKMListPage"));
 const UMKMFormPage = lazy(() => import("./pages/admin/umkm/UMKMFormPage"));
 const UMKMDetailPage = lazy(() => import("./pages/admin/umkm/UMKMDetailPage"));
+const SellerDashboard = lazy(() => import("./features/marketplace/pages/admin/SellerDashboard").then(module => ({ default: module.SellerDashboard })));
+const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
+const MarketplaceProductList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductList"));
+const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/ProductUploadPage"));
 
 const queryClient = new QueryClient();
 
@@ -158,6 +162,7 @@ const App = () => {
                       <Route path="umkm/:id" element={<UMKMDetailPage />} />
                       <Route path="programs" element={<ProgramListPage />} />
                       <Route path="programs/:id" element={<ProgramDetailPage />} />
+                      <Route path="marketplace" element={<MarketplaceAdminDashboard />} />
                     </Route>
 
                     {/* Dashboard Routes with Sidebar Layout */}
@@ -335,6 +340,9 @@ const App = () => {
                       <Route path="/lms/stats" element={<LMSStats />} />
 
                       {/* Marketplace Manager */}
+                      <Route path="/marketplace/dashboard" element={<SellerDashboard />} />
+                      <Route path="/dashboard/marketplace/products" element={<MarketplaceProductList />} />
+                      <Route path="/dashboard/marketplace/products/new" element={<ProductUploadPage />} />
                       <Route path="/marketplace/products" element={<ProductListPage />} />
                       <Route path="/marketplace/product/:slug" element={<ProductDetailPage />} />
                       <Route path="/marketplace/verification" element={<MarketplaceProductVerification />} />

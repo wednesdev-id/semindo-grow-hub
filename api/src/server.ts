@@ -12,6 +12,9 @@ import { corsMiddleware } from './systems/middlewares/cors'
 import { lmsRouter } from './systems/lms'
 import { dashboardRouter } from './systems/dashboard'
 import { marketplaceRouter } from './systems/marketplace'
+import { storeRouter } from './systems/marketplace/routes/store.routes';
+import { uploadRouter } from './systems/marketplace/routes/upload.routes';
+import { cartRouter } from './systems/marketplace/routes/cart.routes';
 import { financingRouter } from './systems/financing'
 import { exportRouter } from './systems/export'
 import { communityRouter } from './systems/community'
@@ -52,6 +55,9 @@ export function createServer(): Application {
   app.use('/api/v1/lms', lmsRouter)
   app.use('/api/v1/dashboard', dashboardRouter)
   app.use('/api/v1/marketplace', marketplaceRouter)
+  app.use('/api/v1/marketplace', storeRouter);
+  app.use('/api/v1/marketplace', uploadRouter);
+  app.use('/api/v1/marketplace', cartRouter);
   app.use('/api/v1/financing', financingRouter);
   app.use('/api/v1/documents', documentRouter);
   app.use('/api/v1/export', exportRouter);
