@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Clock, BookOpen, User } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CourseProgress } from "./CourseProgress";
 
 interface CourseCardProps {
     id: string;
@@ -31,7 +32,8 @@ export default function CourseCard({
     author,
     moduleCount = 0,
     duration = 0,
-}: CourseCardProps) {
+    progress,
+}: CourseCardProps & { progress?: number }) {
     const formatPrice = (price: number) => {
         if (price === 0) return "Gratis";
         return new Intl.NumberFormat("id-ID", {
@@ -99,6 +101,11 @@ export default function CourseCard({
                         <span>{moduleCount} Modul</span>
                     </div>
                 </div>
+                {progress !== undefined && (
+                    <div className="mt-4">
+                        <CourseProgress value={progress} size="sm" />
+                    </div>
+                )}
             </CardContent>
 
             <CardFooter className="p-4 border-t flex items-center justify-between bg-muted/5">

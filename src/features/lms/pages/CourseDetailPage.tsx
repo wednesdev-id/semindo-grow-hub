@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { lmsService } from "@/services/lmsService";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,11 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { PlayCircle, CheckCircle2, Clock, BookOpen, Award, User } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function CourseDetailPage() {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { toast } = useToast();
+    const { hasRole } = useAuth();
+    const queryClient = useQueryClient();
 
     const { data: course, isLoading } = useQuery({
         queryKey: ["course", slug],

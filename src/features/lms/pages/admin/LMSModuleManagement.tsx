@@ -4,27 +4,47 @@ import { DataGrid } from "@/components/dashboard/DataGrid";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Eye } from "lucide-react";
-import { lmsService } from "@/services/lmsService";
+import { lmsService, Course } from "@/services/lmsService";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useToast } from "@/components/ui/use-toast";
+import { CreateModuleDialog } from "@/features/lms/components/CreateModuleDialog";
 
 export default function LMSModuleManagement() {
+    const { toast } = useToast();
     const [modules, setModules] = useState<any[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     useEffect(() => {
-        const fetchModules = async () => {
+        const fetchData = async () => {
             try {
-                const data = await lmsService.getAllModules();
-                setModules(data);
+                const [modulesData, coursesData] = await Promise.all([
+                    lmsService.getAllModules(),
+                    lmsService.getCourses()
+                ]);
+                setModules(modulesData);
+                setCourses(coursesData || []); // coursesData is Course[] directly
             } catch (error) {
-                console.error("Failed to fetch modules:", error);
+                console.error("Failed to fetch data:", error);
+                toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchModules();
+        fetchData();
     }, []);
+
+    const handleSuccess = async () => {
+        // Refresh modules
+        try {
+            const updatedModules = await lmsService.getAllModules();
+            setModules(updatedModules);
+        } catch (error) {
+            console.error("Failed to refresh modules:", error);
+        }
+    };
 
     const columns = [
         {
@@ -85,7 +105,10 @@ export default function LMSModuleManagement() {
                     { label: "LMS", href: "/lms/stats" },
                     { label: "Modules" },
                 ]}
-                action={{ label: "Add Module" }}
+                action={{
+                    label: "Add Module",
+                    onClick: () => setIsDialogOpen(true)
+                }}
             />
 
             <DataGrid
@@ -93,6 +116,12 @@ export default function LMSModuleManagement() {
                 columns={columns}
                 searchKey="title"
                 searchPlaceholder="Search modules..."
+            />
+
+            <CreateModuleDialog
+                open={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                onSuccess={handleSuccess}
             />
         </div>
     );

@@ -146,7 +146,7 @@ export class CoursesService {
 
         if (!enrollment) throw new Error('User not enrolled in this course');
 
-        return prisma.lessonProgress.upsert({
+        const lessonProgress = await prisma.lessonProgress.upsert({
             where: {
                 enrollmentId_lessonId: {
                     enrollmentId: enrollment.id,
@@ -164,5 +164,68 @@ export class CoursesService {
                 completedAt: completed ? new Date() : null,
             },
         });
+
+        // Recalculate Course Progress
+        const totalLessons = await prisma.lesson.count({
+            where: {
+                module: {
+                    courseId: lesson.module.courseId
+                }
+            }
+        });
+
+        const completedLessons = await prisma.lessonProgress.count({
+            where: {
+                enrollmentId: enrollment.id,
+                isCompleted: true
+            }
+        });
+
+        const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+        await prisma.enrollment.update({
+            where: { id: enrollment.id },
+            data: { progress: progressPercentage }
+        });
+
+        return lessonProgress;
+    }
+
+    async getInstructorCourses(userId: string): Promise<Course[]> {
+        return prisma.course.findMany({
+            where: { authorId: userId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                _count: {
+                    select: { enrollments: true }
+                }
+            }
+        });
+    }
+
+    async getInstructorStats(userId: string) {
+        const courses = await prisma.course.findMany({
+            where: { authorId: userId },
+            include: {
+                _count: {
+                    select: { enrollments: true }
+                }
+            }
+        });
+
+        const totalCourses = courses.length;
+        const totalStudents = courses.reduce((acc, course) => acc + course._count.enrollments, 0);
+
+        // Commission Logic
+        // If < 5 courses, deduction 30%
+        // If >= 5 courses, deduction 15%
+        const deductionRate = totalCourses >= 5 ? 0.15 : 0.30;
+
+        return {
+            totalCourses,
+            totalStudents,
+            deductionRate,
+            deductionPercentage: deductionRate * 100
+        };
     }
 }

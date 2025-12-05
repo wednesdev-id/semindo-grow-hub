@@ -124,4 +124,24 @@ export class CoursesController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async getInstructorCourses(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const courses = await coursesService.getInstructorCourses(userId);
+            res.json({ data: courses });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getInstructorStats(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const stats = await coursesService.getInstructorStats(userId);
+            res.json({ data: stats });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }

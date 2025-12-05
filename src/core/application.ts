@@ -47,7 +47,7 @@ export class ServiceContainer {
   private services: Map<string, unknown> = new Map();
   private isInitialized: boolean = false;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): ServiceContainer {
     if (!ServiceContainer.instance) {
@@ -68,10 +68,10 @@ export class ServiceContainer {
     try {
       // Initialize infrastructure services
       await this.initializeInfrastructureServices();
-      
+
       // Initialize core business services
       await this.initializeCoreServices();
-      
+
       // Initialize feature services
       await this.initializeFeatureServices();
 
@@ -106,10 +106,13 @@ export class ServiceContainer {
     this.services.set('storageService', storageService);
 
     // Token Service
+    // Use a dedicated storage service for tokens to match legacy AuthContext which uses 'auth_token' without prefix
+    const tokenStorageService = new StorageService({ prefix: '', storage: sessionStorage });
+
     const tokenService = new TokenService({
-      tokenKey: appConfig.auth.tokenKey,
+      tokenKey: 'auth_token',
       refreshTokenKey: appConfig.auth.refreshTokenKey,
-      storageService
+      storageService: tokenStorageService
     });
 
     this.services.set('tokenService', tokenService);
@@ -120,8 +123,20 @@ export class ServiceContainer {
    */
   private async initializeCoreServices(): Promise<void> {
     const apiClient = this.getService<ApiClient>('apiClient');
-    const storageService = this.getService<StorageService>('storageService');
-    const tokenService = this.getService<TokenService>('tokenService');
+    const storageService = new StorageService({
+      prefix: appConfig.storage.prefix,
+      encryptionKey: appConfig.storage.encryptionKey
+    });
+    this.services.set('storageService', storageService); // Ensure storageService is set here if not in infrastructure
+
+    // Use a dedicated storage service for tokens to match legacy AuthContext which uses 'auth_token' without prefix
+    const tokenStorageService = new StorageService({ prefix: '', storage: sessionStorage });
+    const tokenService = new TokenService({
+      tokenKey: 'auth_token', // Hardcoded as per instruction
+      refreshTokenKey: appConfig.auth.refreshTokenKey,
+      storageService: tokenStorageService
+    });
+    this.services.set('tokenService', tokenService);
 
     // Auth Validation Service
     const authValidationService = new AuthValidationService();
@@ -162,7 +177,7 @@ export class ServiceContainer {
   /**
    * Initialize feature services
    */
-  private async initializeFeatureServices(): Promise<void> {}
+  private async initializeFeatureServices(): Promise<void> { }
 
   /**
    * Get service by name
@@ -207,7 +222,7 @@ export class ServiceContainer {
    */
   private handleUnauthorized(): void {
     console.warn('Unauthorized access detected');
-    
+
     try {
       const tokenService = this.getService<TokenService>('tokenService');
       tokenService.clearTokens();
@@ -239,14 +254,14 @@ import { StorageService } from './infrastructure/storage/StorageService'
  * These will be implemented with actual business logic
  */
 type PlaceholderConfig = Record<string, unknown>
-class LearningService { constructor(config: PlaceholderConfig) {} }
-class ConsultationService { constructor(config: PlaceholderConfig) {} }
-class FinancingService { constructor(config: PlaceholderConfig) {} }
-class MarketplaceService { constructor(config: PlaceholderConfig) {} }
-class ExportService { constructor(config: PlaceholderConfig) {} }
-class CommunityService { constructor(config: PlaceholderConfig) {} }
-class MonitoringService { 
-  constructor(config: PlaceholderConfig) {} 
+class LearningService { constructor(config: PlaceholderConfig) { } }
+class ConsultationService { constructor(config: PlaceholderConfig) { } }
+class FinancingService { constructor(config: PlaceholderConfig) { } }
+class MarketplaceService { constructor(config: PlaceholderConfig) { } }
+class ExportService { constructor(config: PlaceholderConfig) { } }
+class CommunityService { constructor(config: PlaceholderConfig) { } }
+class MonitoringService {
+  constructor(config: PlaceholderConfig) { }
   logError(error: unknown): void {
     console.error('Monitoring error:', error);
   }
@@ -264,7 +279,7 @@ export const initializeServices = async (): Promise<ServiceContainer> => {
 
   globalServiceContainer = ServiceContainer.getInstance();
   await globalServiceContainer.initialize();
-  
+
   return globalServiceContainer;
 };
 
@@ -282,29 +297,29 @@ export const getServices = (): ServiceContainer => {
 export const bootstrapApplication = async (): Promise<void> => {
   try {
     console.log('🚀 Initializing Semindo Core Application...');
-    
+
     // Initialize services
     const services = await initializeServices();
-    
+
     // Initialize core application
     const coreApp = CoreApplication.getInstance();
     await coreApp.initialize();
-    
+
     // Set global API client
     const apiClient = services.getService<ApiClient>('apiClient');
     setGlobalApiClient(apiClient);
-    
+
     console.log('✅ Semindo Core Application initialized successfully');
-    
+
     // Dispatch initialization event
     window.dispatchEvent(new CustomEvent('app:initialized'));
-    
+
   } catch (error) {
     console.error('❌ Failed to bootstrap application:', error);
-    
+
     // Dispatch error event
     window.dispatchEvent(new CustomEvent('app:init_error', { detail: error }));
-    
+
     throw error;
   }
 };

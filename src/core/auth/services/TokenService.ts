@@ -20,7 +20,9 @@ export class TokenService {
   }
 
   async getAccessToken(): Promise<string | null> {
-    return await this.storageService.getItem(this.tokenKey)
+    const token = await this.storageService.getItem(this.tokenKey)
+    console.log('[TokenService] getAccessToken:', this.tokenKey, token ? 'Found' : 'Not Found', token)
+    return token as string | null
   }
 
   async getRefreshToken(): Promise<string | null> {
@@ -29,8 +31,9 @@ export class TokenService {
 
   hasToken(): boolean {
     try {
-      const raw = localStorage.getItem(`${CORE_CONSTANTS.STORAGE_PREFIX}${this.tokenKey}`)
-      return !!raw
+      if (this.tokenKey === 'auth_token' && sessionStorage.getItem('auth_token')) return true
+      // Fallback to checking storage service
+      return false
     } catch {
       return false
     }

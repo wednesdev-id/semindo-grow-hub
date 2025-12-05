@@ -1,11 +1,47 @@
-import { api } from './api';
+import { getGlobalApiClient } from '../core/infrastructure/api/ApiClient';
+
+const api = {
+    get: async <T>(url: string, options?: any) => {
+        const client = getGlobalApiClient();
+        const response = await client.get<T>(url, options);
+        if (!response.success) throw response.error;
+        return response.data as T;
+    },
+    post: async <T>(url: string, body: any, options?: any) => {
+        const client = getGlobalApiClient();
+        // Handle FormData: remove Content-Type to let browser set boundary
+        const headers = options?.headers || {};
+        if (body instanceof FormData) {
+            delete headers['Content-Type'];
+        }
+
+        const response = await client.post<T>(url, body, { ...options, headers });
+        if (!response.success) throw response.error;
+        return response.data as T;
+    },
+    patch: async <T>(url: string, body: any, options?: any) => {
+        const client = getGlobalApiClient();
+        const response = await client.patch<T>(url, body, options);
+        if (!response.success) throw response.error;
+        return response.data as T;
+    },
+    delete: async <T>(url: string, options?: any) => {
+        const client = getGlobalApiClient();
+        const response = await client.delete<T>(url, options);
+        if (!response.success) throw response.error;
+        return response.data as T;
+    }
+};
 
 export interface Lesson {
     id: string;
     title: string;
     slug: string;
+    type: string; // 'video' | 'pdf' | 'slide' | 'link' | 'article' | 'quiz'
     content?: string;
     videoUrl?: string;
+    resourceUrl?: string;
+    attachments?: any;
     duration?: number;
     order: number;
     isFree: boolean;
@@ -27,7 +63,9 @@ export interface Course {
     level: string;
     category: string;
     price: number;
+    isPublished: boolean;
     author: {
+        id: string;
         fullName: string;
     };
     _count?: {
@@ -71,6 +109,17 @@ export const lmsService = {
 
     updateProgress: async (lessonId: string, completed: boolean) => {
         const response = await api.patch<{ data: any }>(`/lms/lessons/${lessonId}/progress`, { completed });
+        return response.data;
+    },
+
+    // Instructor Methods
+    getInstructorCourses: async () => {
+        const response = await api.get<{ data: Course[] }>('/lms/instructor/courses');
+        return response.data;
+    },
+
+    getInstructorStats: async () => {
+        const response = await api.get<{ data: any }>('/lms/instructor/stats');
         return response.data;
     },
 
@@ -170,5 +219,83 @@ export const lmsService = {
 
     deleteLesson: async (lessonId: string) => {
         await api.delete(`/lms/lessons/${lessonId}`);
+    },
+
+    // Assessment System
+    createQuiz: async (lessonId: string, data: any) => {
+        const response = await api.post<{ data: any }>(`/lms/lessons/${lessonId}/quiz`, data);
+        return response.data;
+    },
+
+    getQuiz: async (lessonId: string) => {
+        const response = await api.get<{ data: any }>(`/lms/lessons/${lessonId}/quiz`);
+        return response.data;
+    },
+
+    submitQuiz: async (quizId: string, answers: any) => {
+        const response = await api.post<{ data: any }>(`/lms/quizzes/${quizId}/submit`, { answers });
+        return response.data;
+    },
+
+    getQuizAttempts: async (quizId: string) => {
+        const response = await api.get<{ data: any[] }>(`/lms/quizzes/${quizId}/attempts`);
+        return response.data;
+    },
+
+    createAssignment: async (lessonId: string, data: any) => {
+        const response = await api.post<{ data: any }>(`/lms/lessons/${lessonId}/assignment`, data);
+        return response.data;
+    },
+
+    getAssignment: async (lessonId: string) => {
+        const response = await api.get<{ data: any }>(`/lms/lessons/${lessonId}/assignment`);
+        return response.data;
+    },
+
+    submitAssignment: async (assignmentId: string, data: any) => {
+        const response = await api.post<{ data: any }>(`/lms/assignments/${assignmentId}/submit`, data);
+        return response.data;
+    },
+
+    gradeAssignment: async (submissionId: string, data: { grade: number; feedback?: string }) => {
+        const response = await api.post<{ data: any }>(`/lms/submissions/${submissionId}/grade`, data);
+        return response.data;
+    },
+
+    getAssignmentSubmissions: async (assignmentId: string) => {
+        const response = await api.get<{ data: any[] }>(`/lms/assignments/${assignmentId}/submissions`);
+        return response.data;
+    },
+
+    // Category Management
+    getCategories: async () => {
+        const response = await api.get<{ data: any[] }>('/lms/categories');
+        return response.data;
+    },
+
+    createCategory: async (data: { name: string; description?: string }) => {
+        const response = await api.post<{ data: any }>('/lms/categories', data);
+        return response.data;
+    },
+
+    updateCategory: async (id: string, data: { name?: string; description?: string }) => {
+        const response = await api.patch<{ data: any }>(`/lms/categories/${id}`, data);
+        return response.data;
+    },
+
+    deleteCategory: async (id: string) => {
+        await api.delete(`/lms/categories/${id}`);
+    },
+
+    // Resource Management
+    uploadResource: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post<{ data: { url: string } }>('/lms/resources/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
     },
 };

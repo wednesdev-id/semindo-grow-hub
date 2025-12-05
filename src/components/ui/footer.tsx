@@ -1,14 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { 
-  Facebook, 
-  Instagram, 
-  Twitter, 
-  Linkedin, 
+import {
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
   Youtube,
   Mail,
   Phone,
   MapPin,
-  ArrowRight
+  ArrowRight,
+  Heart
 } from "lucide-react";
 
 const Footer = () => {
@@ -52,26 +53,26 @@ const Footer = () => {
   ];
 
   return (
-    <footer className="bg-foreground text-background">
+    <footer className="bg-slate-950 text-slate-200 border-t border-slate-800">
       {/* Newsletter Section */}
-      <div className="border-b border-background/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div>
-              <h3 className="text-2xl font-bold mb-2">Stay Updated</h3>
-              <p className="text-background/70">
-                Dapatkan insights terbaru tentang perkembangan UMKM dan teknologi bisnis
+      <div className="border-b border-slate-800 bg-slate-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            <div className="space-y-2">
+              <h3 className="text-2xl md:text-3xl font-bold text-white">Stay Updated</h3>
+              <p className="text-slate-400 text-lg">
+                Dapatkan insights terbaru tentang perkembangan UMKM dan teknologi bisnis.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
               <input
                 type="email"
                 placeholder="Masukkan email Anda"
-                className="flex-1 px-4 py-3 rounded-lg bg-background/10 border border-background/20 text-background placeholder:text-background/50 focus:outline-none focus:ring-2 focus:ring-primary"
+                className="flex-1 px-6 py-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
               />
-              <Button className="bg-primary hover:bg-primary-hover text-white shrink-0">
+              <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-6 rounded-xl text-lg font-semibold shadow-lg hover:shadow-primary/25 transition-all">
                 Subscribe
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -79,40 +80,39 @@ const Footer = () => {
       </div>
 
       {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid lg:grid-cols-6 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8">
           {/* Brand Section */}
-          <div className="lg:col-span-2">
-            <div className="mb-4">
-              <img 
-                src="/logo.jpg" 
-                alt="Semindo Logo" 
-                className="h-12 w-auto"
-              />
+          <div className="lg:col-span-2 space-y-8">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-white font-bold text-xl">S</span>
+              </div>
+              <span className="text-2xl font-bold text-white">Semindo</span>
             </div>
-            <p className="text-background/70 mb-6 leading-relaxed">
-              Platform konsultasi berbasis teknologi yang membantu UMKM Indonesia 
+            <p className="text-slate-400 leading-relaxed text-lg">
+              Platform konsultasi berbasis teknologi yang membantu UMKM Indonesia
               berkembang melalui solusi digital, keuangan, dan strategi bisnis terintegrasi.
             </p>
-            
+
             {/* Contact Info */}
-            <div className="space-y-3 mb-6">
-              <div className="flex items-center text-background/70">
-                <MapPin className="h-4 w-4 mr-3 text-primary" />
-                <span className="text-sm">Jakarta, Bandung, Surabaya, Medan</span>
+            <div className="space-y-4">
+              <div className="flex items-start text-slate-400 hover:text-white transition-colors group">
+                <MapPin className="h-5 w-5 mr-3 text-primary mt-1 group-hover:scale-110 transition-transform" />
+                <span className="text-sm leading-relaxed">Jakarta, Bandung, Surabaya, Medan</span>
               </div>
-              <div className="flex items-center text-background/70">
-                <Phone className="h-4 w-4 mr-3 text-primary" />
+              <div className="flex items-center text-slate-400 hover:text-white transition-colors group">
+                <Phone className="h-5 w-5 mr-3 text-primary group-hover:scale-110 transition-transform" />
                 <span className="text-sm">+62 21 1234 5678</span>
               </div>
-              <div className="flex items-center text-background/70">
-                <Mail className="h-4 w-4 mr-3 text-primary" />
+              <div className="flex items-center text-slate-400 hover:text-white transition-colors group">
+                <Mail className="h-5 w-5 mr-3 text-primary group-hover:scale-110 transition-transform" />
                 <span className="text-sm">hello@semindo.id</span>
               </div>
             </div>
 
             {/* Social Media */}
-            <div className="flex space-x-4">
+            <div className="flex gap-3">
               {[
                 { Icon: Facebook, href: "#" },
                 { Icon: Instagram, href: "#" },
@@ -123,9 +123,9 @@ const Footer = () => {
                 <a
                   key={index}
                   href={href}
-                  className="p-2 bg-background/10 rounded-lg hover:bg-primary hover:scale-110 transition-all duration-200 group"
+                  className="p-3 bg-slate-800 rounded-xl hover:bg-primary hover:text-white hover:-translate-y-1 transition-all duration-300 group"
                 >
-                  <Icon className="h-5 w-5 text-background/70 group-hover:text-white" />
+                  <Icon className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors" />
                 </a>
               ))}
             </div>
@@ -133,14 +133,14 @@ const Footer = () => {
 
           {/* Footer Links */}
           {footerSections.map((section) => (
-            <div key={section.title}>
-              <h3 className="font-semibold text-background mb-4">{section.title}</h3>
-              <ul className="space-y-3">
+            <div key={section.title} className="space-y-6">
+              <h3 className="font-bold text-white text-lg">{section.title}</h3>
+              <ul className="space-y-4">
                 {section.links.map((link) => (
                   <li key={link.name}>
                     <a
                       href={link.href}
-                      className="text-background/70 hover:text-primary transition-colors duration-200 text-sm"
+                      className="text-slate-400 hover:text-primary hover:pl-2 transition-all duration-200 text-sm block"
                     >
                       {link.name}
                     </a>
@@ -153,20 +153,20 @@ const Footer = () => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-background/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-background/50 text-sm mb-4 md:mb-0">
-              © 2024 Semindo. All rights reserved. Made with ❤️ for Indonesian SMEs.
+      <div className="border-t border-slate-800 bg-slate-950">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-slate-500 text-sm flex items-center gap-1">
+              © 2024 Semindo. Made with <Heart className="h-4 w-4 text-red-500 fill-current animate-pulse" /> for Indonesian SMEs.
             </div>
-            <div className="flex space-x-6 text-sm">
-              <a href="#privacy" className="text-background/50 hover:text-primary transition-colors duration-200">
+            <div className="flex flex-wrap justify-center gap-8 text-sm">
+              <a href="#privacy" className="text-slate-500 hover:text-white transition-colors">
                 Privacy Policy
               </a>
-              <a href="#terms" className="text-background/50 hover:text-primary transition-colors duration-200">
+              <a href="#terms" className="text-slate-500 hover:text-white transition-colors">
                 Terms of Service
               </a>
-              <a href="#cookies" className="text-background/50 hover:text-primary transition-colors duration-200">
+              <a href="#cookies" className="text-slate-500 hover:text-white transition-colors">
                 Cookie Policy
               </a>
             </div>
