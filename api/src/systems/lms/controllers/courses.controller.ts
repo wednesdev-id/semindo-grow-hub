@@ -95,11 +95,26 @@ export class CoursesController {
     async enroll(req: Request, res: Response) {
         try {
             const userId = (req as any).user.userId;
-            const { id } = req.params;
+            const { id } = req.params; // courseId
+
+            console.log('=== ENROLLMENT REQUEST ===');
+            console.log('User ID:', userId);
+            console.log('Course ID:', id);
+
             const enrollment = await coursesService.enroll(userId, id);
+
+            console.log('Enrollment successful:', enrollment.id);
             res.status(201).json({ data: enrollment });
         } catch (error: any) {
-            res.status(400).json({ error: error.message });
+            console.error('=== ENROLLMENT ERROR ===');
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+
+            // Return user-friendly error message
+            res.status(400).json({
+                error: error.message || 'Failed to enroll in course',
+                code: 'ENROLLMENT_FAILED'
+            });
         }
     }
 

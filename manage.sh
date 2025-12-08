@@ -19,19 +19,38 @@ cd "$(dirname "$0")"
 
 # Fungsi untuk menampilkan bantuan
 show_help() {
-    echo -e "${BLUE}Semindo Project Manager${NC}"
+    echo -e "${BLUE}╔══════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║    Semindo Project Manager v2.0         ║${NC}"
+    echo -e "${BLUE}╚══════════════════════════════════════════╝${NC}"
     echo ""
     echo "Penggunaan: ./manage.sh [PERINTAH]"
     echo ""
-    echo "PERINTAH:"
-    echo "  dev     Menjalankan frontend & backend development server"
-    echo "  build   Melakukan build project"
-    echo "  lint    Menjalankan linter"
-    echo "  test    Menjalankan test"
-    echo "  clean   Membersihkan node_modules dan build"
+    echo -e "${GREEN}📦 DOCKER COMMANDS:${NC}"
+    echo "  docker-dev       Menjalankan development environment dengan Docker"
+    echo "  docker-prod      Menjalankan production environment dengan Docker"
+    echo "  docker-build     Build Docker images"
+    echo "  docker-stop      Stop semua Docker containers"
+    echo "  docker-clean     Hapus semua Docker containers dan volumes"
+    echo "  docker-logs      Lihat logs dari Docker containers"
     echo ""
-    echo "CONTOH:"
-    echo "  ./manage.sh dev              # Menjalankan fullstack dev environment"
+    echo -e "${GREEN}💻 LOCAL DEVELOPMENT:${NC}"
+    echo "  dev              Menjalankan frontend & backend (local, tanpa Docker)"
+    echo "  build            Build project (local)"
+    echo "  lint             Menjalankan linter"
+    echo "  test             Menjalankan test"
+    echo "  clean            Membersihkan node_modules dan build"
+    echo ""
+    echo -e "${GREEN}🗄️  DATABASE (Docker):${NC}"
+    echo "  db-migrate       Jalankan database migrations"
+    echo "  db-seed         Seed database dengan sample data"
+    echo "  db-reset        Reset database (WARNING: hapus semua data)"
+    echo ""
+    echo -e "${YELLOW}CONTOH:${NC}"
+    echo "  ./manage.sh docker-dev       # Development dengan Docker"
+    echo "  ./manage.sh dev              # Development lokal (tanpa Docker)"
+    echo "  ./manage.sh docker-logs      # Lihat logs Docker"
+    echo ""
+    echo -e "${BLUE}TIP: Gunakan 'make help' untuk melihat semua Makefile commands${NC}"
 }
 
 # Fungsi untuk memeriksa apakah port digunakan
@@ -149,10 +168,100 @@ run_clean() {
     echo -e "${GREEN}Pembersihan selesai${NC}"
 }
 
+# Docker Commands
+docker_dev() {
+    echo -e "${BLUE}🐳 Starting Docker development environment...${NC}"
+    docker-compose --profile dev up -d
+    echo -e "${GREEN}✅ Development environment started!${NC}"
+    echo -e "${YELLOW}Frontend: http://localhost:8080${NC}"
+    echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
+    echo -e "${YELLOW}Adminer: http://localhost:8081${NC}"
+    echo ""
+    echo -e "${BLUE}Lihat logs dengan: ./manage.sh docker-logs${NC}"
+}
+
+docker_prod() {
+    echo -e "${BLUE}🐳 Starting Docker production environment...${NC}"
+    docker-compose --profile prod up -d
+    echo -e "${GREEN}✅ Production environment started!${NC}"
+    echo -e "${YELLOW}Frontend: http://localhost:8080${NC}"
+    echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
+}
+
+docker_build() {
+    echo -e "${BLUE}🔨 Building Docker images...${NC}"
+    echo "Select environment:"
+    echo "  1) Development"
+    echo "  2) Production"
+    read -p "Enter choice (1 or 2): " choice
+    
+    case $choice in
+        1)
+            docker-compose --profile dev build --no-cache
+            ;;
+        2)
+            docker-compose --profile prod build --no-cache
+            ;;
+        *)
+            echo -e "${RED}Invalid choice${NC}"
+            return 1
+            ;;
+    esac
+    echo -e "${GREEN}✅ Build complete!${NC}"
+}
+
+docker_stop() {
+    echo -e "${BLUE}🛑 Stopping Docker containers...${NC}"
+    docker-compose --profile dev down
+    docker-compose --profile prod down
+    echo -e "${GREEN}✅ All containers stopped!${NC}"
+}
+
+docker_clean() {
+    echo -e "${RED}⚠️  WARNING: This will remove all containers, volumes, and images!${NC}"
+    read -p "Are you sure? (yes/no): " confirm
+    if [ "$confirm" = "yes" ]; then
+        docker-compose --profile dev down -v --rmi all
+        docker-compose --profile prod down -v --rmi all
+        echo -e "${GREEN}✅ Docker cleanup complete!${NC}"
+    else
+        echo -e "${YELLOW}Cancelled.${NC}"
+    fi
+}
+
+docker_logs() {
+    echo -e "${BLUE}📋 Docker logs (Ctrl+C to exit):${NC}"
+    docker-compose logs -f
+}
+
+db_migrate() {
+    echo -e "${BLUE}🔄 Running database migrations...${NC}"
+    docker-compose exec backend npx prisma migrate deploy
+    echo -e "${GREEN}✅ Migrations complete!${NC}"
+}
+
+db_seed() {
+    echo -e "${BLUE}🌱 Seeding database...${NC}"
+    docker-compose exec backend npx prisma db seed
+    echo -e "${GREEN}✅ Database seeded!${NC}"
+}
+
+db_reset() {
+    echo -e "${RED}⚠️  WARNING: This will delete ALL data!${NC}"
+    read -p "Are you sure? (yes/no): " confirm
+    if [ "$confirm" = "yes" ]; then
+        docker-compose exec backend npx prisma migrate reset --force
+        echo -e "${GREEN}✅ Database reset complete!${NC}"
+    else
+        echo -e "${YELLOW}Cancelled.${NC}"
+    fi
+}
+
 # Main logic
 COMMAND=$1
 
 case $COMMAND in
+    # Local development
     dev)
         run_dev
         ;;
@@ -168,6 +277,38 @@ case $COMMAND in
     clean)
         run_clean
         ;;
+    
+    # Docker commands
+    docker-dev)
+        docker_dev
+        ;;
+    docker-prod)
+        docker_prod
+        ;;
+    docker-build)
+        docker_build
+        ;;
+    docker-stop)
+        docker_stop
+        ;;
+    docker-clean)
+        docker_clean
+        ;;
+    docker-logs)
+        docker_logs
+        ;;
+    
+    # Database commands
+    db-migrate)
+        db_migrate
+        ;;
+    db-seed)
+        db_seed
+        ;;
+    db-reset)
+        db_reset
+        ;;
+    
     *)
         show_help
         ;;

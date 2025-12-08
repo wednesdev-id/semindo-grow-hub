@@ -98,6 +98,29 @@ export class CoursesService {
     }
 
     async enroll(userId: string, courseId: string): Promise<Enrollment> {
+        // Check if user is already enrolled
+        const existingEnrollment = await prisma.enrollment.findUnique({
+            where: {
+                userId_courseId: {
+                    userId,
+                    courseId,
+                },
+            },
+        });
+
+        if (existingEnrollment) {
+            throw new Error('You are already enrolled in this course');
+        }
+
+        // Check if course exists
+        const course = await prisma.course.findUnique({
+            where: { id: courseId },
+        });
+
+        if (!course) {
+            throw new Error('Course not found');
+        }
+
         return prisma.enrollment.create({
             data: {
                 userId,
