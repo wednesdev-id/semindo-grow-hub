@@ -189,14 +189,25 @@ export default function LMSCreateCourse() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <Label htmlFor="price">Price (IDR)</Label>
+                            <Label htmlFor="price">Harga Kursus (IDR)</Label>
                             <Input
                                 id="price"
                                 type="number"
-                                placeholder="0 for free"
+                                placeholder="0 untuk gratis"
                                 value={formData.price}
                                 onChange={handleChange}
                             />
+                            {formData.price && Number(formData.price) > 0 && (
+                                <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                                    <p className="text-sm text-blue-800">
+                                        <span className="font-semibold">Total yang akan diterima:</span>{" "}
+                                        Rp {Number(formData.price).toLocaleString('id-ID')}
+                                    </p>
+                                    <p className="text-xs text-blue-600 mt-1">
+                                        *Harga yang ditampilkan adalah harga akhir yang akan dibayar oleh peserta
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
                         <div className="space-y-2">

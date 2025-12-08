@@ -161,13 +161,24 @@ export default function LMSCourseEditor() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="price">Price (Rp)</Label>
+                                        <Label htmlFor="price">Harga Kursus (Rp)</Label>
                                         <Input
                                             id="price"
                                             type="number"
                                             value={course.price}
                                             onChange={(e) => setCourse({ ...course, price: Number(e.target.value) })}
                                         />
+                                        {course.price && course.price > 0 && (
+                                            <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                                                <p className="text-sm text-blue-800">
+                                                    <span className="font-semibold">Total yang akan diterima:</span>{" "}
+                                                    Rp {course.price.toLocaleString('id-ID')}
+                                                </p>
+                                                <p className="text-xs text-blue-600 mt-1">
+                                                    *Harga yang ditampilkan adalah harga akhir yang akan dibayar oleh peserta
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="level">Level</Label>

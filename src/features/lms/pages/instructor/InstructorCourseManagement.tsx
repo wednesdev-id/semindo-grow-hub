@@ -58,9 +58,9 @@ export default function InstructorCourseManagement() {
             className: "font-medium",
         },
         {
-            header: "Price",
+            header: "Harga",
             accessorKey: "price" as const,
-            cell: (item: any) => `Rp ${Number(item.price).toLocaleString('id-ID')} `,
+            cell: (item: any) => item.price === 0 ? "Gratis" : `Rp ${Number(item.price).toLocaleString('id-ID')}`,
         },
         {
             header: "Students",

@@ -174,9 +174,16 @@ export default function CourseDetailPage() {
                             </div>
 
                             <div className="mb-6">
-                                <span className="text-3xl font-bold">
-                                    {course.price === 0 ? "Gratis" : `Rp ${course.price.toLocaleString('id-ID')}`}
-                                </span>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-3xl font-bold">
+                                        {course.price === 0 ? "Gratis" : `Rp ${course.price.toLocaleString('id-ID')}`}
+                                    </span>
+                                    {course.price > 0 && (
+                                        <span className="text-sm text-muted-foreground">
+                                            (Total harga yang akan dibayar)
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-4">
