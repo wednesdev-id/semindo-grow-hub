@@ -20,6 +20,9 @@ import { exportRouter } from './systems/export'
 import { communityRouter } from './systems/community'
 import { programRouter } from './systems/program';
 import { umkmRouter } from './systems/umkm';
+import { rolesRouter } from './systems/roles/routes/roles.routes';
+import { permissionsRouter } from './systems/permissions/routes/permissions.routes';
+import { auditRouter } from './systems/audit/routes/audit.routes';
 ;
 
 export function createServer(): Application {
@@ -64,6 +67,9 @@ export function createServer(): Application {
   app.use('/api/v1/community', communityRouter);
   app.use('/api/v1/programs', programRouter);
   app.use('/api/v1/umkm', umkmRouter);
+  app.use('/api/v1/roles', rolesRouter);
+  app.use('/api/v1/permissions', permissionsRouter);
+  app.use('/api/v1/audit-logs', auditRouter);
 
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));

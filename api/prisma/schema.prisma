@@ -21,6 +21,7 @@ model User {
   fullName      String   @map("full_name")
   phone         String?
   businessName  String?  @map("business_name")
+  profilePictureUrl String? @map("profile_picture_url")
   emailVerified Boolean  @default(false) @map("email_verified")
   isActive      Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at")

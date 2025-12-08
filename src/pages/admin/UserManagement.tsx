@@ -72,16 +72,22 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
             })
             console.log('UserManagement fetchUsers response:', res)
 
-            if (Array.isArray(res.data)) {
-                setUsers(res.data)
-            } else {
-                console.error('Invalid users data:', res.data)
-                setUsers([])
-            }
+            // Handle nested data structure from API
+            // Response is { success: true, data: { data: User[], meta: ... } }
+            const responseData = res.data as any;
 
-            if (res.meta) {
-                setTotalPages(res.meta.lastPage || 1)
+            if (responseData && Array.isArray(responseData.data)) {
+                setUsers(responseData.data)
+                if (responseData.meta) {
+                    setTotalPages(responseData.meta.lastPage || 1)
+                }
+            } else if (Array.isArray(res.data)) {
+                // Fallback if it's just an array
+                setUsers(res.data)
+                setTotalPages(1)
             } else {
+                console.error('Invalid users data:', res)
+                setUsers([])
                 setTotalPages(1)
             }
         } catch (error) {
