@@ -2,10 +2,32 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, Download, FileText } from 'lucide-react';
 import { userService } from '@/services/userService';
 import { Badge } from '@/components/ui/badge';
+
+interface ValidationError {
+    row: number;
+    field: string;
+    message: string;
+}
+
+interface ValidationResult {
+    valid: number;
+    invalid: number;
+    errors?: ValidationError[];
+    preview?: Array<{
+        email: string;
+        fullName: string;
+        role: string;
+    }>;
+}
+
+interface ImportResult {
+    imported: number;
+}
 
 interface ImportUsersDialogProps {
     open: boolean;
@@ -18,7 +40,7 @@ export function ImportUsersDialog({ open, onOpenChange, onSuccess }: ImportUsers
     const [csvContent, setCsvContent] = useState<string>('');
     const [validating, setValidating] = useState(false);
     const [importing, setImporting] = useState(false);
-    const [validation, setValidation] = useState<any>(null);
+    const [validation, setValidation] = useState<ValidationResult | null>(null);
     const { toast } = useToast();
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

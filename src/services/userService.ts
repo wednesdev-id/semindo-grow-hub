@@ -169,8 +169,13 @@ export const userService = {
     },
 
     validateImport: (csvContent: string) =>
-        api.post('/users/import/validate', { csvContent }),
+        api.post<ApiResponse<{
+            valid: number;
+            invalid: number;
+            errors?: Array<{ row: number; field: string; message: string }>;
+            preview?: Array<{ email: string; fullName: string; role: string }>;
+        }>>('/users/import/validate', { csvContent }),
 
     importUsers: (csvContent: string) =>
-        api.post('/users/import', { csvContent }),
+        api.post<ApiResponse<{ imported: number }>>('/users/import', { csvContent }),
 };
