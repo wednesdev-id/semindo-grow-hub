@@ -146,6 +146,36 @@ export class CoursesService {
         });
     }
 
+    async checkEnrollment(userId: string, courseId: string): Promise<{ isEnrolled: boolean; enrollment?: Enrollment }> {
+        const enrollment = await prisma.enrollment.findUnique({
+            where: {
+                userId_courseId: {
+                    userId,
+                    courseId,
+                },
+            },
+            include: {
+                course: {
+                    include: {
+                        modules: {
+                            include: {
+                                lessons: {
+                                    orderBy: { order: 'asc' }
+                                }
+                            },
+                            orderBy: { order: 'asc' }
+                        }
+                    }
+                }
+            }
+        });
+
+        return {
+            isEnrolled: !!enrollment,
+            enrollment: enrollment || undefined
+        };
+    }
+
     async updateProgress(
         userId: string,
         lessonId: string,

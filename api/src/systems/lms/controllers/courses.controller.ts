@@ -94,12 +94,21 @@ export class CoursesController {
 
     async enroll(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user?.userId;
             const { id } = req.params; // courseId
 
             console.log('=== ENROLLMENT REQUEST ===');
             console.log('User ID:', userId);
             console.log('Course ID:', id);
+            console.log('Full user object:', (req as any).user);
+
+            if (!userId) {
+                console.error('=== ENROLLMENT ERROR: No userId ===');
+                return res.status(400).json({
+                    error: 'User ID not found in token',
+                    code: 'MISSING_USER_ID'
+                });
+            }
 
             const enrollment = await coursesService.enroll(userId, id);
 
@@ -130,11 +139,27 @@ export class CoursesController {
 
     async updateProgress(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user?.userId;
             const { id } = req.params; // lessonId
             const { completed } = req.body;
             const progress = await coursesService.updateProgress(userId, id, completed);
             res.json({ data: progress });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async checkEnrollment(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user?.userId;
+            const { id } = req.params; // courseId
+
+            if (!userId) {
+                return res.status(401).json({ error: 'Unauthorized' });
+            }
+
+            const result = await coursesService.checkEnrollment(userId, id);
+            res.json({ data: result });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }

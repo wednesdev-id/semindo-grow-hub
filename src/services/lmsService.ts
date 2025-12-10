@@ -112,6 +112,11 @@ export const lmsService = {
         return response.data;
     },
 
+    checkEnrollmentStatus: async (courseId: string) => {
+        const response = await api.get<{ data: { isEnrolled: boolean; enrollment?: any } }>(`/lms/courses/${courseId}/enrollment-status`);
+        return response.data;
+    },
+
     // Instructor Methods
     getInstructorCourses: async () => {
         const response = await api.get<{ data: Course[] }>('/lms/instructor/courses');

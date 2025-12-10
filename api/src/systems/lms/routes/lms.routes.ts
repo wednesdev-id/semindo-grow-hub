@@ -72,6 +72,7 @@ router.delete('/courses/:id', controller.delete);
 
 // Enrollment & Progress
 router.post('/courses/:id/enroll', controller.enroll);
+router.get('/courses/:id/enrollment-status', controller.checkEnrollment);
 router.get('/my-courses', controller.getMyCourses);
 router.patch('/lessons/:id/progress', controller.updateProgress);
 
