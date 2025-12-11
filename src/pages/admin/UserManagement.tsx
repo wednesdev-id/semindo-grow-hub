@@ -19,10 +19,37 @@ import {
     DialogTrigger,
     DialogFooter,
 } from '@/components/ui/dialog'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Search, Pencil, Trash2 } from 'lucide-react'
+import { Loader2, Plus, Search, Pencil, Trash2, Upload, Download } from 'lucide-react'
+import { ImportUsersDialog } from '@/components/admin/ImportUsersDialog'
+
+// Type-safe API response interfaces
+interface PaginatedUsersResponse {
+    data: User[]
+    meta: {
+        page: number
+        limit: number
+        total: number
+        lastPage: number
+    }
+}
+
+interface ApiResponse<T> {
+    success: boolean
+    data: T
+}
 
 interface UserManagementProps {
     defaultRole?: string;
@@ -36,6 +63,9 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
     const [totalPages, setTotalPages] = useState(1)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
+    const [importDialogOpen, setImportDialogOpen] = useState(false)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [userToDelete, setUserToDelete] = useState<string | null>(null)
     const { toast } = useToast()
 
     const [roleFilter, setRoleFilter] = useState(defaultRole || 'all')
@@ -70,20 +100,20 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                 role: roleFilter === 'all' ? undefined : roleFilter,
                 isActive: statusFilter === 'all' ? undefined : statusFilter
             })
-            console.log('UserManagement fetchUsers response:', res)
 
             // Handle nested data structure from API
-            // Response is { success: true, data: { data: User[], meta: ... } }
-            const responseData = res.data as any;
+            // Response can be { data: User[], meta: ... } or just User[]
+            const responseData = res.data as PaginatedUsersResponse | User[];
 
-            if (responseData && Array.isArray(responseData.data)) {
+            // Check if it's a paginated response
+            if (responseData && typeof responseData === 'object' && 'data' in responseData && Array.isArray(responseData.data)) {
                 setUsers(responseData.data)
                 if (responseData.meta) {
                     setTotalPages(responseData.meta.lastPage || 1)
                 }
-            } else if (Array.isArray(res.data)) {
-                // Fallback if it's just an array
-                setUsers(res.data)
+            } else if (Array.isArray(responseData)) {
+                // Direct array response
+                setUsers(responseData)
                 setTotalPages(1)
             } else {
                 console.error('Invalid users data:', res)
@@ -101,16 +131,22 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
         }
     }
 
+    // Debounced search effect (only for search)
     useEffect(() => {
         const debounce = setTimeout(() => {
+            setPage(1) // Reset to page 1 when searching
             fetchUsers()
         }, 500)
         return () => clearTimeout(debounce)
-    }, [page, search, roleFilter, statusFilter])
+    }, [search])
+
+    // Immediate fetch for page and filters (no debounce)
+    useEffect(() => {
+        fetchUsers()
+    }, [page, roleFilter, statusFilter])
 
     const handleSubmit = async (e: React.FormEvent | React.MouseEvent) => {
         e.preventDefault()
-        console.log('Submitting form:', formData)
 
         // Manual Validation
         if (!formData.email || !formData.fullName) {
@@ -127,16 +163,13 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                 await userService.update(selectedUser.id, formData)
                 toast({ title: 'Success', description: 'User updated successfully' })
             } else {
-                console.log('Creating user...')
                 await userService.create(formData)
-                console.log('User created!')
                 toast({ title: 'Success', description: 'User created successfully' })
             }
             setIsDialogOpen(false)
             fetchUsers()
             resetForm()
         } catch (error: any) {
-            console.error('Form submission error:', error)
             toast({
                 title: 'Error',
                 description: error.message || 'Operation failed',
@@ -146,9 +179,15 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this user?')) return
+        setUserToDelete(id)
+        setDeleteDialogOpen(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!userToDelete) return
+
         try {
-            await userService.delete(id)
+            await userService.delete(userToDelete)
             toast({ title: 'Success', description: 'User deleted successfully' })
             fetchUsers()
         } catch (error: any) {
@@ -157,6 +196,9 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                 description: error.message || 'Delete failed',
                 variant: 'destructive',
             })
+        } finally {
+            setDeleteDialogOpen(false)
+            setUserToDelete(null)
         }
     }
 
@@ -196,81 +238,132 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
         <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold tracking-tight">{getPageTitle()}</h1>
-                <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                    setIsDialogOpen(open)
-                    if (!open) resetForm()
-                }}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add {defaultRole ? defaultRole.toUpperCase() : 'User'}
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>{selectedUser ? 'Edit User' : 'Add New User'}</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    disabled={!!selectedUser} // Disable email edit
-                                    required
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="fullName">Full Name</Label>
-                                <Input
-                                    id="fullName"
-                                    value={formData.fullName}
-                                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            {!selectedUser && (
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        onClick={() => setImportDialogOpen(true)}
+                    >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Import CSV
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={async () => {
+                            try {
+                                await userService.exportUsers({
+                                    role: roleFilter === 'all' ? undefined : roleFilter,
+                                    isActive: statusFilter === 'all' ? undefined : statusFilter,
+                                    search: search || undefined
+                                })
+                                toast({
+                                    title: 'Success',
+                                    description: 'Users exported successfully'
+                                })
+                            } catch (err: any) {
+                                toast({
+                                    title: 'Error',
+                                    description: err.message || 'Export failed',
+                                    variant: 'destructive'
+                                })
+                            }
+                        }}
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        Export CSV
+                    </Button>
+                    <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                        setIsDialogOpen(open)
+                        if (!open) resetForm()
+                    }}>
+                        <DialogTrigger asChild>
+                            <Button>
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add {defaultRole ? defaultRole.toUpperCase() : 'User'}
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>{selectedUser ? 'Edit User' : 'Add New User'}</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        disabled={false} // Allow email editing
+                                        required
+                                    />
+                                    {selectedUser && (
+                                        <p className="text-xs text-muted-foreground">
+                                            ⚠️ Changing email will require re-verification
+                                        </p>
+                                    )}
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="fullName">Full Name</Label>
+                                    <Input
+                                        id="fullName"
+                                        value={formData.fullName}
+                                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="password">
+                                        Password
+                                        {selectedUser && <span className="text-muted-foreground"> (optional)</span>}
+                                    </Label>
                                     <Input
                                         id="password"
                                         type="password"
                                         value={formData.password}
                                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        required
+                                        placeholder={selectedUser ? "Leave blank to keep current password" : ""}
+                                        required={!selectedUser}
                                     />
                                 </div>
-                            )}
-                            <div className="grid gap-2">
-                                <Label htmlFor="role">Role</Label>
-                                <select
-                                    id="role"
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                    disabled={!!defaultRole} // Disable if defaultRole is set
-                                >
-                                    <option value="umkm">UMKM</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="mentor">Mentor</option>
-                                </select>
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="businessName">Business Name (Optional)</Label>
-                                <Input
-                                    id="businessName"
-                                    value={formData.businessName}
-                                    onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                                />
-                            </div>
-                            <DialogFooter>
-                                <Button type="button" onClick={(e) => handleSubmit(e as any)}>Save</Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="role">Role</Label>
+                                    <select
+                                        id="role"
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={formData.role}
+                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                        disabled={!!defaultRole} // Disable if defaultRole is set
+                                    >
+                                        <option value="umkm">UMKM</option>
+                                        <option value="admin">Admin</option>
+                                        <option value="mentor">Mentor</option>
+                                    </select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="businessName">Business Name (Optional)</Label>
+                                    <Input
+                                        id="businessName"
+                                        value={formData.businessName}
+                                        onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="phone">Phone (Optional)</Label>
+                                    <Input
+                                        id="phone"
+                                        type="tel"
+                                        placeholder="+62812345678"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    />
+                                </div>
+                                <DialogFooter>
+                                    <Button type="button" onClick={(e) => handleSubmit(e as any)}>Save</Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4">
@@ -370,6 +463,70 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Pagination UI */}
+            {!loading && users.length > 0 && (
+                <div className="flex items-center justify-between px-2 py-4">
+                    <div className="text-sm text-muted-foreground">
+                        Page {page} of {totalPages}
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                        >
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Import Users Dialog */}
+            <ImportUsersDialog
+                open={importDialogOpen}
+                onOpenChange={setImportDialogOpen}
+                onSuccess={() => {
+                    fetchUsers()
+                    toast({
+                        title: 'Success',
+                        description: 'Users imported successfully'
+                    })
+                }}
+            />
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the user
+                            and remove their data from the system.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setUserToDelete(null)}>
+                            Cancel
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={confirmDelete}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }

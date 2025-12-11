@@ -1,9 +1,18 @@
 import { PrismaClient } from '@prisma/client'
+import { seedPermissions } from './seeds/permissions.seed'
+import { seedRolePermissions } from './seeds/role-permissions.seed'
 
 const prisma = new PrismaClient()
 
 async function main() {
-    // 1. Create Roles
+    // ============================================
+    // STEP 1: Seed Permissions (85 permissions)
+    // ============================================
+    await seedPermissions()
+
+    // ============================================
+    // STEP 2: Create Roles
+    // ============================================
     const roles = [
         { name: 'umkm', displayName: 'UMKM', description: 'UMKM Business Owner' },
         { name: 'admin', displayName: 'Administrator', description: 'System Administrator' },
@@ -85,7 +94,14 @@ async function main() {
         }
     }
 
-    // 4. Create Assessment Templates & Questions
+    // ============================================
+    // STEP 3: Assign Permissions to Roles (NEW COMPREHENSIVE SYSTEM)
+    // ============================================
+    await seedRolePermissions()
+
+    // ============================================
+    // STEP 4: Create Assessment Templates & Questions
+    // ============================================
     const generalTemplate = await prisma.assessmentTemplate.upsert({
         where: { id: 'default-template' }, // Use a fixed ID for simplicity in seed
         update: {},

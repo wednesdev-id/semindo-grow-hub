@@ -67,6 +67,14 @@ export function ImportUsersDialog({ open, onOpenChange, onSuccess }: ImportUsers
             // Auto-validate
             await validateFile(content);
         };
+        reader.onerror = () => {
+            toast({
+                title: 'Error',
+                description: 'Failed to read file',
+                variant: 'destructive',
+            });
+            setFile(null);
+        };
         reader.readAsText(selectedFile);
     };
 
