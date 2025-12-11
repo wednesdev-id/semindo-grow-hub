@@ -17,12 +17,24 @@ import { lmsService } from "@/services/lmsService";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 
+// Helper function to generate slug from title
+const generateSlug = (title: string): string => {
+    return title
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+};
+
 export default function LMSCreateCourse() {
     const { toast } = useToast();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [isCustomCategory, setIsCustomCategory] = useState(false);
     const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+    const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
     const [formData, setFormData] = useState({
         title: "",
         slug: "",
@@ -47,7 +59,18 @@ export default function LMSCreateCourse() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { id, value } = e.target;
-        setFormData((prev) => ({ ...prev, [id]: value }));
+
+        // Auto-generate slug from title if slug hasn't been manually edited
+        if (id === 'title' && !isSlugManuallyEdited) {
+            const autoSlug = generateSlug(value);
+            setFormData((prev) => ({ ...prev, title: value, slug: autoSlug }));
+        } else if (id === 'slug') {
+            // Mark slug as manually edited when user directly edits it
+            setIsSlugManuallyEdited(true);
+            setFormData((prev) => ({ ...prev, [id]: value }));
+        } else {
+            setFormData((prev) => ({ ...prev, [id]: value }));
+        }
     };
 
     const handleSelectChange = (field: string, value: string) => {
@@ -97,7 +120,21 @@ export default function LMSCreateCourse() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="slug">Slug (URL)</Label>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="slug">Slug (URL)</Label>
+                            {isSlugManuallyEdited && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsSlugManuallyEdited(false);
+                                        setFormData((prev) => ({ ...prev, slug: generateSlug(prev.title) }));
+                                    }}
+                                    className="text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                    Reset to auto-generate
+                                </button>
+                            )}
+                        </div>
                         <Input
                             id="slug"
                             placeholder="e.g. digital-marketing-101"
@@ -105,6 +142,11 @@ export default function LMSCreateCourse() {
                             value={formData.slug}
                             onChange={handleChange}
                         />
+                        <p className="text-xs text-gray-500">
+                            {isSlugManuallyEdited
+                                ? "Manual slug (will not auto-update from title)"
+                                : "Auto-generated from title (editable)"}
+                        </p>
                     </div>
 
                     <div className="space-y-2">

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CustomYouTubePlayer } from './CustomYouTubePlayer';
 
 interface ResourcePlayerProps {
     type: string; // video, pdf, slide, link, article
@@ -7,8 +8,33 @@ interface ResourcePlayerProps {
     title?: string;
 }
 
+// Helper function to check if URL is a YouTube URL
+const isYouTubeUrl = (url: string): boolean => {
+    return url.includes('youtube.com') || url.includes('youtu.be');
+};
+
+// Helper function to extract YouTube video ID from URL
+const getYouTubeVideoId = (url: string): string | null => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+
+    if (match && match[2].length === 11) {
+        return match[2];
+    }
+    return null;
+};
+
 export const ResourcePlayer: React.FC<ResourcePlayerProps> = ({ type, url, content, title }) => {
     if (type === 'video' && url) {
+        // Check if it's a YouTube URL
+        if (isYouTubeUrl(url)) {
+            const videoId = getYouTubeVideoId(url);
+            if (videoId) {
+                return <CustomYouTubePlayer videoId={videoId} title={title} />;
+            }
+        }
+
+        // For non-YouTube videos (direct video files)
         return (
             <div className="aspect-video w-full bg-black rounded-lg overflow-hidden shadow-lg">
                 <video
