@@ -47,7 +47,14 @@ const AssessmentHistoryPage = lazy(() => import("./features/assessment/pages/Ass
 const AssessmentWizardPage = lazy(() => import("./features/assessment/pages/AssessmentWizardPage"));
 const AssessmentResultsPage = lazy(() => import("./features/assessment/pages/AssessmentResultsPage"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
+const MyProfile = lazy(() => import("./pages/profile/MyProfile"));
+const ChangePassword = lazy(() => import("./pages/profile/ChangePassword"));
 const UMKMProfileWizard = lazy(() => import("./pages/profile/UMKMProfileWizard"));
+const RoleManagement = lazy(() => import("./pages/admin/RoleManagement"));
+const PermissionManagement = lazy(() => import("./pages/admin/PermissionManagement"));
+const RoleDetail = lazy(() => import("./pages/admin/RoleDetail"));
+const RolePermissionMatrix = lazy(() => import("./pages/admin/RolePermissionMatrix"));
+const AuditLogs = lazy(() => import("./pages/admin/AuditLogs"));
 const CourseCatalogPage = lazy(() => import("./features/lms/pages/CourseCatalogPage"));
 const MyCoursesPage = lazy(() => import("./features/lms/pages/MyCoursesPage"));
 const CourseDetailPage = lazy(() => import("./features/lms/pages/CourseDetailPage"));
@@ -74,6 +81,10 @@ const ProgramCreate = lazy(() => import("./pages/programs/ProgramCreate"));
 const UMKMListPage = lazy(() => import("./pages/admin/umkm/UMKMListPage"));
 const UMKMFormPage = lazy(() => import("./pages/admin/umkm/UMKMFormPage"));
 const UMKMDetailPage = lazy(() => import("./pages/admin/umkm/UMKMDetailPage"));
+const SellerDashboard = lazy(() => import("./features/marketplace/pages/admin/SellerDashboard").then(module => ({ default: module.SellerDashboard })));
+const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
+const MarketplaceProductList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductList"));
+const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/ProductUploadPage"));
 
 const queryClient = new QueryClient();
 
@@ -160,6 +171,7 @@ const App = () => {
                       <Route path="umkm/:id" element={<UMKMDetailPage />} />
                       <Route path="programs" element={<ProgramListPage />} />
                       <Route path="programs/:id" element={<ProgramDetailPage />} />
+                      <Route path="marketplace" element={<MarketplaceAdminDashboard />} />
                     </Route>
 
                     {/* Dashboard Routes with Sidebar Layout */}
@@ -195,6 +207,13 @@ const App = () => {
                       <Route path="/admin/users" element={<UserManagement />} />
                       <Route path="/users/all" element={<UserManagement />} />
                       <Route path="/users/roles" element={<UserRoleManagement />} />
+
+                      {/* Role & Permission Management */}
+                      <Route path="/admin/roles" element={<RoleManagement />} />
+                      <Route path="/admin/roles/:id" element={<RoleDetail />} />
+                      <Route path="/admin/permissions" element={<PermissionManagement />} />
+                      <Route path="/admin/role-permission-matrix" element={<RolePermissionMatrix />} />
+                      <Route path="/admin/audit-logs" element={<AuditLogs />} />
                       <Route path="/users/umkm" element={<UserManagement defaultRole="umkm" />} />
                       <Route path="/users/mentors" element={<UserManagement defaultRole="mentor" />} />
                       <Route path="/users/trainers" element={<UserManagement defaultRole="trainer" />} />
@@ -344,6 +363,9 @@ const App = () => {
                       <Route path="/lms/stats" element={<LMSStats />} />
 
                       {/* Marketplace Manager */}
+                      <Route path="/marketplace/dashboard" element={<SellerDashboard />} />
+                      <Route path="/dashboard/marketplace/products" element={<MarketplaceProductList />} />
+                      <Route path="/dashboard/marketplace/products/new" element={<ProductUploadPage />} />
                       <Route path="/marketplace/products" element={<ProductListPage />} />
                       <Route path="/marketplace/product/:slug" element={<ProductDetailPage />} />
                       <Route path="/marketplace/verification" element={<MarketplaceProductVerification />} />
@@ -654,7 +676,11 @@ const App = () => {
                       <Route path="/assessment/history" element={<AssessmentHistoryPage />} />
                       <Route path="/assessment/:id" element={<AssessmentWizardPage />} />
                       <Route path="/assessment/results/:id" element={<AssessmentResultsPage />} />
-                      <Route path="/profile" element={<UMKMProfileWizard />} />
+
+                      {/* Profile Routes */}
+                      <Route path="/profile" element={<MyProfile />} />
+                      <Route path="/profile/change-password" element={<ChangePassword />} />
+                      <Route path="/profile/umkm" element={<UMKMProfileWizard />} />
                       <Route path="/consultation" element={<FeaturePreviewPage
                         title="Consultation Management"
                         description="Pusat manajemen layanan konsultasi."

@@ -18,7 +18,7 @@ export interface Category {
 }
 
 export interface Product {
-    id: number;
+    id: string;
     name: string;
     slug: string;
     seller: string;
@@ -28,48 +28,169 @@ export interface Product {
     rating: number;
     reviews: number;
     image: string;
+    images?: string[];
     category: string;
     badges: string[];
     description: string;
+    stock: number;
+    externalLinks?: { shopee?: string; tokopedia?: string };
 }
 
-// Mock Data
+export interface OrderItem {
+    id: string;
+    product: Product;
+    quantity: number;
+    price: string;
+}
+
+export interface Order {
+    id: string;
+    totalAmount: string;
+    status: string;
+    paymentLink?: string;
+    paymentStatus: string;
+    createdAt: string;
+    items: OrderItem[];
+}
+
 export const marketplaceService = {
     getCategories: async (): Promise<Category[]> => {
-        // Currently hardcoded as backend doesn't have category endpoint yet, but that's fine for now
+        // Still mock for now as we don't have a category endpoint
         return [
-            { id: "kuliner", name: "Kuliner & F&B", count: 245 },
-            { id: "fashion", name: "Fashion & Tekstil", count: 189 },
-            { id: "kerajinan", name: "Kerajinan Tangan", count: 156 },
-            { id: "teknologi", name: "Teknologi & Digital", count: 98 },
-            { id: "kesehatan", name: "Kesehatan & Kecantikan", count: 134 },
-            { id: "pertanian", name: "Pertanian & Organik", count: 87 },
-            { id: "otomotif", name: "Otomotif & Spare Part", count: 76 },
-            { id: "elektronik", name: "Elektronik & Gadget", count: 112 }
+            { id: "Kuliner", name: "Kuliner & F&B", count: 245 },
+            { id: "Fashion", name: "Fashion & Tekstil", count: 189 },
+            { id: "Kerajinan", name: "Kerajinan Tangan", count: 156 },
+            { id: "Teknologi", name: "Teknologi & Digital", count: 98 },
+            { id: "Kesehatan", name: "Kesehatan & Kecantikan", count: 134 },
+            { id: "Pertanian", name: "Pertanian & Organik", count: 87 },
+            { id: "Otomotif", name: "Otomotif & Spare Part", count: 76 },
+            { id: "Elektronik", name: "Elektronik & Gadget", count: 112 }
         ];
     },
 
     getFeaturedProducts: async (): Promise<Product[]> => {
         const response = await api.get<{ data: any[] }>('/marketplace/products');
-        // Map backend response to frontend Product interface
         return response.data.map((p: any) => ({
             id: p.id,
             name: p.title,
             slug: p.slug,
             seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-            location: p.seller?.city || 'Indonesia', // Assuming location is in seller profile
+            location: p.seller?.city || 'Indonesia',
             price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-            rating: 0, // Not yet implemented
-            reviews: 0, // Not yet implemented
+            rating: 0,
+            reviews: 0,
             image: p.images?.[0] || "/api/placeholder/300/200",
+            images: p.images || [],
             category: p.category,
             badges: [],
-            description: p.description || ''
+            description: p.description || '',
+            stock: p.stock,
+            externalLinks: p.externalLinks
         }));
     },
 
+    getProductBySlug: async (slug: string): Promise<Product | undefined> => {
+        try {
+            const response = await api.get<{ data: any }>(`/marketplace/products/${slug}`);
+            const p = response.data;
+            return {
+                id: p.id,
+                name: p.title,
+                slug: p.slug,
+                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
+                location: p.seller?.city || 'Indonesia',
+                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                rating: 0,
+                reviews: 0,
+                image: p.images?.[0] || "/api/placeholder/300/200",
+                images: p.images || [],
+                category: p.category,
+                badges: [],
+                description: p.description || '',
+                stock: p.stock,
+                externalLinks: p.externalLinks
+            };
+        } catch (error) {
+            return undefined;
+        }
+    },
+
+    uploadImage: async (file: File) => {
+        const formData = new FormData();
+        formData.append('image', file);
+        const response = await api.post<{ url: string }>('/marketplace/upload/image', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.url;
+    },
+
+    uploadMultipleImages: async (files: File[]) => {
+        const formData = new FormData();
+        files.forEach(file => formData.append('images', file));
+        const response = await api.post<{ urls: string[] }>('/marketplace/upload/images', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        return response.urls;
+    },
+
+    createProduct: async (data: any) => {
+        // Data should already contain image URLs if uploaded separately
+        return api.post('/marketplace/products', data);
+    },
+
+    createOrder: async (items: { productId: string; quantity: number }[]) => {
+        return api.post('/marketplace/orders', { items });
+    },
+
+    getMyOrders: async () => {
+        const response = await api.get<{ data: any[] }>('/marketplace/orders');
+        return response.data;
+    },
+
+    getAllOrders: async () => {
+        // Admin endpoint - reusing getMyOrders for now or need specific admin endpoint
+        // The UI calls getAllOrders. Let's map it to getMyOrders for seller view
+        const response = await api.get<{ data: any[] }>('/marketplace/orders');
+        return response.data.map((o: any) => ({
+            id: o.id,
+            customer: o.user?.fullName || 'Unknown',
+            date: new Date(o.createdAt).toLocaleDateString(),
+            total: `Rp ${Number(o.totalAmount).toLocaleString('id-ID')}`,
+            status: o.status,
+            items: o.items.length
+        }));
+    },
+
+    syncStock: async (productId: string) => {
+        return api.post(`/marketplace/products/${productId}/sync`, {});
+    },
+
+    getMyProducts: async (): Promise<Product[]> => {
+        const response = await api.get<{ data: any[] }>('/marketplace/my-products');
+        return response.data.map((p: any) => ({
+            id: p.id,
+            name: p.title,
+            slug: p.slug,
+            seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
+            location: p.seller?.city || 'Indonesia',
+            price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+            rating: 0,
+            reviews: 0,
+            image: p.images?.[0] || "/api/placeholder/300/200",
+            images: p.images || [],
+            category: p.category,
+            badges: [],
+            description: p.description || '',
+            stock: p.stock,
+            externalLinks: p.externalLinks
+        }));
+    },
+
+    deleteProduct: async (id: string) => {
+        return api.delete(`/marketplace/products/${id}`);
+    },
+
     getTopSellers: async (): Promise<Seller[]> => {
-        // Mock for now as backend doesn't have top sellers endpoint
         return [
             {
                 id: "1",
@@ -104,32 +225,7 @@ export const marketplaceService = {
         ];
     },
 
-    getProductBySlug: async (slug: string): Promise<Product | undefined> => {
-        try {
-            const response = await api.get<{ data: any }>(`/marketplace/products/${slug}`);
-            const p = response.data;
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-                location: p.seller?.city || 'Indonesia',
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: 0,
-                reviews: 0,
-                image: p.images?.[0] || "/api/placeholder/300/200",
-                category: p.category,
-                badges: [],
-                description: p.description || ''
-            };
-        } catch (error) {
-            return undefined;
-        }
-    },
-
-    // Admin Methods
     getAdminStats: async () => {
-        // Mock implementation
         return {
             totalSales: 150000000,
             totalOrders: 450,
@@ -138,74 +234,61 @@ export const marketplaceService = {
             salesTrend: { value: 15, positive: true },
             ordersTrend: { value: 8, positive: true },
             productsTrend: { value: 5, positive: true },
-            verificationTrend: { value: 2, positive: false }, // Decreased pending is good? Or increased load? Let's say trend is count change.
+            verificationTrend: { value: 2, positive: false },
         };
-        // const response = await api.get<{ data: any }>('/marketplace/admin/stats');
-        // return response.data;
     },
 
-    getAllOrders: async () => {
-        // Mock implementation
-        return [
-            {
-                id: "ORD-001",
-                customer: "Budi Santoso",
-                date: "2024-03-15",
-                total: "Rp 450.000",
-                status: "completed",
-                items: 3,
-            },
-            {
-                id: "ORD-002",
-                customer: "Siti Aminah",
-                date: "2024-03-14",
-                total: "Rp 1.250.000",
-                status: "processing",
-                items: 1,
-            },
-            {
-                id: "ORD-003",
-                customer: "Rudi Hartono",
-                date: "2024-03-14",
-                total: "Rp 75.000",
-                status: "cancelled",
-                items: 2,
-            },
-        ];
-        // const response = await api.get<{ data: any[] }>('/marketplace/admin/orders');
-        // return response.data;
+    // Cart API
+    getCart: async () => {
+        const response = await api.get<{ data: any }>('/marketplace/cart');
+        return response.data;
     },
 
-    getPendingProducts: async () => {
-        // Mock implementation
-        return [
-            {
-                id: 1,
-                name: "Kopi Gayo Premium",
-                seller: "CV Kopi Nusantara",
-                category: "Kuliner",
-                price: "Rp 85.000",
-                submittedAt: "2024-03-15",
-                status: "pending",
-            },
-            {
-                id: 2,
-                name: "Batik Tulis Solo",
-                seller: "Batik Heritage",
-                category: "Fashion",
-                price: "Rp 450.000",
-                submittedAt: "2024-03-14",
-                status: "pending",
-            },
-        ];
-        // const response = await api.get<{ data: any[] }>('/marketplace/admin/products/pending');
-        // return response.data;
+    addToCart: async (productId: string, quantity: number, variantId?: string) => {
+        const response = await api.post<{ data: any }>('/marketplace/cart/items', { productId, quantity, variantId });
+        return response.data;
     },
 
-    verifyProduct: async (productId: number, approved: boolean) => {
-        // Mock implementation
-        return { success: true };
-        // const response = await api.post(`/marketplace/admin/products/${productId}/verify`, { approved });
-        // return response.data;
+    updateCartItem: async (itemId: string, quantity: number) => {
+        const response = await api.patch<{ data: any }>(`/marketplace/cart/items/${itemId}`, { quantity });
+        return response.data;
+    },
+
+    removeFromCart: async (itemId: string) => {
+        return api.delete(`/marketplace/cart/items/${itemId}`);
+    },
+
+    clearCart: async () => {
+        return api.delete('/marketplace/cart');
+    },
+
+    updateOrderStatus: async (orderId: string, status: string) => {
+        const response = await api.patch<{ data: any }>(`/marketplace/orders/${orderId}/status`, { status });
+        return response.data;
+    },
+
+    async updateShipment(orderId: string, trackingNumber: string, courier: string) {
+        const response = await api.patch<{ data: any }>(`/marketplace/orders/${orderId}/shipment`, { trackingNumber, courier });
+        return response.data;
+    },
+
+    async getSellerAnalytics() {
+        const response = await api.get<{ data: any }>('/marketplace/analytics/seller');
+        return response.data;
+    },
+
+    async getAdminAnalytics() {
+        const response = await api.get<{ data: any }>('/marketplace/analytics/admin');
+        return response.data;
+    },
+
+    async getPendingProducts() {
+        const response = await api.get<{ data: any[] }>('/marketplace/products/pending');
+        return response.data;
+    },
+
+    async verifyProduct(id: string, approved: boolean) {
+        const response = await api.post<{ data: any }>(`/marketplace/products/${id}/verify`, { approved });
+        return response.data;
     }
 };

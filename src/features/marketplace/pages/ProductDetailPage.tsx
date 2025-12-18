@@ -22,6 +22,30 @@ export default function ProductDetailPage() {
     });
 
     const handleAddToCart = () => {
+        if (!product) return;
+
+        const storedCart = localStorage.getItem('marketplace_cart');
+        let cartItems = storedCart ? JSON.parse(storedCart) : [];
+
+        const existingItemIndex = cartItems.findIndex((item: any) => item.id === product.id);
+
+        if (existingItemIndex >= 0) {
+            cartItems[existingItemIndex].quantity += 1;
+        } else {
+            cartItems.push({
+                id: product.id,
+                name: product.name,
+                price: Number(product.price.replace(/[^0-9]/g, '')), // Extract number from "Rp 10.000" string
+                image: product.image,
+                quantity: 1,
+                seller: product.seller
+            });
+        }
+
+        localStorage.setItem('marketplace_cart', JSON.stringify(cartItems));
+        // Dispatch event for header to update (if header listens to storage)
+        window.dispatchEvent(new Event('storage'));
+
         toast.success("Produk berhasil ditambahkan ke keranjang!");
     };
 

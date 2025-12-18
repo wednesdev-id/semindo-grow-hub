@@ -8,14 +8,10 @@ export class MarketplaceController {
     async createProduct(req: Request, res: Response) {
         try {
             const userId = (req as any).user.userId;
-            const data: Prisma.ProductCreateInput = {
-                ...req.body,
-                seller: { connect: { id: userId } },
-                slug: req.body.title.toLowerCase().replace(/ /g, '-') + '-' + Date.now(),
-            };
-            const product = await marketplaceService.createProduct(data);
+            const product = await marketplaceService.createProduct(userId, req.body);
             res.status(201).json({ data: product });
         } catch (error: any) {
+            console.error('[MarketplaceController] createProduct error:', error);
             res.status(400).json({ error: error.message });
         }
     }
@@ -113,6 +109,7 @@ export class MarketplaceController {
             const products = await marketplaceService.getMyProducts(userId);
             res.json({ data: products });
         } catch (error: any) {
+            console.error('[MarketplaceController] getMyProducts error:', error);
             res.status(400).json({ error: error.message });
         }
     }
@@ -132,8 +129,71 @@ export class MarketplaceController {
         try {
             const { id } = req.params;
             const { status } = req.body;
-            const order = await marketplaceService.updateOrderStatus(id, status);
+            const userId = (req as any).user.userId;
+
+            const order = await marketplaceService.updateOrderStatus(id, status, userId);
             res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async updateShipment(req: Request, res: Response) {
+        try {
+            const { id } = req.params; // Order ID
+            const { trackingNumber, courier } = req.body;
+
+            const order = await marketplaceService.updateShipment(id, trackingNumber, courier);
+            res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async syncStock(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const result = await marketplaceService.syncStock(id);
+            res.json({ data: result });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+    async getSellerAnalytics(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const data = await marketplaceService.getSellerAnalytics(userId);
+            res.json({ data });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getAdminAnalytics(req: Request, res: Response) {
+        try {
+            // In a real app, check for admin role here
+            const data = await marketplaceService.getAdminAnalytics();
+            res.json({ data });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+    async getPendingProducts(req: Request, res: Response) {
+        try {
+            // In real app, check for admin role
+            const products = await marketplaceService.getPendingProducts();
+            res.json({ data: products });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async verifyProduct(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { approved } = req.body;
+            const product = await marketplaceService.verifyProduct(id, approved);
+            res.json({ data: product });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }

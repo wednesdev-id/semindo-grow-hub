@@ -5,6 +5,7 @@ export interface User {
   fullName: string
   phone?: string
   businessName?: string
+  profilePictureUrl?: string
   isActive: boolean
   isVerified: boolean
   emailVerifiedAt?: Date

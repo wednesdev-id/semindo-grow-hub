@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
 
-const allowedOrigins = [
-  'http://localhost:8080',
-  'http://localhost:8081'
+// Read from environment variable, fallback to development defaults
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) || [
+  'http://localhost:5174',
+  'http://localhost:3000'
 ]
 
 export function corsMiddleware(req: Request, res: Response, next: NextFunction) {
