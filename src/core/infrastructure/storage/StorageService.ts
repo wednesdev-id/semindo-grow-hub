@@ -1,40 +1,42 @@
 export class StorageService {
   private prefix: string
   private encryptionKey?: string
+  private storage: Storage
 
-  constructor(config: { prefix: string; encryptionKey?: string }) {
+  constructor(config: { prefix: string; encryptionKey?: string; storage?: Storage }) {
     this.prefix = config.prefix
     this.encryptionKey = config.encryptionKey
+    this.storage = config.storage || localStorage
   }
 
   async setItem<T>(key: string, value: T): Promise<void> {
     const storageKey = `${this.prefix}${key}`
     const storageValue = this.encryptionKey ? this.encrypt(JSON.stringify(value)) : JSON.stringify(value)
-    localStorage.setItem(storageKey, storageValue)
+    this.storage.setItem(storageKey, storageValue)
   }
 
   async getItem<T>(key: string): Promise<T | null> {
     const storageKey = `${this.prefix}${key}`
-    const storageValue = localStorage.getItem(storageKey)
+    const storageValue = this.storage.getItem(storageKey)
     if (!storageValue) return null
     try {
       const value = this.encryptionKey ? JSON.parse(this.decrypt(storageValue)) : JSON.parse(storageValue)
       return value as T
     } catch {
-      return null
+      return storageValue as unknown as T
     }
   }
 
   async removeItem(key: string): Promise<void> {
     const storageKey = `${this.prefix}${key}`
-    localStorage.removeItem(storageKey)
+    this.storage.removeItem(storageKey)
   }
 
   async clear(): Promise<void> {
-    const keys = Object.keys(localStorage)
+    const keys = Object.keys(this.storage)
     for (const key of keys) {
       if (key.startsWith(this.prefix)) {
-        localStorage.removeItem(key)
+        this.storage.removeItem(key)
       }
     }
   }

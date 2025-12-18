@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useEffect, useMemo, useState } from "react";
 import { AuthProvider } from "@core/auth/hooks/useAuth";
-import { ServiceContainer, initializeServices } from "@core/application";
+import { ServiceContainer, bootstrapApplication } from "@core/application";
 import { AuthService } from "@core/auth/services/AuthService";
 import { TokenService } from "@core/auth/services/TokenService";
 import AppLayout from "./layout/AppLayout";
@@ -64,9 +64,11 @@ const ProductListPage = lazy(() => import("./features/marketplace/pages/ProductL
 const LoanApplicationForm = lazy(() => import("./pages/financing/LoanApplicationForm"));
 
 // New Dashboard Pages
+const InstructorCourseManagement = lazy(() => import("./features/lms/pages/instructor/InstructorCourseManagement"));
 const LMSStats = lazy(() => import("./features/lms/pages/admin/LMSStats"));
 const LMSCreateCourse = lazy(() => import("./features/lms/pages/admin/LMSCreateCourse"));
-const LMSModuleManagement = lazy(() => import("./features/lms/pages/admin/LMSModuleManagement"));
+const CourseCategoryManagement = lazy(() => import('./features/lms/pages/admin/CourseCategoryManagement'));
+const LMSCourseEditor = lazy(() => import("./features/lms/pages/admin/LMSCourseEditor"));
 const MarketplaceStats = lazy(() => import("./features/marketplace/pages/admin/MarketplaceStats"));
 const MarketplaceOrderList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceOrderList"));
 const MarketplaceProductVerification = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductVerification"));
@@ -99,7 +101,7 @@ const App = () => {
   useEffect(() => {
     console.log('App: Initializing services...')
     let mounted = true;
-    initializeServices().then(() => {
+    bootstrapApplication().then(() => {
       console.log('App: Services initialized')
       if (mounted) setReady(true);
     }).catch((err) => {
@@ -173,7 +175,11 @@ const App = () => {
                     </Route>
 
                     {/* Dashboard Routes with Sidebar Layout */}
-                    <Route element={<AppLayout />}>
+                    <Route element={
+                      <ProtectedRoute>
+                        <AppLayout />
+                      </ProtectedRoute>
+                    }>
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/dashboard/overview" element={<Dashboard />} />
                       <Route path="/dashboard/activity" element={<FeaturePreviewPage
@@ -325,7 +331,10 @@ const App = () => {
                       <Route path="/lms/my-courses" element={<MyCoursesPage />} />
                       <Route path="/lms/courses/:slug" element={<CourseDetailPage />} />
                       <Route path="/lms/create" element={<LMSCreateCourse />} />
-                      <Route path="/lms/modules" element={<LMSModuleManagement />} />
+                      <Route path="/lms/admin/create" element={<LMSCreateCourse />} />
+                      <Route path="/lms/admin/categories" element={<CourseCategoryManagement />} />
+                      <Route path="/lms/instructor/courses" element={<InstructorCourseManagement />} />
+                      <Route path="/lms/courses/:slug/edit" element={<LMSCourseEditor />} />
                       <Route path="/lms/videos" element={<FeaturePreviewPage
                         title="Video Library"
                         description="Pusat penyimpanan dan manajemen video pembelajaran."

@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 export default function AdminDashboard() {
-    const { data, isLoading } = useQuery({
+    const { data, isLoading, error } = useQuery({
         queryKey: ['admin-dashboard-overview'],
-        queryFn: dashboardService.getAdminOverview
+        queryFn: dashboardService.getAdminOverview,
+        retry: 1, // Only retry once
     });
 
     if (isLoading) {
@@ -26,6 +27,22 @@ export default function AdminDashboard() {
                     <Skeleton className="col-span-4 h-[400px] rounded-xl" />
                     <Skeleton className="col-span-3 h-[400px] rounded-xl" />
                 </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        console.error('[AdminDashboard] Error:', error);
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <AlertCircle className="h-12 w-12 text-destructive" />
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold">Failed to load dashboard</h3>
+                    <p className="text-sm text-muted-foreground">
+                        {error instanceof Error ? error.message : 'An error occurred while fetching dashboard data'}
+                    </p>
+                </div>
+                <Button onClick={() => window.location.reload()}>Refresh Page</Button>
             </div>
         );
     }

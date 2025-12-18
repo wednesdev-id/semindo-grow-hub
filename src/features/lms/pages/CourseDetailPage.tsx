@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { lmsService } from "@/services/lmsService";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,16 +8,27 @@ import { Separator } from "@/components/ui/separator";
 import { PlayCircle, CheckCircle2, Clock, BookOpen, Award, User } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function CourseDetailPage() {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { toast } = useToast();
+    const { hasRole } = useAuth();
+    const queryClient = useQueryClient();
 
     const { data: course, isLoading } = useQuery({
         queryKey: ["course", slug],
         queryFn: () => lmsService.getCourseBySlug(slug || ""),
         enabled: !!slug,
+    });
+
+    // Check enrollment status (only if user is authenticated)
+    const { data: enrollmentStatus, isLoading: isCheckingEnrollment } = useQuery({
+        queryKey: ["enrollment-status", course?.id],
+        queryFn: () => lmsService.checkEnrollmentStatus(course!.id),
+        enabled: !!course?.id && !!hasRole, // Just check if hasRole function exists (user is authenticated)
+        retry: false, // Don't retry if user is not authenticated
     });
 
     const enrollMutation = useMutation({
@@ -55,9 +66,23 @@ export default function CourseDetailPage() {
     });
 
     const handleEnroll = () => {
-        if (course) {
-            enrollMutation.mutate(course.id);
+        if (!course) return;
+
+        // If already enrolled, navigate to learning page
+        if (enrollmentStatus?.isEnrolled) {
+            const firstModule = enrollmentStatus.enrollment?.course?.modules?.[0];
+            const firstLesson = firstModule?.lessons?.[0];
+
+            if (firstLesson) {
+                navigate(`/lms/learn/${course.slug}?lesson=${firstLesson.slug}`);
+            } else {
+                navigate(`/lms/learn/${course.slug}`);
+            }
+            return;
         }
+
+        // Otherwise, enroll
+        enrollMutation.mutate(course.id);
     };
 
     if (isLoading) {
@@ -171,9 +196,16 @@ export default function CourseDetailPage() {
                             </div>
 
                             <div className="mb-6">
-                                <span className="text-3xl font-bold">
-                                    {course.price === 0 ? "Gratis" : `Rp ${course.price.toLocaleString('id-ID')}`}
-                                </span>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-3xl font-bold">
+                                        {course.price === 0 ? "Gratis" : `Rp ${course.price.toLocaleString('id-ID')}`}
+                                    </span>
+                                    {course.price > 0 && (
+                                        <span className="text-sm text-muted-foreground">
+                                            (Total harga yang akan dibayar)
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-4">
@@ -181,12 +213,24 @@ export default function CourseDetailPage() {
                                     className="w-full"
                                     size="lg"
                                     onClick={handleEnroll}
-                                    disabled={enrollMutation.isPending}
+                                    disabled={enrollMutation.isPending || isCheckingEnrollment}
                                 >
-                                    {enrollMutation.isPending ? "Mendaftar..." : "Mulai Belajar Sekarang"}
+                                    {enrollMutation.isPending ? (
+                                        "Mendaftar..."
+                                    ) : enrollmentStatus?.isEnrolled ? (
+                                        <>
+                                            <PlayCircle className="w-5 h-5 mr-2" />
+                                            Mulai Pembelajaran
+                                        </>
+                                    ) : (
+                                        "Daftar Sekarang"
+                                    )}
                                 </Button>
                                 <p className="text-xs text-center text-muted-foreground">
-                                    Akses selamanya ke semua materi
+                                    {enrollmentStatus?.isEnrolled
+                                        ? `Progress: ${enrollmentStatus.enrollment?.progress || 0}%`
+                                        : "Akses selamanya ke semua materi"
+                                    }
                                 </p>
                             </div>
 

@@ -54,6 +54,8 @@ model User {
   // Program Relations
   organizedPrograms Program[]
   programParticipations ProgramParticipant[]
+  quizAttempts QuizAttempt[]
+  assignmentSubmissions AssignmentSubmission[]
 
   @@map("users")
 }
@@ -459,8 +461,23 @@ model Course {
   author      User         @relation(fields: [authorId], references: [id])
   modules     Module[]
   enrollments Enrollment[]
+  courseCategory CourseCategory? @relation(fields: [categoryId], references: [id])
+  categoryId  String?      @map("category_id")
 
   @@map("courses")
+}
+
+model CourseCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  courses     Course[]
+
+  @@map("course_categories")
 }
 
 model Module {
@@ -484,9 +501,11 @@ model Lesson {
   moduleId  String   @map("module_id")
   title     String
   slug      String   @unique
-  type      String   @default("video") // video, article, quiz
+  type      String   @default("video") // video, article, quiz, pdf, slide, link
   content   String?  @db.Text // For articles
-  videoUrl  String?  @map("video_url")
+  videoUrl  String?  @map("video_url") // For video lessons
+  resourceUrl String? @map("resource_url") // For pdf, slide, link
+  attachments Json?   // Array of { title, url, type }
   duration  Int      @default(0) // in minutes
   order     Int      @default(0)
   isFree    Boolean  @default(false) @map("is_free") // Preview allowed
@@ -497,6 +516,8 @@ model Lesson {
   // Relations
   module   Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   progress LessonProgress[]
+  quiz     Quiz?
+  assignment Assignment?
 
   @@map("lessons")
 }
@@ -533,6 +554,96 @@ model LessonProgress {
 
   @@unique([enrollmentId, lessonId])
   @@map("lesson_progress")
+}
+
+// ============================================
+// LMS ASSESSMENT SYSTEM (QUIZ & ASSIGNMENT)
+// ============================================
+
+model Quiz {
+  id          String   @id @default(uuid())
+  lessonId    String   @unique @map("lesson_id")
+  title       String
+  description String?  @db.Text
+  timeLimit   Int?     @map("time_limit") // in minutes
+  passingScore Int     @default(70) @map("passing_score") // percentage
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions   QuizQuestion[]
+  attempts    QuizAttempt[]
+
+  @@map("lms_quizzes")
+}
+
+model QuizQuestion {
+  id          String   @id @default(uuid())
+  quizId      String   @map("quiz_id")
+  text        String   @db.Text
+  type        String   // multiple_choice, boolean, text
+  options     Json?    // Array of { text, isCorrect }
+  points      Int      @default(1)
+  order       Int      @default(0)
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("lms_quiz_questions")
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  quizId      String   @map("quiz_id")
+  userId      String   @map("user_id")
+  score       Int      @default(0)
+  isPassed    Boolean  @default(false) @map("is_passed")
+  answers     Json?    // Store user answers
+  startedAt   DateTime @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("lms_quiz_attempts")
+}
+
+model Assignment {
+  id          String   @id @default(uuid())
+  lessonId    String   @unique @map("lesson_id")
+  title       String
+  description String   @db.Text
+  dueDate     DateTime? @map("due_date")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  @@map("lms_assignments")
+}
+
+model AssignmentSubmission {
+  id           String   @id @default(uuid())
+  assignmentId String   @map("assignment_id")
+  userId       String   @map("user_id")
+  fileUrl      String?  @map("file_url")
+  content      String?  @db.Text
+  grade        Int?
+  feedback     String?  @db.Text
+  status       String   @default("submitted") // submitted, graded, returned
+  
+  submittedAt  DateTime @default(now()) @map("submitted_at")
+  gradedAt     DateTime? @map("graded_at")
+
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("lms_assignment_submissions")
 }
 
 // ============================================
