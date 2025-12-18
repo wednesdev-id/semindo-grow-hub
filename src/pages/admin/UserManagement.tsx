@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { User } from '@/types/auth'
 import { userService } from '@/services/userService'
+import { roleService } from '@/services/roleService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -70,6 +71,20 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
 
     const [roleFilter, setRoleFilter] = useState(defaultRole || 'all')
     const [statusFilter, setStatusFilter] = useState('all')
+    const [availableRoles, setAvailableRoles] = useState<any[]>([])
+
+    // Fetch roles on mount
+    useEffect(() => {
+        const fetchRoles = async () => {
+            try {
+                const response = await roleService.getAllRoles()
+                setAvailableRoles(response.data || [])
+            } catch (error) {
+                console.error("Failed to fetch roles", error)
+            }
+        }
+        fetchRoles()
+    }, [])
 
     // Sync roleFilter with defaultRole when it changes
     useEffect(() => {
@@ -334,9 +349,30 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                                         onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                         disabled={!!defaultRole} // Disable if defaultRole is set
                                     >
-                                        <option value="umkm">UMKM</option>
-                                        <option value="admin">Admin</option>
-                                        <option value="mentor">Mentor</option>
+                                        {defaultRole ? (
+                                            <option value={defaultRole}>
+                                                {{
+                                                    'umkm': 'UMKM',
+                                                    'admin': 'Admin',
+                                                    'konsultan': 'Konsultan',
+                                                    'mentor': 'Mentor',
+                                                    'trainer': 'Trainer',
+                                                    'staff': 'Staff Manajemen'
+                                                }[defaultRole] || defaultRole.charAt(0).toUpperCase() + defaultRole.slice(1)}
+                                            </option>
+                                        ) : (
+                                            <>
+                                                {availableRoles.length > 0 ? (
+                                                    availableRoles.map(role => (
+                                                        <option key={role.id} value={role.name}>
+                                                            {role.displayName}
+                                                        </option>
+                                                    ))
+                                                ) : (
+                                                    <option disabled>Loading roles...</option>
+                                                )}
+                                            </>
+                                        )}
                                     </select>
                                 </div>
                                 <div className="grid gap-2">
@@ -385,9 +421,11 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                             onChange={(e) => setRoleFilter(e.target.value)}
                         >
                             <option value="all">All Roles</option>
-                            <option value="umkm">UMKM</option>
-                            <option value="mentor">Mentor</option>
-                            <option value="admin">Admin</option>
+                            {availableRoles.map(role => (
+                                <option key={role.id} value={role.name}>
+                                    {role.displayName}
+                                </option>
+                            ))}
                         </select>
                     </div>
                 )}
