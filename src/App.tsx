@@ -40,6 +40,8 @@ const MyProgramsPage = lazy(() => import("./pages/program/MyProgramsPage").then(
 const Blog = lazy(() => import("./pages/Blog"));
 const Contact = lazy(() => import("./pages/Contact"));
 const Dashboard = lazy(() => import("./pages/dashboards/Dashboard"));
+const ConsultantDashboard = lazy(() => import("./pages/dashboards/ConsultantDashboard"));
+const CreateCoursePage = lazy(() => import("./pages/lms/CreateCoursePage"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
 const AssessmentLandingPage = lazy(() => import("./features/assessment/pages/AssessmentLandingPage"));
@@ -47,6 +49,7 @@ const AssessmentHistoryPage = lazy(() => import("./features/assessment/pages/Ass
 const AssessmentWizardPage = lazy(() => import("./features/assessment/pages/AssessmentWizardPage"));
 const AssessmentResultsPage = lazy(() => import("./features/assessment/pages/AssessmentResultsPage"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
+const ConsultantManagement = lazy(() => import("./pages/users/ConsultantManagement"));
 const MyProfile = lazy(() => import("./pages/profile/MyProfile"));
 const ChangePassword = lazy(() => import("./pages/profile/ChangePassword"));
 const UMKMProfileWizard = lazy(() => import("./pages/profile/UMKMProfileWizard"));
@@ -85,6 +88,24 @@ const SellerDashboard = lazy(() => import("./features/marketplace/pages/admin/Se
 const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
 const MarketplaceProductList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductList"));
 const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/ProductUploadPage"));
+
+// Consultation Pages
+const ConsultantList = lazy(() => import("./pages/consultation/ConsultantList"));
+const ConsultantProfile = lazy(() => import("./pages/consultation/ConsultantProfile"));
+const ConsultationDashboard = lazy(() => import("./pages/consultation/ConsultationDashboard"));
+const ConsultationChat = lazy(() => import("./pages/consultation/ConsultationChat"));
+const ConsultantOnboarding = lazy(() => import("./pages/consultation/ConsultantOnboarding"));
+const ConsultantProfileEdit = lazy(() => import("./pages/consultation/ConsultantProfileEdit"));
+const SchedulePage = lazy(() => import("./pages/consultation/schedule/SchedulePage"));
+const BookingConfirmationPage = lazy(() => import("./pages/consultation/schedule/BookingConfirmationPage"));
+const ConsultantProfileSettings = lazy(() => import("./pages/consultation/ConsultantProfileSettings"));
+const SessionHistoryPage = lazy(() => import("./pages/consultation/history/SessionHistoryPage"));
+
+// Consultation Admin Pages
+const ConsultationManagement = lazy(() => import("./pages/admin/consultation/ConsultationManagement"));
+const ChatMonitoringPage = lazy(() => import("./pages/admin/consultation/ChatMonitoringPage"));
+const ChatTranscriptPage = lazy(() => import("./pages/admin/consultation/ChatTranscriptPage"));
+const PendingConsultants = lazy(() => import("./pages/admin/consultation/PendingConsultants"));
 
 const queryClient = new QueryClient();
 
@@ -180,6 +201,13 @@ const App = () => {
                         <AppLayout />
                       </ProtectedRoute>
                     }>
+                      {/* Dashboards */}
+                      <Route path="/consultation/dashboard" element={<ConsultantDashboard />} />
+                      <Route path="/umkm/dashboard" element={<Dashboard />} />
+                      <Route path="/admin" element={<AdminDashboard />} />
+
+                      {/* LMS Instructor */}
+                      <Route path="/lms/create-course" element={<CreateCoursePage />} />
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/dashboard/overview" element={<Dashboard />} />
                       <Route path="/dashboard/activity" element={<FeaturePreviewPage
@@ -206,6 +234,7 @@ const App = () => {
                       {/* User Management */}
                       <Route path="/admin/users" element={<UserManagement />} />
                       <Route path="/users/all" element={<UserManagement />} />
+                      <Route path="/users/consultants" element={<ConsultantManagement />} />
                       <Route path="/users/roles" element={<UserRoleManagement />} />
 
                       {/* Role & Permission Management */}
@@ -286,10 +315,44 @@ const App = () => {
                         description="Evaluasi kinerja mentor berdasarkan KPI."
                         features={["KPI dashboard", "Report generation", "Performance reviews"]}
                       />} />
-                      <Route path="/mentors/approval" element={<FeaturePreviewPage
-                        title="Approval Laporan"
-                        description="Review dan approval laporan mentor."
-                        features={["Report submission workflow", "Feedback loops", "Approval history"]}
+                      <Route path="/lms/analytics" element={<FeaturePreviewPage
+                        title="Student Analytics"
+                        description="Analisis pembelajaran dan performa siswa."
+                        features={["Progress tracking", "Completion rates", "Performance metrics"]}
+                      />} />
+
+                      {/* Consultation Manager */}
+                      <Route path="/consultation/schedule" element={<FeaturePreviewPage
+                        title="Schedule Consultation"
+                        description="Kalender dan sistem booking konsultasi yang lebih advanced."
+                        features={["Calendar view", "Slot availability", "Automated reminders", "Recurring bookings"]}
+                      />} />
+                      <Route path="/consultation/history" element={<FeaturePreviewPage
+                        title="Consultation History"
+                        description="Riwayat lengkap semua sesi konsultasi yang telah dilakukan."
+                        features={["Session archive", "Notes & feedback", "Rating history", "Export reports"]}
+                      />} />
+                      <Route path="/dashboard/consultation/dashboard" element={<ConsultationManagement />} />
+                      <Route path="/dashboard/consultation/consultants/pending" element={<PendingConsultants />} />
+                      <Route path="/dashboard/consultation/consultants/active" element={<FeaturePreviewPage
+                        title="Active Consultants"
+                        description="Daftar lengkap konsultan aktif dengan metrik performa."
+                        features={["Performance metrics", "Client reviews", "Session statistics", "Revenue tracking"]}
+                      />} />
+                      <Route path="/dashboard/consultation/requests/all" element={<FeaturePreviewPage
+                        title="All Consultation Requests"
+                        description="Manajemen semua permintaan konsultasi dalam sistem."
+                        features={["Request filtering", "Status tracking", "Bulk actions", "Export data"]}
+                      />} />
+                      <Route path="/dashboard/consultation/chat-monitoring" element={<FeaturePreviewPage
+                        title="Chat Monitoring"
+                        description="Oversight dan monitoring chat konsultasi untuk quality assurance."
+                        features={["Live chat monitoring", "Keyword alerts", "Quality scoring", "Intervention tools"]}
+                      />} />
+                      <Route path="/dashboard/consultation/reports" element={<FeaturePreviewPage
+                        title="Reports & Analytics"
+                        description="Laporan komprehensif dan analytics untuk consultation hub."
+                        features={["Revenue analytics", "Consultant performance", "Client satisfaction", "Custom reports"]}
                       />} />
 
                       {/* Program Management */}
@@ -681,11 +744,28 @@ const App = () => {
                       <Route path="/profile" element={<MyProfile />} />
                       <Route path="/profile/change-password" element={<ChangePassword />} />
                       <Route path="/profile/umkm" element={<UMKMProfileWizard />} />
-                      <Route path="/consultation" element={<FeaturePreviewPage
-                        title="Consultation Management"
-                        description="Pusat manajemen layanan konsultasi."
-                        features={["Schedule management", "Mentor assignment", "Session history"]}
-                      />} />
+                      {/* Consultation Admin */}
+                      <Route path="/admin/consultation" element={<ConsultationManagement />} />
+                      <Route path="/admin/consultation/chats" element={<ChatMonitoringPage />} />
+                      <Route path="/admin/consultation/chats/:channelId" element={<ChatTranscriptPage />} />
+
+                      {/* Consultation Routes */}
+                      <Route path="/consultants/list" element={<ConsultantList />} />
+                      <Route path="/consultants/onboarding" element={<ConsultantOnboarding />} />
+                      <Route
+                        path="/consultants/my-profile"
+                        element={
+                          <ProtectedRoute requiredRoles={['consultant', 'konsultan']}>
+                            <ConsultantProfileSettings />
+                          </ProtectedRoute>
+                        }
+                      />
+                      <Route path="/consultants/:id" element={<ConsultantProfile />} />
+                      <Route path="/consultation/book" element={<BookingConfirmationPage />} />
+                      <Route path="/consultation/history" element={<SessionHistoryPage />} /> {/* New History Page */}
+                      <Route path="/consultation/dashboard" element={<ConsultationDashboard />} />
+                      <Route path="/consultation/requests/:requestId/chat" element={<ConsultationChat />} />
+
                       <Route path="/financing" element={<FeaturePreviewPage
                         title="Financing Management"
                         description="Pusat manajemen pembiayaan."

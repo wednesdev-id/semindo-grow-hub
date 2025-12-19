@@ -1,7 +1,7 @@
 const API_URL = '/api/v1';
 
 const getHeaders = () => {
-    const token = localStorage.getItem('auth_token');
+    const token = sessionStorage.getItem('auth_token'); // Fixed: use sessionStorage
     return {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

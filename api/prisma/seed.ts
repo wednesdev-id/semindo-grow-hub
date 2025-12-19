@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { seedPermissions } from './seeds/permissions.seed'
 import { seedRolePermissions } from './seeds/role-permissions.seed'
+import { seedConsultationTypes } from './seeds/consultation.seed'
 
 const prisma = new PrismaClient()
 
@@ -572,6 +573,11 @@ async function main() {
         });
     }
     console.log("✅ Financing Partners created");
+
+    // ============================================
+    // STEP 13: Seed Consultation Types
+    // ============================================
+    await seedConsultationTypes();
 
     console.log("✅ Seeding completed successfully!");
 }

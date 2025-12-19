@@ -121,14 +121,32 @@ export class UsersService {
                             }
                         }
                     }
-                }
+                },
+                // Auto-create ConsultantProfile if role is consultant or konsultan
+                ...(data.role.toLowerCase() === 'consultant' || data.role.toLowerCase() === 'konsultan' ? {
+                    consultantProfile: {
+                        create: {
+                            status: 'approved',
+                            title: 'Consultant',
+                            bio: 'Profile under review',
+                            yearsExperience: 0,
+                            hourlyRate: 0,
+                            expertiseAreas: [],
+                            industries: [],
+                            languages: ['Indonesian'],
+                            isAcceptingNewClients: false,
+                            totalSessions: 0,
+                            averageRating: 0
+                        }
+                    }
+                } : {})
             },
             include: {
                 userRoles: {
                     include: { role: true }
                 }
             }
-        })
+        }) as any
 
         return {
             ...user,

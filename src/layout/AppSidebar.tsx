@@ -73,11 +73,13 @@ const getMenuItems = (): {
         { name: "Manajemen Role & Permission", path: "/users/roles", roles: ["admin"] },
         { name: "Kelola UMKM", path: "/users/umkm", roles: ["admin", "management"] },
         { name: "Kelola Mentor", path: "/users/mentors", roles: ["admin", "management"] },
-        { name: "Kelola Trainer", path: "/users/trainers", roles: ["admin", "management"] },
+        { name: "Kelola Konsultan", path: "/users/consultants", roles: ["admin", "management"] }, // Changed from Trainer
         { name: "Kelola Staf Manajemen", path: "/users/staff", roles: ["admin"] },
         { name: "Kelola Admin", path: "/users/admins", roles: ["admin"] },
         { name: "Import / Export Data User", path: "/users/import-export", roles: ["admin"] },
         { name: "Audit User Activity", path: "/users/audit", roles: ["admin", "management"] },
+        // Consultant Self-Service
+        { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
       ],
     },
     // 3. UMKM Database
@@ -189,12 +191,19 @@ const getMenuItems = (): {
       icon: <MessageSquare size={20} />,
       name: "Consultation Management",
       subItems: [
-        { name: "Jadwal Konsultasi", path: "/consultation/schedule" }, // All can book
-        { name: "Mentor Assignment", path: "/consultation/assignment", roles: ["admin", "management"] },
-        { name: "Riwayat Konsultasi", path: "/consultation/history" }, // All can view their own
-        { name: "Chat Monitoring", path: "/consultation/chat", roles: ["admin", "management"] },
-        { name: "Case Ticketing System", path: "/consultation/tickets" }, // All can create tickets
-        { name: "Konsultasi Ekspor / Legal / Digital", path: "/consultation/specialized" }, // All can access
+        // User Features (All can access)
+        { name: "Browse Consultants", path: "/consultation/consultants" },
+        { name: "My Consultations", path: "/consultation/dashboard" },
+        { name: "Schedule Consultation", path: "/consultation/schedule" }, // Preview
+        { name: "Consultation History", path: "/consultation/history" }, // Preview
+
+        // Admin Features
+        { name: "Dashboard Overview", path: "/dashboard/consultation/dashboard", roles: ["admin", "management"] },
+        { name: "Pending Approvals", path: "/dashboard/consultation/consultants/pending", roles: ["admin", "management"] },
+        { name: "Active Consultants", path: "/dashboard/consultation/consultants/active", roles: ["admin", "management"] }, // Preview
+        { name: "All Requests", path: "/dashboard/consultation/requests/all", roles: ["admin", "management"] }, // Preview
+        { name: "Chat Monitoring", path: "/dashboard/consultation/chat-monitoring", roles: ["admin", "management"] }, // Preview
+        { name: "Reports & Analytics", path: "/dashboard/consultation/reports", roles: ["admin", "management"] }, // Preview
       ],
     },
     // 11. Community Platform Manager

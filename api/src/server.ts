@@ -23,7 +23,10 @@ import { umkmRouter } from './systems/umkm';
 import { rolesRouter } from './systems/roles/routes/roles.routes';
 import { permissionsRouter } from './systems/permissions/routes/permissions.routes';
 import { auditRouter } from './systems/audit/routes/audit.routes';
+import consultationRouter from './systems/consultation/routes/consultation.routes';
 ;
+
+
 
 export function createServer(): Application {
   const app = express()
@@ -70,6 +73,8 @@ export function createServer(): Application {
   app.use('/api/v1/roles', rolesRouter);
   app.use('/api/v1/permissions', permissionsRouter);
   app.use('/api/v1/audit-logs', auditRouter);
+  app.use('/api/v1/consultation', consultationRouter);
+
 
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));

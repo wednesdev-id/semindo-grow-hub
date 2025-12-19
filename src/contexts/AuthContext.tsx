@@ -164,17 +164,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const logout = () => {
-        // Clear local storage
-        sessionStorage.removeItem('auth_token')
-        sessionStorage.removeItem('auth_user')
-        sessionStorage.removeItem('auth_roles')
-        sessionStorage.removeItem('auth_permissions')
+        console.log('[Auth] Logout initiated');
+
+        // Clear sessionStorage (current implementation)
+        sessionStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_user');
+        sessionStorage.removeItem('auth_roles');
+        sessionStorage.removeItem('auth_permissions');
+
+        // ⭐ NEW: Also clear localStorage (in case of inconsistency)
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_roles');
+        localStorage.removeItem('auth_permissions');
+
+        console.log('[Auth] All storage cleared');
 
         // Reset state
-        setUser(null)
-        setRoles([])
-        setPermissions([])
-        setIsAuthenticated(false)
+        setUser(null);
+        setRoles([]);
+        setPermissions([]);
+        setIsAuthenticated(false);
+
+        console.log('[Auth] State reset complete, redirecting to login');
 
         // Redirect to login
         navigate('/login');
