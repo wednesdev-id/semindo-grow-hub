@@ -35,8 +35,11 @@ export interface ConsultationRequest {
     topic: string;
     description?: string;
     status: 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed';
+    isPaid?: boolean;
+    quotedPrice?: number;
     meetingUrl?: string;
     meetingPlatform?: string;
+    sessionNotes?: string;
     timezone?: string;
     createdAt: string;
     consultant?: ConsultantProfile;
@@ -78,4 +81,19 @@ export interface AvailabilitySlot {
     isRecurring: boolean;
     specificDate?: string;
     isAvailable: boolean;
+}
+
+export interface SessionFile {
+    id: string;
+    requestId: string;
+    uploadedBy: string; // userId
+    fileName: string;
+    fileUrl: string;
+    fileSize?: number;
+    mimeType?: string;
+    description?: string;
+    createdAt: string;
+    uploader?: {
+        fullName: string;
+    };
 }

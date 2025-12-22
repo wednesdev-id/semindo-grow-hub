@@ -1365,6 +1365,11 @@ model ConsultationRequest {
   meetingUrl      String? @map("meeting_url")
   meetingPlatform String? @map("meeting_platform")
 
+  sessionNotes    String? @map("session_notes") @db.Text
+
+  isPaid      Boolean @default(false) @map("is_paid")
+  quotedPrice Decimal @default(0) @map("quoted_price") @db.Decimal(10, 2)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

@@ -3,6 +3,28 @@ import { prisma } from '../../../lib/prisma';
 import { paymentService } from './payment.service';
 import { shopeeAdapter, tokopediaAdapter } from '../adapters/mock.adapter';
 
+// Order Status Enum
+enum OrderStatus {
+    PENDING = 'pending',
+    PAID = 'paid',
+    PROCESSING = 'processing',
+    SHIPPED = 'shipped',
+    DELIVERED = 'delivered',
+    COMPLETED = 'completed',
+    CANCELLED = 'cancelled'
+}
+
+// Valid status transitions - state machine
+const VALID_TRANSITIONS: Record<string, string[]> = {
+    pending: ['paid', 'cancelled'],
+    paid: ['processing', 'cancelled'],
+    processing: ['shipped', 'cancelled'],
+    shipped: ['delivered'],
+    delivered: ['completed'],
+    completed: [], // Terminal state
+    cancelled: []  // Terminal state
+};
+
 export class MarketplaceService {
     async createProduct(userId: string, data: any): Promise<Product> {
         // Get user's store
@@ -240,7 +262,11 @@ export class MarketplaceService {
             include: {
                 items: {
                     include: {
-                        product: true,
+                        product: {
+                            include: {
+                                store: true // Include store to check seller ownership
+                            }
+                        },
                     },
                 },
                 user: {
@@ -249,34 +275,62 @@ export class MarketplaceService {
                         fullName: true,
                         email: true,
                     }
-                }
+                },
+                shipment: true,
+                payment: true,
             },
         });
 
         if (!order) return null;
-        // Allow if user is the buyer OR the seller of ANY item in the order
-        // For MVP, let's just check if user is buyer. Seller view might need more complex logic or separate endpoint.
-        // Actually, for "My Orders" detail, it's the buyer.
-        if (order.userId !== userId) {
-            // Check if user is seller of any product in the order?
-            // For now, strict check for buyer.
-            // TODO: Allow sellers to view orders containing their products.
-            throw new Error('Unauthorized');
-        }
 
-        return order;
+        // Allow if user is the buyer
+        if (order.userId === userId) return order;
+
+        // Allow if user is seller of any product in the order
+        const isSeller = order.items.some(
+            item => item.product.store?.userId === userId
+        );
+        if (isSeller) return order;
+
+        throw new Error('Unauthorized: You can only view orders you placed or orders containing your products');
     }
 
-    async updateOrderStatus(id: string, status: string, userId: string): Promise<Order> {
-        // Verify seller ownership (optional but recommended)
-        // For now, we assume the controller checks if the user is a seller or admin
+    async updateOrderStatus(id: string, newStatus: string, userId: string): Promise<Order> {
+        const order = await prisma.order.findUnique({
+            where: { id },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            include: {
+                                store: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
-        const order = await prisma.order.findUnique({ where: { id } });
         if (!order) throw new Error('Order not found');
+
+        // Verify user is seller of any product in the order
+        const isSeller = order.items.some(
+            item => item.product.store?.userId === userId
+        );
+        if (!isSeller) throw new Error('Unauthorized: Only sellers can update order status');
+
+        // Validate status transition using state machine
+        const validNextStatuses = VALID_TRANSITIONS[order.status] || [];
+        if (!validNextStatuses.includes(newStatus)) {
+            throw new Error(
+                `Invalid status transition: Cannot change from "${order.status}" to "${newStatus}". ` +
+                `Valid next statuses are: ${validNextStatuses.join(', ') || 'none (terminal state)'}`
+            );
+        }
 
         return prisma.order.update({
             where: { id },
-            data: { status },
+            data: { status: newStatus },
         });
     }
 
@@ -381,6 +435,62 @@ export class MarketplaceService {
             recentOrders,
             monthlySales
         };
+    }
+
+    async getSellerOrders(userId: string): Promise<Order[]> {
+        // Get user's store
+        const store = await prisma.store.findUnique({ where: { userId } });
+        if (!store) return [];
+
+        // Find all orders that contain products from this seller's store
+        return prisma.order.findMany({
+            where: {
+                items: {
+                    some: {
+                        product: {
+                            storeId: store.id
+                        }
+                    }
+                }
+            },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            select: {
+                                id: true,
+                                title: true,
+                                images: true,
+                                price: true,
+                                storeId: true,
+                            }
+                        },
+                    },
+                },
+                user: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        email: true,
+                        phone: true,
+                    }
+                },
+                shipment: {
+                    select: {
+                        status: true,
+                        trackingNumber: true,
+                        courier: true,
+                    }
+                },
+                payment: {
+                    select: {
+                        status: true,
+                        method: true,
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' },
+        });
     }
 
     async getAdminAnalytics() {

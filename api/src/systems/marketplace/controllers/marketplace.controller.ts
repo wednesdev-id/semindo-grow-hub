@@ -81,6 +81,16 @@ export class MarketplaceController {
         }
     }
 
+    async getSellerOrders(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.userId;
+            const orders = await marketplaceService.getSellerOrders(userId);
+            res.json({ data: orders });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async updateProduct(req: Request, res: Response) {
         try {
             const userId = (req as any).user.userId;

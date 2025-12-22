@@ -33,8 +33,10 @@ export default function ConsultantProfileSettings() {
     const [slots, setSlots] = useState<any[]>([]);
     const [newSlot, setNewSlot] = useState({
         date: '',
+        dayOfWeek: 1, // Default Monday
         startTime: '09:00',
-        endTime: '10:00'
+        endTime: '10:00',
+        isRecurring: false
     });
 
     useEffect(() => {
@@ -90,19 +92,31 @@ export default function ConsultantProfileSettings() {
     };
 
     const handleAddSlot = async () => {
-        if (!newSlot.date || !newSlot.startTime || !newSlot.endTime) {
-            toast({ title: 'Error', description: 'Please fill all slot details', variant: 'destructive' });
+        if (!newSlot.startTime || !newSlot.endTime) {
+            toast({ title: 'Error', description: 'Please fill time details', variant: 'destructive' });
             return;
         }
+
+        if (!newSlot.isRecurring && !newSlot.date) {
+            toast({ title: 'Error', description: 'Please select a date', variant: 'destructive' });
+            return;
+        }
+
         try {
-            await consultationService.addAvailability({
-                // Using specificDate based on types/consultation.ts AvailabilitySlot interface
-                specificDate: new Date(newSlot.date).toISOString().split('T')[0], // format YYYY-MM-DD
+            const payload: any = {
                 startTime: newSlot.startTime,
                 endTime: newSlot.endTime,
                 isAvailable: true,
-                isRecurring: false
-            });
+                isRecurring: newSlot.isRecurring
+            };
+
+            if (newSlot.isRecurring) {
+                payload.dayOfWeek = newSlot.dayOfWeek;
+            } else {
+                payload.specificDate = new Date(newSlot.date).toISOString().split('T')[0];
+            }
+
+            await consultationService.addAvailability(payload);
             fetchAvailability();
             toast({ title: 'Success', description: 'Slot added successfully' });
         } catch (error: any) {
@@ -233,33 +247,69 @@ export default function ConsultantProfileSettings() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Add Slot Form */}
-                            <div className="p-4 border rounded-lg bg-gray-50 flex flex-col md:flex-row gap-4 items-end">
-                                <div className="grid gap-2 flex-1">
-                                    <Label>Date</Label>
-                                    <Input
-                                        type="date"
-                                        min={format(new Date(), 'yyyy-MM-dd')}
-                                        value={newSlot.date}
-                                        onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
-                                    />
+                            <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+                                <div className="flex items-center space-x-4 mb-2">
+                                    <div className="flex items-center space-x-2">
+                                        <Switch
+                                            checked={newSlot.isRecurring}
+                                            onCheckedChange={(checked) => setNewSlot({ ...newSlot, isRecurring: checked })}
+                                            id="recurring-mode"
+                                        />
+                                        <Label htmlFor="recurring-mode">Weekly Recurring</Label>
+                                    </div>
+                                    <span className="text-sm text-muted-foreground">
+                                        {newSlot.isRecurring ? "Set weekly schedule (e.g., Every Monday)" : "Set for a specific date only"}
+                                    </span>
                                 </div>
-                                <div className="grid gap-2 w-32">
-                                    <Label>Start Time</Label>
-                                    <Input
-                                        type="time"
-                                        value={newSlot.startTime}
-                                        onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
-                                    />
+
+                                <div className="flex flex-col md:flex-row gap-4 items-end">
+                                    {newSlot.isRecurring ? (
+                                        <div className="grid gap-2 w-full md:w-48">
+                                            <Label>Day of Week</Label>
+                                            <Select
+                                                value={newSlot.dayOfWeek.toString()}
+                                                onValueChange={(val) => setNewSlot({ ...newSlot, dayOfWeek: parseInt(val) })}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select day" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+                                                        <SelectItem key={index} value={index.toString()}>{day}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    ) : (
+                                        <div className="grid gap-2 w-full md:w-48">
+                                            <Label>Date</Label>
+                                            <Input
+                                                type="date"
+                                                min={format(new Date(), 'yyyy-MM-dd')}
+                                                value={newSlot.date}
+                                                onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="grid gap-2 w-32">
+                                        <Label>Start Time</Label>
+                                        <Input
+                                            type="time"
+                                            value={newSlot.startTime}
+                                            onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2 w-32">
+                                        <Label>End Time</Label>
+                                        <Input
+                                            type="time"
+                                            value={newSlot.endTime}
+                                            onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
+                                        />
+                                    </div>
+                                    <Button onClick={handleAddSlot}><Plus className="mr-2 h-4 w-4" /> Add Slot</Button>
                                 </div>
-                                <div className="grid gap-2 w-32">
-                                    <Label>End Time</Label>
-                                    <Input
-                                        type="time"
-                                        value={newSlot.endTime}
-                                        onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
-                                    />
-                                </div>
-                                <Button onClick={handleAddSlot}><Plus className="mr-2 h-4 w-4" /> Add Slot</Button>
                             </div>
 
                             {/* Slots List */}
@@ -274,17 +324,21 @@ export default function ConsultantProfileSettings() {
                                                 <div className="flex items-center gap-3">
                                                     <Calendar className="h-4 w-4 text-primary" />
                                                     <div className="text-sm">
-                                                        <div className="font-medium">{format(new Date(slot.date), 'EEE, dd MMM yyyy')}</div>
-                                                        <div className="text-muted-foreground">{slot.startTime} - {slot.endTime}</div>
+                                                        <div className="font-medium">
+                                                            {slot.isRecurring
+                                                                ? `Every ${['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][slot.dayOfWeek || 0]}`
+                                                                : format(new Date(slot.specificDate || slot.date), 'EEE, dd MMM yyyy')
+                                                            }
+                                                        </div>
+                                                        <div className="text-muted-foreground">{slot.startTime.toString().slice(0, 5)} - {slot.endTime.toString().slice(0, 5)}</div>
                                                     </div>
                                                 </div>
-                                                {slot.status === 'available' ? (
+                                                <div className="flex gap-2">
+                                                    {slot.isRecurring && <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Recurring</Badge>}
                                                     <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteSlot(slot.id)}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
-                                                ) : (
-                                                    <Badge variant="secondary">Booked</Badge>
-                                                )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

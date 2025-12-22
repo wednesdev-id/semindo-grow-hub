@@ -25,6 +25,11 @@ const LayananKonsultasi = lazy(() => import("./pages/LayananKonsultasi"));
 const SelfAssessment = lazy(() => import("./pages/SelfAssessment"));
 const LearningHub = lazy(() => import("./pages/LearningHub"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const ProductDetail = lazy(() => import("./pages/marketplace/ProductDetail"));
+const Cart = lazy(() => import("./pages/marketplace/Cart"));
+const Checkout = lazy(() => import("./pages/marketplace/Checkout"));
+const OrderHistory = lazy(() => import("./pages/marketplace/OrderHistory"));
+const MarketplaceSellerDashboard = lazy(() => import("./pages/marketplace/SellerDashboard"));
 const FinancingHub = lazy(() => import("./pages/FinancingHub"));
 const ExportHub = lazy(() => import("./pages/ExportHub"));
 const CommunityLayout = lazy(() => import("./components/layouts/CommunityLayout").then(module => ({ default: module.CommunityLayout })));
@@ -100,6 +105,7 @@ const SchedulePage = lazy(() => import("./pages/consultation/schedule/SchedulePa
 const BookingConfirmationPage = lazy(() => import("./pages/consultation/schedule/BookingConfirmationPage"));
 const ConsultantProfileSettings = lazy(() => import("./pages/consultation/ConsultantProfileSettings"));
 const SessionHistoryPage = lazy(() => import("./pages/consultation/history/SessionHistoryPage"));
+const ConsultationRequests = lazy(() => import("./pages/consultation/ConsultationRequests"));
 
 // Consultation Admin Pages
 const ConsultationManagement = lazy(() => import("./pages/admin/consultation/ConsultationManagement"));
@@ -154,6 +160,11 @@ const App = () => {
                     <Route path="/self-assessment" element={<SelfAssessment />} />
                     <Route path="/learning-hub" element={<LearningHub />} />
                     <Route path="/marketplace" element={<Marketplace />} />
+                    <Route path="/marketplace/product/:slug" element={<ProductDetail />} />
+                    <Route path="/marketplace/cart" element={<Cart />} />
+                    <Route path="/marketplace/checkout" element={<Checkout />} />
+                    <Route path="/marketplace/orders" element={<OrderHistory />} />
+                    <Route path="/marketplace/seller" element={<MarketplaceSellerDashboard />} />
                     <Route path="/financing-hub" element={<FinancingHub />} />
                     <Route path="/export-hub" element={<ExportHub />} />
                     <Route path="/community" element={<CommunityLayout />}>
@@ -765,6 +776,7 @@ const App = () => {
                       <Route path="/consultation/history" element={<SessionHistoryPage />} /> {/* New History Page */}
                       <Route path="/consultation/dashboard" element={<ConsultationDashboard />} />
                       <Route path="/consultation/requests/:requestId/chat" element={<ConsultationChat />} />
+                      <Route path="/consultation/requests" element={<ConsultationRequests />} />
 
                       <Route path="/financing" element={<FeaturePreviewPage
                         title="Financing Management"

@@ -107,37 +107,55 @@ export const rejectRequest = async (req: Request, res: Response, next: NextFunct
 /**
  * Consultant: Update meeting link for approved request
  */
-export const updateMeetingLink = async (req: Request, res: Response, next: NextFunction) => {
+export const updateMeetingLink = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
-        const userId = (req as any).user.id;
-        const { meetingUrl, meetingPlatform } = req.body;
+        const result = await bookingService.updateMeetingLink(
+            req.params.id,
+            (req as any).user.id,
+            req.body
+        );
+        res.json({ success: true, data: result });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
 
-        const request = await bookingService.updateMeetingLink(id, userId, {
-            meetingUrl,
-            meetingPlatform
-        });
+export const payRequest = async (req: Request, res: Response) => {
+    try {
+        const result = await bookingService.payRequest(
+            req.params.id,
+            (req as any).user.id,
+            req.body.paymentMethod
+        );
+        res.json({ success: true, data: result });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+};
 
-        res.json({
-            success: true,
-            data: request
-        });
-    } catch (error) {
-        next(error);
+export const updateSessionNotes = async (req: Request, res: Response) => {
+    try {
+        const result = await bookingService.updateSessionNotes(
+            req.params.id,
+            (req as any).user.id,
+            req.body.notes
+        );
+        res.json({ success: true, data: result });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
     }
 };
 
 /**
  * Get available slots
  */
-export const getAvailableSlots = async (req: Request, res: Response, next: NextFunction) => {
+export const getAvailableSlots = async (req: Request, res: Response) => {
     try {
         const { consultantId } = req.params;
         const { startDate, endDate } = req.query;
 
         if (!startDate || !endDate) {
-            res.status(400).json({ error: 'Start date and end date are required' });
-            return;
+            return res.status(400).json({ success: false, message: 'startDate and endDate are required' });
         }
 
         const slots = await bookingService.getAvailableSlots(
@@ -145,12 +163,8 @@ export const getAvailableSlots = async (req: Request, res: Response, next: NextF
             startDate as string,
             endDate as string
         );
-
-        res.json({
-            success: true,
-            data: slots
-        });
-    } catch (error) {
-        next(error);
+        res.json({ success: true, data: slots });
+    } catch (error: any) {
+        res.status(400).json({ success: false, message: error.message });
     }
 };

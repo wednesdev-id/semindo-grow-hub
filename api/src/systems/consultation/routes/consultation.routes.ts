@@ -137,6 +137,48 @@ router.get('/chat/:channelId/unread',
 // ADMIN ROUTES
 // ============================================
 
+// ============================================
+// PAYMENT & NOTES
+// ============================================
+
+router.post('/requests/:id/pay',
+    authenticate,
+    bookingController.payRequest
+);
+
+router.patch('/requests/:id/notes',
+    authenticate,
+    requirePermission('consultation.consultant.update'),
+    bookingController.updateSessionNotes
+);
+
+// ============================================
+// FILE MANAGEMENT
+// ============================================
+
+import * as fileController from '../controllers/file.controller';
+
+router.post('/requests/:id/files',
+    authenticate,
+    requirePermission('consultation.consultant.update'),
+    fileController.uploadFileHandler
+);
+
+router.get('/requests/:id/files',
+    authenticate,
+    fileController.getFiles
+);
+
+router.delete('/files/:fileId',
+    authenticate,
+    requirePermission('consultation.consultant.update'),
+    fileController.deleteFile
+);
+
+// ============================================
+// ADMIN ROUTES
+// ============================================
+
 router.patch('/admin/consultants/:id/approve',
     authenticate,
     requirePermission('consultation.admin.approve'),

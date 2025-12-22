@@ -311,6 +311,70 @@ export const updateMeetingLink = async (
 };
 
 /**
+ * Process payment (Manual/Mock)
+ */
+export const payRequest = async (
+    requestId: string,
+    userId: string, // Client paying
+    paymentMethod: string = 'manual_transfer'
+) => {
+    const request = await prisma.consultationRequest.findUnique({
+        where: { id: requestId }
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    if (request.clientId !== userId) {
+        throw new Error('Unauthorized');
+    }
+
+    // In a real system, you'd create a Transaction/Payment record here
+    // For MVP Manual Transfer, we just mark it as paid
+    return await prisma.consultationRequest.update({
+        where: { id: requestId },
+        data: {
+            isPaid: true,
+            status: 'approved' // Ensure it stays approved (or moves to approved if waiting payment)
+        }
+    });
+};
+
+/**
+ * Update session notes
+ */
+export const updateSessionNotes = async (
+    requestId: string,
+    consultantUserId: string,
+    notes: string
+) => {
+    const request = await prisma.consultationRequest.findUnique({
+        where: { id: requestId },
+        include: {
+            consultant: {
+                select: { userId: true }
+            }
+        }
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    if (request.consultant.userId !== consultantUserId) {
+        throw new Error('Unauthorized');
+    }
+
+    return await prisma.consultationRequest.update({
+        where: { id: requestId },
+        data: {
+            sessionNotes: notes
+        }
+    });
+};
+
+/**
  * Get available slots for a consultant
  */
 export const getAvailableSlots = async (

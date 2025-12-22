@@ -136,6 +136,53 @@ export const consultationService = {
         return response.data;
     },
 
+    async payRequest(id: string, paymentMethod: string = 'manual_transfer') {
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/pay`,
+            { paymentMethod }
+        );
+        return response.data;
+    },
+
+    async updateSessionNotes(id: string, notes: string) {
+        const response = await api.patch<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/notes`,
+            { notes }
+        );
+        return response.data;
+    },
+
+    // Session Files
+    async uploadFile(requestId: string, file: File, description?: string) {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (description) formData.append('description', description);
+
+        // Uses fetch directly or api abstraction that handles FormData
+        // Assuming api.post can handle FormData if we don't set Content-Type header manually (browser sets it)
+        const response = await api.post<{ success: boolean; data: any }>(
+            `${BASE_URL}/requests/${requestId}/files`,
+            formData,
+            // Assuming the api wrapper handles Content-Type for FormData automatically or allows override
+            { headers: { 'Content-Type': undefined } }
+        );
+        return response.data;
+    },
+
+    async getFiles(requestId: string) {
+        const response = await api.get<{ success: boolean; data: any[] }>(
+            `${BASE_URL}/requests/${requestId}/files`
+        );
+        return response.data;
+    },
+
+    async deleteFile(fileId: string) {
+        const response = await api.delete<{ success: boolean; message: string }>(
+            `${BASE_URL}/files/${fileId}`
+        );
+        return response;
+    },
+
     // Chat
     async getChannel(requestId: string) {
         const response = await api.get<{ success: boolean; data: ChatChannel }>(

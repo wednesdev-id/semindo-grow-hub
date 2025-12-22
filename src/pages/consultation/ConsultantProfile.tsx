@@ -161,26 +161,60 @@ export default function ConsultantProfile() {
 // Booking Modal Component
 function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }) {
     const navigate = useNavigate();
+    const [selectedDate, setSelectedDate] = useState('');
+    const [availableSlots, setAvailableSlots] = useState<{ date: string; startTime: string; endTime: string; status: string }[]>([]);
+    const [selectedSlot, setSelectedSlot] = useState<{ date: string; startTime: string; endTime: string } | null>(null);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+
     const [formData, setFormData] = useState({
-        date: '',
-        startTime: '',
-        endTime: '',
-        duration: 60,
         topic: '',
         description: '',
     });
     const [submitting, setSubmitting] = useState(false);
 
+    // Fetch slots when date changes
+    useEffect(() => {
+        if (selectedDate) {
+            fetchSlots(selectedDate);
+        } else {
+            setAvailableSlots([]);
+        }
+    }, [selectedDate]);
+
+    const fetchSlots = async (date: string) => {
+        try {
+            setLoadingSlots(true);
+            // Fetch for the specific date (start = end = date)
+            const slots = await consultationService.getAvailableSlots(consultant.id, date, date);
+            setAvailableSlots(slots);
+        } catch (error) {
+            console.error('Failed to fetch slots:', error);
+        } finally {
+            setLoadingSlots(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!selectedSlot) {
+            alert('Please select a time slot');
+            return;
+        }
+
         try {
             setSubmitting(true);
+
+            // Calculate duration in minutes
+            const start = new Date(\`\${selectedSlot.date}T\${selectedSlot.startTime}\`);
+            const end = new Date(\`\${selectedSlot.date}T\${selectedSlot.endTime}\`);
+            const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+
             await consultationService.createRequest({
                 consultantId: consultant.id,
-                requestedDate: formData.date,
-                requestedStartTime: formData.startTime,
-                requestedEndTime: formData.endTime,
-                durationMinutes: formData.duration,
+                requestedDate: selectedSlot.date,
+                requestedStartTime: selectedSlot.startTime,
+                requestedEndTime: selectedSlot.endTime,
+                durationMinutes: durationMinutes,
                 topic: formData.topic,
                 description: formData.description,
             });
@@ -196,7 +230,7 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-screen overflow-y-auto">
+            <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">Book a Session</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -204,44 +238,55 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Date Selection */}
                     <div>
-                        <label className="block text-sm font-medium mb-1">Date</label>
+                        <label className="block text-sm font-medium mb-1">Select Date</label>
                         <input
                             type="date"
                             required
-                            value={formData.date}
-                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                            min={new Date().toISOString().split('T')[0]}
+                            value={selectedDate}
+                            onChange={(e) => {
+                                setSelectedDate(e.target.value);
+                                setSelectedSlot(null);
+                            }}
                             className="w-full px-3 py-2 border rounded-md"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Slot Selection */}
+                    {selectedDate && (
                         <div>
-                            <label className="block text-sm font-medium mb-1">Start Time</label>
-                            <input
-                                type="time"
-                                required
-                                value={formData.startTime}
-                                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                                className="w-full px-3 py-2 border rounded-md"
-                            />
+                            <label className="block text-sm font-medium mb-2">Select Time Slot</label>
+                            {loadingSlots ? (
+                                <div className="text-center py-4 text-gray-500">Loading available slots...</div>
+                            ) : availableSlots.length === 0 ? (
+                                <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-md border border-dashed">
+                                    No available slots on this date. Please choose another date.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-3 gap-3">
+                                    {availableSlots.map((slot, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => setSelectedSlot(slot)}
+                                            className={`px - 3 py - 2 text - sm rounded - md border transition - all ${
+                selectedSlot === slot
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                                            }`}
+                                        >
+                                            {slot.startTime} - {slot.endTime}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">Duration (minutes)</label>
-                            <select
-                                value={formData.duration}
-                                onChange={(e) => setFormData({ ...formData, duration: Number(e.target.value) })}
-                                className="w-full px-3 py-2 border rounded-md"
-                            >
-                                <option value={30}>30 minutes</option>
-                                <option value={60}>1 hour</option>
-                                <option value={90}>1.5 hours</option>
-                                <option value={120}>2 hours</option>
-                            </select>
-                        </div>
-                    </div>
+                    )}
 
+                    {/* Topic & Description */}
                     <div>
                         <label className="block text-sm font-medium mb-1">Topic</label>
                         <input
@@ -265,7 +310,7 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4">
+                    <div className="flex justify-end gap-3 pt-4 border-t">
                         <button
                             type="button"
                             onClick={onClose}
@@ -275,10 +320,10 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                         </button>
                         <button
                             type="submit"
-                            disabled={submitting}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                            disabled={submitting || !selectedSlot}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {submitting ? 'Submitting...' : 'Submit Request'}
+                            {submitting ? 'Submitting...' : 'Confirm Booking'}
                         </button>
                     </div>
                 </form>
