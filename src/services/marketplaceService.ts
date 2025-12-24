@@ -33,6 +33,7 @@ export interface Product {
     badges: string[];
     description: string;
     stock: number;
+    status?: string;
     externalLinks?: { shopee?: string; tokopedia?: string };
 }
 
@@ -85,6 +86,7 @@ export const marketplaceService = {
             badges: [],
             description: p.description || '',
             stock: p.stock,
+            status: p.status,
             externalLinks: p.externalLinks
         }));
     },
@@ -108,6 +110,7 @@ export const marketplaceService = {
                 badges: [],
                 description: p.description || '',
                 stock: p.stock,
+                status: p.status,
                 externalLinks: p.externalLinks
             };
         } catch (error) {
@@ -115,22 +118,24 @@ export const marketplaceService = {
         }
     },
 
-    uploadImage: async (file: File) => {
+    uploadImage: async (file: File): Promise<{ url: string; thumbnail: string; metadata: any }> => {
         const formData = new FormData();
         formData.append('image', file);
-        const response = await api.post<{ url: string }>('/marketplace/upload/image', formData, {
+        return api.post('/marketplace/upload/image', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response.url;
     },
 
-    uploadMultipleImages: async (files: File[]) => {
+    uploadMultipleImages: async (files: File[]): Promise<{ images: { url: string; thumbnail: string; metadata: any }[] }> => {
         const formData = new FormData();
         files.forEach(file => formData.append('images', file));
-        const response = await api.post<{ urls: string[] }>('/marketplace/upload/images', formData, {
+        return api.post('/marketplace/upload/images', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response.urls;
+    },
+
+    uploadFromUrl: async (url: string): Promise<{ url: string; thumbnail: string; metadata: any }> => {
+        return api.post('/marketplace/upload/url', { url });
     },
 
     createProduct: async (data: any) => {
@@ -182,12 +187,21 @@ export const marketplaceService = {
             badges: [],
             description: p.description || '',
             stock: p.stock,
+            status: p.status,
             externalLinks: p.externalLinks
         }));
     },
 
     deleteProduct: async (id: string) => {
         return api.delete(`/marketplace/products/${id}`);
+    },
+
+    archiveProduct: async (id: string) => {
+        return api.patch(`/marketplace/products/${id}/archive`, {});
+    },
+
+    updateProduct: async (id: string, data: any) => {
+        return api.patch(`/marketplace/products/${id}`, data);
     },
 
     getTopSellers: async (): Promise<Seller[]> => {

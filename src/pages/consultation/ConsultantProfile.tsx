@@ -205,8 +205,8 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
             setSubmitting(true);
 
             // Calculate duration in minutes
-            const start = new Date(\`\${selectedSlot.date}T\${selectedSlot.startTime}\`);
-            const end = new Date(\`\${selectedSlot.date}T\${selectedSlot.endTime}\`);
+            const start = new Date(`${selectedSlot.date}T${selectedSlot.startTime}`);
+            const end = new Date(`${selectedSlot.date}T${selectedSlot.endTime}`);
             const durationMinutes = (end.getTime() - start.getTime()) / 60000;
 
             await consultationService.createRequest({
@@ -272,11 +272,10 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                                             key={idx}
                                             type="button"
                                             onClick={() => setSelectedSlot(slot)}
-                                            className={`px - 3 py - 2 text - sm rounded - md border transition - all ${
-                selectedSlot === slot
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
-                                            }`}
+                                            className={`px-3 py-2 text-sm rounded-md border transition-all ${selectedSlot === slot
+                                                    ? 'bg-blue-600 text-white border-blue-600'
+                                                    : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                                                }`}
                                         >
                                             {slot.startTime} - {slot.endTime}
                                         </button>

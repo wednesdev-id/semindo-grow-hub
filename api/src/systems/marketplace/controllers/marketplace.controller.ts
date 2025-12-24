@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response } from 'express'
 import { MarketplaceService } from '../services/marketplace.service';
 import { Prisma } from '@prisma/client';
 
@@ -7,7 +7,7 @@ const marketplaceService = new MarketplaceService();
 export class MarketplaceController {
     async createProduct(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const product = await marketplaceService.createProduct(userId, req.body);
             res.status(201).json({ data: product });
         } catch (error: any) {
@@ -62,7 +62,7 @@ export class MarketplaceController {
 
     async createOrder(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const { items } = req.body; // items: [{ productId, quantity }]
             const order = await marketplaceService.createOrder(userId, items);
             res.status(201).json({ data: order });
@@ -73,7 +73,7 @@ export class MarketplaceController {
 
     async getMyOrders(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const orders = await marketplaceService.getMyOrders(userId);
             res.json({ data: orders });
         } catch (error: any) {
@@ -83,7 +83,7 @@ export class MarketplaceController {
 
     async getSellerOrders(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const orders = await marketplaceService.getSellerOrders(userId);
             res.json({ data: orders });
         } catch (error: any) {
@@ -91,9 +91,20 @@ export class MarketplaceController {
         }
     }
 
+    async archiveProduct(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.archiveProduct(req.params.id, userId);
+            res.json(product);
+        } catch (error: any) {
+            console.error('Failed to archive product:', error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     async updateProduct(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const { id } = req.params;
             const product = await marketplaceService.updateProduct(id, userId, req.body);
             res.json({ data: product });
@@ -104,7 +115,7 @@ export class MarketplaceController {
 
     async deleteProduct(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const { id } = req.params;
             await marketplaceService.deleteProduct(id, userId);
             res.status(204).send();
@@ -115,7 +126,7 @@ export class MarketplaceController {
 
     async getMyProducts(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const products = await marketplaceService.getMyProducts(userId);
             res.json({ data: products });
         } catch (error: any) {
@@ -126,7 +137,7 @@ export class MarketplaceController {
 
     async getOrder(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const { id } = req.params;
             const order = await marketplaceService.getOrder(id, userId);
             res.json({ data: order });
@@ -139,7 +150,7 @@ export class MarketplaceController {
         try {
             const { id } = req.params;
             const { status } = req.body;
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
 
             const order = await marketplaceService.updateOrderStatus(id, status, userId);
             res.json({ data: order });
@@ -169,9 +180,10 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
+
     async getSellerAnalytics(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const data = await marketplaceService.getSellerAnalytics(userId);
             res.json({ data });
         } catch (error: any) {
@@ -188,6 +200,7 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
+
     async getPendingProducts(req: Request, res: Response) {
         try {
             // In real app, check for admin role

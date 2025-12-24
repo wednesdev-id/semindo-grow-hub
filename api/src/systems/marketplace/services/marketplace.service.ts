@@ -64,7 +64,10 @@ export class MarketplaceService {
         return prisma.product.findMany({
             skip,
             take,
-            where,
+            where: {
+                ...where,
+                deletedAt: null
+            },
             orderBy,
             include: {
                 store: {
@@ -81,8 +84,8 @@ export class MarketplaceService {
     }
 
     async findProductBySlug(slug: string): Promise<Product | null> {
-        return prisma.product.findUnique({
-            where: { slug },
+        return prisma.product.findFirst({
+            where: { slug, deletedAt: null },
             include: {
                 seller: {
                     select: {
@@ -106,7 +109,7 @@ export class MarketplaceService {
                 include: { variants: true }
             });
 
-            if (!product) throw new Error(`Product ${item.productId} not found`);
+            if (!product || product.deletedAt) throw new Error(`Product ${item.productId} not found or no longer available`);
 
             let price = Number(product.price);
             let stock = product.stock;
@@ -227,9 +230,28 @@ export class MarketplaceService {
         if (!product) throw new Error('Product not found');
         if (product.sellerId !== userId) throw new Error('Unauthorized');
 
+        // Handle Status Logic
+        if (typeof data.status === 'string') {
+            const newStatus = data.status;
+
+            // Sync isPublished based on status
+            if (newStatus === 'active') { // 'active' = Published
+                data.isPublished = true;
+            } else if (['draft', 'archived', 'suspended'].includes(newStatus)) {
+                data.isPublished = false;
+            }
+        }
+
         return prisma.product.update({
             where: { id },
             data,
+        });
+    }
+
+    async archiveProduct(id: string, userId: string): Promise<Product> {
+        return this.updateProduct(id, userId, {
+            status: 'archived',
+            isPublished: false
         });
     }
 
@@ -238,8 +260,12 @@ export class MarketplaceService {
         if (!product) throw new Error('Product not found');
         if (product.sellerId !== userId) throw new Error('Unauthorized');
 
-        return prisma.product.delete({
+        return prisma.product.update({
             where: { id },
+            data: {
+                deletedAt: new Date(),
+                isPublished: false // Also unpublish on delete
+            },
         });
     }
 
@@ -248,7 +274,10 @@ export class MarketplaceService {
         if (!store) return [];
 
         return prisma.product.findMany({
-            where: { storeId: store.id },
+            where: {
+                storeId: store.id,
+                deletedAt: null
+            },
             orderBy: { createdAt: 'desc' },
             include: {
                 variants: true,

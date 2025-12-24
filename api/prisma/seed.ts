@@ -403,6 +403,7 @@ async function main() {
     });
     console.log("✅ Mentor user created:", mentorUser.email);
 
+
     // 8. Create Courses
     const courses = [
         {
@@ -412,7 +413,7 @@ async function main() {
             level: "Beginner",
             category: "Marketing",
             price: 0,
-            thumbnailUrl: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+            thumbnail: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
             authorId: mentorUser.id,
             isPublished: true,
             modules: {
@@ -447,7 +448,7 @@ async function main() {
             level: "Intermediate",
             category: "Finance",
             price: 150000,
-            thumbnailUrl: "https://images.unsplash.com/photo-1554224155-98406852d009?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+            thumbnail: "https://images.unsplash.com/photo-1554224155-98406852d009?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
             authorId: mentorUser.id,
             isPublished: true,
             modules: {
@@ -467,7 +468,9 @@ async function main() {
         }
     ];
 
+    console.log(`Creating courses with authorId: ${mentorUser.id} and courses count: ${courses.length}`);
     for (const course of courses) {
+
         await prisma.course.upsert({
             where: { slug: course.slug },
             update: {},

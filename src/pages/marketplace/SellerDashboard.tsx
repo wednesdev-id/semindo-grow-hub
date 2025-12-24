@@ -120,8 +120,13 @@ export default function SellerDashboard() {
                 images: productForm.images.length > 0 ? productForm.images : ['/api/placeholder/300/200']
             };
 
-            await marketplaceService.createProduct(payload);
-            alert('Product saved successfully!');
+            if (editingProduct) {
+                await marketplaceService.updateProduct(editingProduct.id, payload);
+                alert('Product updated successfully!');
+            } else {
+                await marketplaceService.createProduct(payload);
+                alert('Product created successfully!');
+            }
             setShowProductForm(false);
             loadData();
         } catch (error) {
@@ -387,22 +392,40 @@ export default function SellerDashboard() {
                                     <p className="text-sm text-muted-foreground mb-2">
                                         Image URLs (for MVP, use placeholder or external URLs)
                                     </p>
-                                    <Input
-                                        placeholder="https://example.com/image.jpg"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                const input = e.target as HTMLInputElement;
-                                                if (input.value) {
-                                                    setProductForm({
-                                                        ...productForm,
-                                                        images: [...productForm.images, input.value]
-                                                    });
-                                                    input.value = '';
+                                    <div className="relative">
+                                        <Input
+                                            placeholder="https://example.com/image.jpg"
+                                            disabled={submitting}
+                                            onKeyDown={async (e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const input = e.target as HTMLInputElement;
+                                                    const url = input.value.trim();
+                                                    if (url) {
+                                                        try {
+                                                            setSubmitting(true);
+                                                            const result = await marketplaceService.uploadFromUrl(url);
+                                                            setProductForm({
+                                                                ...productForm,
+                                                                images: [...productForm.images, result.url]
+                                                            });
+                                                            input.value = '';
+                                                        } catch (err) {
+                                                            console.error('Failed to process image URL:', err);
+                                                            alert('Failed to process image URL. It might be blocked or invalid.');
+                                                        } finally {
+                                                            setSubmitting(false);
+                                                        }
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                    />
+                                            }}
+                                        />
+                                        {submitting && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="flex gap-2 mt-2 flex-wrap">
                                         {productForm.images.map((img, idx) => (
                                             <Badge key={idx} variant="secondary">
