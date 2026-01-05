@@ -33,7 +33,8 @@ export interface Product {
     badges: string[];
     description: string;
     stock: number;
-    status?: string;
+    status?: string; // draft, active, archived, etc.
+    isPublished?: boolean; // Whether product is visible in marketplace
     externalLinks?: { shopee?: string; tokopedia?: string };
 }
 
@@ -71,6 +72,31 @@ export const marketplaceService = {
 
     getFeaturedProducts: async (): Promise<Product[]> => {
         const response = await api.get<{ data: any[] }>('/marketplace/products');
+        return response.data.map((p: any) => ({
+            id: p.id,
+            name: p.title,
+            slug: p.slug,
+            seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
+            location: p.seller?.city || 'Indonesia',
+            price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+            rating: 0,
+            reviews: 0,
+            image: p.images?.[0] || "/api/placeholder/300/200",
+            images: p.images || [],
+            category: p.category,
+            badges: [],
+            description: p.description || '',
+            stock: p.stock,
+            status: p.status,
+            externalLinks: p.externalLinks
+        }));
+    },
+
+    // Admin: Get ALL products from all sellers (including drafts and unpublished)
+    getAllProductsForAdmin: async (): Promise<Product[]> => {
+        const response = await api.get<{ data: any[] }>('/marketplace/products', {
+            params: { includeAll: true } // This will bypass isPublished filter
+        });
         return response.data.map((p: any) => ({
             id: p.id,
             name: p.title,
@@ -172,24 +198,40 @@ export const marketplaceService = {
 
     getMyProducts: async (): Promise<Product[]> => {
         const response = await api.get<{ data: any[] }>('/marketplace/my-products');
-        return response.data.map((p: any) => ({
-            id: p.id,
-            name: p.title,
-            slug: p.slug,
-            seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-            location: p.seller?.city || 'Indonesia',
-            price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-            rating: 0,
-            reviews: 0,
-            image: p.images?.[0] || "/api/placeholder/300/200",
-            images: p.images || [],
-            category: p.category,
-            badges: [],
-            description: p.description || '',
-            stock: p.stock,
-            status: p.status,
-            externalLinks: p.externalLinks
-        }));
+        return response.data.map((p: any) => {
+            // Determine correct status based on isPublished
+            let displayStatus = p.status;
+
+            // If status is missing or inconsistent with isPublished, fix it
+            if (p.isPublished && (!p.status || p.status === 'draft')) {
+                displayStatus = 'active';
+            } else if (!p.isPublished && p.status === 'active') {
+                displayStatus = 'draft';
+            } else if (!p.status) {
+                // Fallback if status is completely missing
+                displayStatus = p.isPublished ? 'active' : 'draft';
+            }
+
+            return {
+                id: p.id,
+                name: p.title,
+                slug: p.slug,
+                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
+                location: p.seller?.city || 'Indonesia',
+                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                rating: 0,
+                reviews: 0,
+                image: p.images?.[0] || "/api/placeholder/300/200",
+                images: p.images || [],
+                category: p.category,
+                badges: [],
+                description: p.description || '',
+                stock: p.stock,
+                status: displayStatus,
+                isPublished: p.isPublished,
+                externalLinks: p.externalLinks
+            };
+        });
     },
 
     deleteProduct: async (id: string) => {
@@ -197,7 +239,7 @@ export const marketplaceService = {
     },
 
     archiveProduct: async (id: string) => {
-        return api.patch(`/marketplace/products/${id}/archive`, {});
+        return api.patch(`/marketplace/products/${id}/archive`);
     },
 
     updateProduct: async (id: string, data: any) => {

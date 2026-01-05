@@ -46,21 +46,23 @@ export const uploadController = {
             const thumbFileName = `thumb-${fileName}.webp`;
             const thumbPath = path.join('uploads', thumbFileName);
 
+            // Define base URL for response
+            const baseUrl = `${req.protocol}://${req.get('host')}/uploads`;
+
             // Process image: resize, compress, convert to webp
             const metadata = await sharp(filePath)
                 .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
                 .webp({ quality: 80 })
                 .toFile(outputPath);
-                    res.json({
-                        url: `${baseUrl}/${outputFileName}`,
-                        thumbnail: `${baseUrl}/${thumbFileName}`,
-                        metadata: {
-                            width: metadata.width,
-                            height: metadata.height,
-                            size: metadata.size,
-                            format: 'webp'
-                        }
-                    });
+
+            // Generate thumbnail
+            await sharp(filePath)
+                .resize(300, 300, { fit: 'cover' })
+                .webp({ quality: 70 })
+                .toFile(thumbPath);
+
+            // Cleanup original uploaded file
+            fs.unlinkSync(filePath);
 
             res.json({
                 url: `${baseUrl}/${outputFileName}`,
@@ -70,8 +72,7 @@ export const uploadController = {
                     height: metadata.height,
                     size: metadata.size,
                     format: 'webp'
-                },
-                db: savedRecord
+                }
             });
         } catch (error: any) {
             console.error('Image processing failed:', error);

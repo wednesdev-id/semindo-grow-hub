@@ -93,6 +93,7 @@ const SellerDashboard = lazy(() => import("./features/marketplace/pages/admin/Se
 const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
 const MarketplaceProductList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductList"));
 const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/ProductUploadPage"));
+const AdminProductDetailPage = lazy(() => import("./features/marketplace/pages/admin/AdminProductDetailPage"));
 
 // Consultation Pages
 const ConsultantList = lazy(() => import("./pages/consultation/ConsultantList"));
@@ -438,9 +439,11 @@ const App = () => {
 
                       {/* Marketplace Manager */}
                       <Route path="/marketplace/dashboard" element={<SellerDashboard />} />
+                      <Route path="/dashboard/marketplace" element={<Navigate to="/marketplace/products" replace />} />
                       <Route path="/dashboard/marketplace/products" element={<MarketplaceProductList />} />
                       <Route path="/dashboard/marketplace/products/new" element={<ProductUploadPage />} />
                       <Route path="/marketplace/products" element={<ProductListPage />} />
+                      <Route path="/marketplace/products/:slug" element={<AdminProductDetailPage />} />
                       <Route path="/marketplace/product/:slug" element={<ProductDetailPage />} />
                       <Route path="/marketplace/verification" element={<MarketplaceProductVerification />} />
                       <Route path="/marketplace/stores" element={<FeaturePreviewPage

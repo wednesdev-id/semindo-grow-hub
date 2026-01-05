@@ -26,7 +26,8 @@ export default function MarketplaceProductList() {
 
     const fetchProducts = async () => {
         try {
-            const data = await marketplaceService.getMyProducts();
+            // Admin view: get ALL products from all sellers
+            const data = await marketplaceService.getAllProductsForAdmin();
             setProducts(data);
         } catch (error) {
             console.error("Failed to fetch products:", error);

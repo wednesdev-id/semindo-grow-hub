@@ -61,12 +61,17 @@ export class MarketplaceService {
         orderBy?: Prisma.ProductOrderByWithRelationInput;
     }): Promise<Product[]> {
         const { skip, take, where, orderBy } = params;
+
+        // If where clause already has deletedAt filter (admin view), don't add isPublished filter
+        const hasDeletedAtFilter = where && 'deletedAt' in where;
+
         return prisma.product.findMany({
             skip,
             take,
-            where: {
+            where: hasDeletedAtFilter ? where : {
                 ...where,
-                deletedAt: null
+                deletedAt: null,
+                isPublished: true // Only show published products for public
             },
             orderBy,
             include: {
@@ -578,6 +583,74 @@ export class MarketplaceService {
                 isPublished: approved,
                 status: approved ? 'active' : 'rejected'
             }
+        });
+    }
+
+    async findProductsByStore(storeId: string): Promise<Product[]> {
+        return prisma.product.findMany({
+            where: { storeId, deletedAt: null },
+            include: { variants: true },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+
+    async updateProductStatus(id: string, userId: string, status: string): Promise<Product> {
+        return this.updateProduct(id, userId, { status });
+    }
+
+    async attachImagesToProduct(id: string, userId: string, newImages: string[]): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        const currentImages = Array.isArray(product.images) ? (product.images as string[]) : [];
+        const updatedImages = [...currentImages, ...newImages];
+
+        return prisma.product.update({
+            where: { id },
+            data: { images: updatedImages }
+        });
+    }
+
+    async reorderProductImages(id: string, userId: string, images: string[]): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        return prisma.product.update({
+            where: { id },
+            data: { images }
+        });
+    }
+
+    async setProductImageThumbnail(id: string, userId: string, imageUrl: string): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        let currentImages = Array.isArray(product.images) ? (product.images as string[]) : [];
+
+        // Remove the image if it exists and unshift it to the front
+        currentImages = currentImages.filter(img => img !== imageUrl);
+        currentImages.unshift(imageUrl);
+
+        return prisma.product.update({
+            where: { id },
+            data: { images: currentImages }
+        });
+    }
+
+    async deleteProductImage(id: string, userId: string, imageUrl: string): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        const currentImages = Array.isArray(product.images) ? (product.images as string[]) : [];
+        const updatedImages = currentImages.filter(img => img !== imageUrl);
+
+        return prisma.product.update({
+            where: { id },
+            data: { images: updatedImages }
         });
     }
 }

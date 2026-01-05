@@ -24,7 +24,6 @@ import { rolesRouter } from './systems/roles/routes/roles.routes';
 import { permissionsRouter } from './systems/permissions/routes/permissions.routes';
 import { auditRouter } from './systems/audit/routes/audit.routes';
 import consultationRouter from './systems/consultation/routes/consultation.routes';
-;
 
 
 

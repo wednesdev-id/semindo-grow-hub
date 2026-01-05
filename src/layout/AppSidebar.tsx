@@ -147,11 +147,12 @@ const getMenuItems = (): {
     {
       icon: <ShoppingBag size={20} />,
       name: "Marketplace Manager",
+      roles: ["admin", "management", "umkm"], // Allowed UMKM access
       subItems: [
-        { name: "Produk UMKM", path: "/marketplace/products" }, // All can view
+        { name: "Produk UMKM", path: "/marketplace/products", roles: ["admin", "management", "umkm"] },
         { name: "Verifikasi Produk", path: "/marketplace/verification", roles: ["admin", "management"] },
-        { name: "Toko UMKM", path: "/marketplace/stores" }, // All can view
-        { name: "Transaksi & Order", path: "/marketplace/orders" }, // UMKM can view their own
+        { name: "Toko UMKM", path: "/marketplace/stores", roles: ["admin", "management", "umkm"] },
+        { name: "Transaksi & Order", path: "/marketplace/orders", roles: ["admin", "management", "umkm"] },
         { name: "Komplain & Resolusi", path: "/marketplace/complaints", roles: ["admin", "management"] },
         { name: "Fee & Komisi Marketplace", path: "/marketplace/fees", roles: ["admin", "management"] },
         { name: "Integrasi Marketplace Eksternal", path: "/marketplace/integration", roles: ["admin"] },

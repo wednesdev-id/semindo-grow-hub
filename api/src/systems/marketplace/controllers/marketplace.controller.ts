@@ -221,4 +221,72 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async findProductsByStore(req: Request, res: Response) {
+        try {
+            const { storeId } = req.params;
+            const products = await marketplaceService.findProductsByStore(storeId);
+            res.json({ data: products });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async updateProductStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.updateProductStatus(id, status, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async attachImagesToProduct(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { images } = req.body;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.attachImagesToProduct(id, images, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async reorderProductImages(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { images } = req.body;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.reorderProductImages(id, images, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async setProductImageThumbnail(req: Request, res: Response) {
+        try {
+            const { id, imageId } = req.params;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.setProductImageThumbnail(id, imageId, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async deleteProductImage(req: Request, res: Response) {
+        try {
+            const { id, imageId } = req.params;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.deleteProductImage(id, imageId, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
