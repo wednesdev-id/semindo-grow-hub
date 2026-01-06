@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive, Star, Check } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive, Star, Check, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/core/auth/hooks/useAuth';
+import { ProductFiltersComponent, type ProductFilters } from '@/components/marketplace/ProductFilters';
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
 
@@ -38,6 +39,17 @@ export default function SellerDashboard() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('products');
 
+    // Filters state
+    const [filters, setFilters] = useState<ProductFilters>({
+        search: '',
+        category: null,
+        minPrice: 0,
+        maxPrice: 100000000,
+        stockStatus: 'all',
+        sortBy: 'newest',
+    });
+    const [categories, setCategories] = useState<{ id: string; name: string; count: number }[]>([]);
+
     // Product Form State
     const [showProductForm, setShowProductForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -59,18 +71,34 @@ export default function SellerDashboard() {
     });
 
     useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const cats = await marketplaceService.getCategories();
+                setCategories(cats);
+            } catch (error) {
+                console.error('Failed to load categories', error);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
         if (!user) {
             navigate('/auth/login');
             return;
         }
-        loadData();
-    }, [user, activeTab]);
+        // Debounce search to prevent too many requests
+        const timeoutId = setTimeout(() => {
+            loadData();
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [user, activeTab, filters]);
 
     const loadData = async () => {
         try {
             setLoading(true);
             if (activeTab === 'products') {
-                const data = await marketplaceService.getMyProducts();
+                const data = await marketplaceService.getMyProducts(filters);
                 setProducts(data);
             } else {
                 const data = await marketplaceService.getAllOrders();

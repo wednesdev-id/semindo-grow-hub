@@ -329,8 +329,23 @@ export const marketplaceService = {
         return api.post(`/marketplace/products/${productId}/sync`, {});
     },
 
-    getMyProducts: async (): Promise<Product[]> => {
-        const response = await api.get<{ data: any[] }>('/marketplace/my-products');
+    getMyProducts: async (filters?: {
+        search?: string;
+        category?: string;
+        stockStatus?: string;
+        sortBy?: string;
+        minPrice?: number;
+        maxPrice?: number;
+    }): Promise<Product[]> => {
+        const queryParams = new URLSearchParams();
+        if (filters?.search) queryParams.append('search', filters.search);
+        if (filters?.category) queryParams.append('category', filters.category);
+        if (filters?.stockStatus) queryParams.append('stockStatus', filters.stockStatus);
+        if (filters?.sortBy) queryParams.append('sortBy', filters.sortBy);
+        if (filters?.minPrice) queryParams.append('minPrice', filters.minPrice.toString());
+        if (filters?.maxPrice) queryParams.append('maxPrice', filters.maxPrice.toString());
+
+        const response = await api.get<{ data: any[] }>(`/marketplace/my-products?${queryParams.toString()}`);
         return response.data.map((p: any) => {
             // Determine correct status based on isPublished
             let displayStatus = p.status;

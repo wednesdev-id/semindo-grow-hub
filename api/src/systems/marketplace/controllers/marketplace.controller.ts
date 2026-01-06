@@ -166,7 +166,25 @@ class MarketplaceController {
     async getMyProducts(req: Request, res: Response) {
         try {
             const userId = (req as any).user.id;
-            const products = await marketplaceService.getMyProducts(userId);
+            const {
+                search,
+                category,
+                stockStatus,
+                sortBy,
+                minPrice,
+                maxPrice
+            } = req.query;
+
+            const params = {
+                search: search ? String(search) : undefined,
+                category: category ? String(category) : undefined,
+                stockStatus: stockStatus ? String(stockStatus) : undefined,
+                sortBy: sortBy ? String(sortBy) : undefined,
+                minPrice: minPrice ? Number(minPrice) : undefined,
+                maxPrice: maxPrice ? Number(maxPrice) : undefined,
+            };
+
+            const products = await marketplaceService.getMyProducts(userId, params);
             res.json({ data: products });
         } catch (error: any) {
             console.error('[MarketplaceController] getMyProducts error:', error);

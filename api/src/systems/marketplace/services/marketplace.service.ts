@@ -455,18 +455,77 @@ export class MarketplaceService {
         });
     }
 
-    async getMyProducts(userId: string): Promise<Product[]> {
+    async getMyProducts(userId: string, filters?: {
+        search?: string;
+        category?: string;
+        stockStatus?: string;
+        sortBy?: string;
+        minPrice?: number;
+        maxPrice?: number;
+    }): Promise<Product[]> {
         const store = await prisma.store.findFirst({ where: { userId } });
 
-        // Find products belonging to the store OR directly to the user (legacy/transitional)
+        // Base where clause for ownership
+        const where: Prisma.ProductWhereInput = {
+            OR: [
+                store ? { storeId: store.id } : {},
+                { sellerId: userId }
+            ],
+            deletedAt: null
+        };
+
+        // Apply Filters
+        if (filters) {
+            const { search, category, stockStatus, minPrice, maxPrice } = filters;
+
+            if (search) {
+                where.AND = [
+                    ...(Array.isArray(where.AND) ? where.AND : []),
+                    {
+                        OR: [
+                            { title: { contains: search, mode: 'insensitive' } },
+                            { description: { contains: search, mode: 'insensitive' } }
+                        ]
+                    }
+                ];
+            }
+
+            if (category) {
+                where.category = category;
+            }
+
+            if (minPrice !== undefined || maxPrice !== undefined) {
+                where.price = {};
+                if (minPrice !== undefined) where.price.gte = minPrice;
+                if (maxPrice !== undefined) where.price.lte = maxPrice;
+            }
+
+            if (stockStatus) {
+                if (stockStatus === 'in_stock') {
+                    where.stock = { gt: 0 };
+                } else if (stockStatus === 'low_stock') {
+                    where.stock = { gt: 0, lt: 10 };
+                } else if (stockStatus === 'out_of_stock') {
+                    where.stock = { lte: 0 };
+                }
+            }
+        }
+
+        // Apply Sorting
+        let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+        if (filters?.sortBy) {
+            switch (filters.sortBy) {
+                case 'price_asc': orderBy = { price: 'asc' }; break;
+                case 'price_desc': orderBy = { price: 'desc' }; break;
+                case 'oldest': orderBy = { createdAt: 'asc' }; break;
+                case 'popular': orderBy = { viewCount: 'desc' }; break; // Assuming viewCount exists
+                case 'newest':
+                default: orderBy = { createdAt: 'desc' };
+            }
+        }
+
         return prisma.product.findMany({
-            where: {
-                OR: [
-                    store ? { storeId: store.id } : {},
-                    { sellerId: userId }
-                ],
-                deletedAt: null
-            },
+            where,
             include: {
                 seller: {
                     select: {
@@ -479,7 +538,7 @@ export class MarketplaceService {
                     }
                 }
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy
         });
     }
 

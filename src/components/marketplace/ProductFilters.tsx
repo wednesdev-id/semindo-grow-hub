@@ -48,12 +48,12 @@ export function ProductFiltersComponent({ filters, onFiltersChange, categories }
             search: '',
             category: null,
             minPrice: 0,
-            maxPrice: 10000000,
+            maxPrice: 100000000,
             stockStatus: 'all',
             sortBy: 'newest',
         };
         setLocalFilters(resetFilters);
-        setPriceRange([0, 10000000]);
+        setPriceRange([0, 100000000]);
         onFiltersChange(resetFilters);
     };
 
@@ -69,7 +69,7 @@ export function ProductFiltersComponent({ filters, onFiltersChange, categories }
                 <div className="px-2">
                     <Slider
                         min={0}
-                        max={10000000}
+                        max={100000000}
                         step={100000}
                         value={priceRange}
                         onValueChange={setPriceRange}
