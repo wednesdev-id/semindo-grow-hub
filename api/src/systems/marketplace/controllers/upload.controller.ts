@@ -46,8 +46,8 @@ export const uploadController = {
             const thumbFileName = `thumb-${fileName}.webp`;
             const thumbPath = path.join('uploads', thumbFileName);
 
-            // Define base URL for response
-            const baseUrl = `${req.protocol}://${req.get('host')}/uploads`;
+            // Define base URL for response (using relative path for better proxy compatibility)
+            const baseUrl = `/uploads`;
 
             // Process image: resize, compress, convert to webp
             const metadata = await sharp(filePath)
@@ -87,7 +87,7 @@ export const uploadController = {
 
         try {
             const files = req.files as Express.Multer.File[];
-            const baseUrl = `${req.protocol}://${req.get('host')}/uploads`;
+            const baseUrl = `/uploads`;
 
             const results = await Promise.all(files.map(async (file) => {
                 const filePath = file.path;
@@ -107,6 +107,12 @@ export const uploadController = {
                     .resize(300, 300, { fit: 'cover' })
                     .webp({ quality: 70 })
                     .toFile(thumbPath);
+
+                // Cleanup original uploaded file
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+
                 return {
                     url: `${baseUrl}/${outputFileName}`,
                     thumbnail: `${baseUrl}/${thumbFileName}`,
@@ -114,12 +120,13 @@ export const uploadController = {
                         width: metadata.width,
                         height: metadata.height,
                         size: metadata.size,
-                        format: 'webp'
+                        format: 'webp',
+                        originalName: file.originalname
                     }
                 };
             }));
 
-            res.json({ images: results });
+            res.json({ data: results });
         } catch (error: any) {
             console.error('Multiple images processing failed:', error);
             res.status(500).json({ error: 'Failed to process images' });
@@ -155,7 +162,7 @@ export const uploadController = {
                 .webp({ quality: 70 })
                 .toFile(thumbPath);
 
-            const baseUrl = `${req.protocol}://${req.get('host')}/uploads`;
+            const baseUrl = `/uploads`;
 
             res.json({
                 url: `${baseUrl}/${outputFileName}`,

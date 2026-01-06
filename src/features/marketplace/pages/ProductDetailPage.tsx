@@ -35,7 +35,9 @@ export default function ProductDetailPage() {
             cartItems.push({
                 id: product.id,
                 name: product.name,
-                price: Number(product.price.replace(/[^0-9]/g, '')), // Extract number from "Rp 10.000" string
+                price: typeof product.price === 'string'
+                    ? Number(product.price.replace(/[^0-9]/g, ''))
+                    : product.price, // Already a number if came from API properly mapped
                 image: product.image,
                 quantity: 1,
                 seller: product.seller
@@ -97,11 +99,11 @@ export default function ProductDetailPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
                     {/* Product Image */}
                     <div className="space-y-4">
-                        <div className="aspect-square rounded-xl overflow-hidden border bg-muted/20 relative">
+                        <div className="aspect-square rounded-xl overflow-hidden border bg-muted/20 relative shadow-inner">
                             <img
                                 src={product.image}
                                 alt={product.name}
-                                className="w-full h-full object-cover"
+                                className="absolute inset-0 w-full h-full object-cover"
                             />
                             <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                                 {product.badges.map((badge, index) => (

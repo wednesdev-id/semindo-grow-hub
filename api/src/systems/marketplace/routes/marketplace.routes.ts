@@ -11,9 +11,9 @@ router.post('/products/:id/verify', authenticate, controller.verifyProduct);
 
 // Public routes
 router.get('/products', controller.findAllProducts);
+router.get('/products/categories', controller.getCategories);
+router.get('/products/top-sellers', controller.getTopSellers);
 router.get('/products/:slug', controller.findProductBySlug);
-// Products by store/UMKM
-router.get('/stores/:storeId/products', controller.findProductsByStore);
 
 // Protected routes
 router.use(authenticate);

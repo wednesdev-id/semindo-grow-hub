@@ -119,22 +119,30 @@ export default function ProductDetail() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
                     {/* Images */}
                     <div>
-                        <div className="mb-4 rounded-lg overflow-hidden border">
-                            <img
-                                src={images[selectedImage]}
-                                alt={product.name}
-                                className="w-full h-96 object-cover"
-                            />
+                        <div className="mb-4 rounded-lg overflow-hidden border bg-muted/20">
+                            <div className="aspect-[4/3] md:aspect-square w-full relative">
+                                <img
+                                    src={typeof images[selectedImage] === 'string'
+                                        ? images[selectedImage]
+                                        : (images[selectedImage] as any)?.url || images[selectedImage]}
+                                    alt={product.name}
+                                    className="absolute inset-0 w-full h-full object-cover transition-all duration-300"
+                                />
+                            </div>
                         </div>
                         <div className="grid grid-cols-4 gap-2">
                             {images.map((img, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => setSelectedImage(idx)}
-                                    className={`rounded-lg overflow-hidden border-2 ${selectedImage === idx ? 'border-primary' : 'border-transparent'
+                                    className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${selectedImage === idx ? 'border-primary shadow-sm' : 'border-transparent hover:border-primary/50'
                                         }`}
                                 >
-                                    <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-20 object-cover" />
+                                    <img
+                                        src={typeof img === 'string' ? img : (img as any)?.thumbnail || (img as any)?.url || img}
+                                        alt={`${product.name} ${idx + 1}`}
+                                        className="w-full h-full object-cover"
+                                    />
                                 </button>
                             ))}
                         </div>
@@ -164,6 +172,7 @@ export default function ProductDetail() {
                                 <div className="text-lg text-muted-foreground line-through">{product.originalPrice}</div>
                             )}
                         </div>
+
 
                         <div className="mb-6">
                             <p className="text-sm text-muted-foreground mb-2">Stock: {product.stock} units</p>
@@ -220,14 +229,13 @@ export default function ProductDetail() {
 
                         <Card>
                             <CardContent className="p-4">
-                                <div className="flex items-center gap-3 mb-3">
+                                <div className="flex items-center gap-3">
                                     <Store className="h-5 w-5 text-muted-foreground" />
                                     <div>
                                         <p className="font-medium">{product.seller}</p>
                                         <p className="text-sm text-muted-foreground">{product.location}</p>
                                     </div>
                                 </div>
-                                <Button variant="outline" className="w-full">Visit Store</Button>
                             </CardContent>
                         </Card>
                     </div>

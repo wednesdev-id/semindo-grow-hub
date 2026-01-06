@@ -2,6 +2,7 @@ import { Product, Order, Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { paymentService } from './payment.service';
 import { shopeeAdapter, tokopediaAdapter } from '../adapters/mock.adapter';
+import { options } from 'pdfkit';
 
 // Order Status Enum
 enum OrderStatus {
@@ -31,12 +32,11 @@ export class MarketplaceService {
         const store = await prisma.store.findUnique({ where: { userId } });
         if (!store) throw new Error('User does not have a store. Please create a store first.');
 
-        const { variants, shopeeLink, tokopediaLink, ...productData } = data;
+        const productData = data;
 
         // Generate slug
         const baseSlug = productData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         const slug = `${baseSlug}-${Date.now()}`;
-
 
         return prisma.product.create({
             data: {
@@ -44,12 +44,6 @@ export class MarketplaceService {
                 slug,
                 storeId: store.id,
                 sellerId: userId, // Keep for legacy compatibility
-                variants: variants ? {
-                    create: variants
-                } : undefined
-            },
-            include: {
-                variants: true,
             }
         });
     }
@@ -83,7 +77,6 @@ export class MarketplaceService {
                         rating: true,
                     }
                 },
-                variants: true,
             },
         });
     }
@@ -103,43 +96,31 @@ export class MarketplaceService {
         });
     }
 
-    async createOrder(userId: string, items: { productId: string; quantity: number; variantId?: string }[]): Promise<Order> {
+    async createOrder(userId: string, items: { productId: string; quantity: number }[]): Promise<Order> {
         // Calculate total amount and verify stock
         let totalAmount = 0;
         const orderItemsData: any[] = [];
 
         for (const item of items) {
             const product = await prisma.product.findUnique({
-                where: { id: item.productId },
-                include: { variants: true }
+                where: { id: item.productId }
             });
 
             if (!product || product.deletedAt) throw new Error(`Product ${item.productId} not found or no longer available`);
 
             let price = Number(product.price);
             let stock = product.stock;
-            let variantName: string | null = null;
-
-            if (item.variantId) {
-                const variant = product.variants.find(v => v.id === item.variantId);
-                if (!variant) throw new Error(`Variant ${item.variantId} not found for product ${product.title}`);
-
-                price = Number(variant.price);
-                stock = variant.stock;
-                variantName = variant.name;
-            }
 
             if (stock < item.quantity) {
-                throw new Error(`Insufficient stock for ${product.title} ${variantName ? `(${variantName})` : ''} `);
+                throw new Error(`Insufficient stock for ${product.title}`);
             }
 
             totalAmount += price * item.quantity;
             orderItemsData.push({
                 productId: item.productId,
-                variantId: item.variantId,
                 quantity: item.quantity,
                 price: price,
-                name: variantName ? `${product.title} - ${variantName} ` : product.title
+                name: product.title,
             });
         }
 
@@ -159,7 +140,6 @@ export class MarketplaceService {
                     items: {
                         include: {
                             product: true,
-                            variant: true,
                         },
                     },
                     user: true, // Include user to get details for payment
@@ -185,17 +165,10 @@ export class MarketplaceService {
 
             // Update stock
             for (const item of items) {
-                if (item.variantId) {
-                    await tx.productVariant.update({
-                        where: { id: item.variantId },
-                        data: { stock: { decrement: item.quantity } },
-                    });
-                } else {
-                    await tx.product.update({
-                        where: { id: item.productId },
-                        data: { stock: { decrement: item.quantity } },
-                    });
-                }
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { decrement: item.quantity } },
+                });
             }
 
             // Clear cart items if they exist
@@ -275,18 +248,30 @@ export class MarketplaceService {
     }
 
     async getMyProducts(userId: string): Promise<Product[]> {
-        const store = await prisma.store.findUnique({ where: { userId } });
-        if (!store) return [];
+        const store = await prisma.store.findFirst({ where: { userId } });
 
+        // Find products belonging to the store OR directly to the user (legacy/transitional)
         return prisma.product.findMany({
             where: {
-                storeId: store.id,
+                OR: [
+                    store ? { storeId: store.id } : {},
+                    { sellerId: userId }
+                ],
                 deletedAt: null
             },
-            orderBy: { createdAt: 'desc' },
             include: {
-                variants: true,
-            }
+                seller: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        businessName: true,
+                        umkmProfile: {
+                            select: { city: true }
+                        }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
         });
     }
 
@@ -446,7 +431,12 @@ export class MarketplaceService {
         });
 
         const recentOrders = await prisma.order.findMany({
-            where: { storeId: store.id },
+            where: {
+                OR: [
+                    { storeId: store.id },
+                    { items: { some: { product: { sellerId: userId } } } }
+                ]
+            },
             orderBy: { createdAt: 'desc' },
             take: 5,
             include: { user: { select: { fullName: true } } }
@@ -589,7 +579,6 @@ export class MarketplaceService {
     async findProductsByStore(storeId: string): Promise<Product[]> {
         return prisma.product.findMany({
             where: { storeId, deletedAt: null },
-            include: { variants: true },
             orderBy: { createdAt: 'desc' }
         });
     }
@@ -652,5 +641,67 @@ export class MarketplaceService {
             where: { id },
             data: { images: updatedImages }
         });
+    }
+
+
+    async getCategories() {
+        const categories = await prisma.product.groupBy({
+            by: ['category'],
+            where: { deletedAt: null, isPublished: true },
+            _count: {
+                _all: true
+            }
+        });
+
+        return categories.map(c => ({
+            id: c.category,
+            name: c.category,
+            count: c._count._all
+        }));
+    }
+
+    async getTopSellers() {
+        const topStores = await prisma.store.findMany({
+            where: { isActive: true },
+            take: 10,
+            include: {
+                _count: {
+                    select: {
+                        products: true,
+                        orders: {
+                            where: { status: 'completed' }
+                        }
+                    }
+                },
+                user: {
+                    select: {
+                        fullName: true,
+                        businessName: true,
+                        profilePictureUrl: true,
+                        umkmProfile: {
+                            select: {
+                                city: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                orders: {
+                    _count: 'desc'
+                }
+            }
+        });
+
+        return topStores.map(s => ({
+            id: s.id,
+            name: s.name,
+            location: s.user?.umkmProfile?.city || 'Indramayu',
+            products: s._count.products,
+            rating: Number(s.rating) || 0,
+            totalSales: String(s._count.orders),
+            verified: s.isActive,
+            image: s.logoUrl || s.user?.profilePictureUrl || '/api/placeholder/80/80'
+        }));
     }
 }

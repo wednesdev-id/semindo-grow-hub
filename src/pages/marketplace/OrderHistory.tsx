@@ -21,6 +21,7 @@ interface Order {
         id: string;
         quantity: number;
         price: number;
+        selectedOptions?: Record<string, string>;
         product: {
             id: string;
             title: string;
@@ -182,6 +183,6 @@ export default function OrderHistory() {
             </div>
 
             <Footer />
-        </div>
+        </div >
     );
 }

@@ -130,7 +130,6 @@ export default function AdminProductDetailPage() {
                     label: "Kembali",
                     onClick: () => navigate("/marketplace/products"),
                     icon: <ArrowLeft className="h-4 w-4 mr-2" />,
-                    variant: "outline"
                 }}
             />
 
@@ -140,20 +139,27 @@ export default function AdminProductDetailPage() {
                     {/* Product Images */}
                     <Card>
                         <CardContent className="p-6">
-                            <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted mb-4">
+                            <div className="aspect-square w-full rounded-lg overflow-hidden bg-muted mb-4 relative">
                                 <img
-                                    src={product.image}
+                                    src={typeof product.image === 'string' ? product.image : product.image?.url}
                                     alt={product.name}
-                                    className="w-full h-full object-cover"
+                                    className="absolute inset-0 w-full h-full object-cover"
                                 />
                             </div>
                             {product.images && product.images.length > 1 && (
                                 <div className="grid grid-cols-4 gap-2">
-                                    {product.images.slice(0, 4).map((img: string, idx: number) => (
-                                        <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-muted">
-                                            <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover" />
-                                        </div>
-                                    ))}
+                                    {product.images.slice(0, 4).map((img: any, idx: number) => {
+                                        const imageUrl = typeof img === 'string' ? img : (img.thumbnail || img.url);
+                                        return (
+                                            <div key={idx} className="aspect-square rounded-lg overflow-hidden bg-muted relative">
+                                                <img
+                                                    src={imageUrl}
+                                                    alt={`${product.name} ${idx + 1}`}
+                                                    className="absolute inset-0 w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             )}
                         </CardContent>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { marketplaceService, type Product } from '@/services/marketplaceService';
+import { marketplaceService, type Product, type ProductImage } from '@/services/marketplaceService';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive, Star, Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '@/core/auth/hooks/useAuth';
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
@@ -41,13 +42,20 @@ export default function SellerDashboard() {
     const [showProductForm, setShowProductForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [productForm, setProductForm] = useState({
+    const [productForm, setProductForm] = useState<{
+        title: string;
+        description: string;
+        price: string;
+        stock: string;
+        category: string;
+        images: ProductImage[];
+    }>({
         title: '',
         description: '',
         price: '',
         stock: '',
         category: '',
-        images: [] as string[]
+        images: []
     });
 
     useEffect(() => {
@@ -81,10 +89,12 @@ export default function SellerDashboard() {
             setProductForm({
                 title: product.name,
                 description: product.description,
-                price: product.price.replace(/[^0-9]/g, ''),
+                price: String(product.price).replace(/[^0-9]/g, ''),
                 stock: product.stock.toString(),
                 category: product.category,
-                images: product.images || []
+                images: (product.images || []).map(img =>
+                    typeof img === 'string' ? { url: img, thumbnail: img } : img
+                )
             });
         } else {
             setEditingProduct(null);
@@ -111,21 +121,22 @@ export default function SellerDashboard() {
         try {
             setSubmitting(true);
 
-            const payload = {
-                title: productForm.title,
-                description: productForm.description,
-                price: parseFloat(productForm.price),
-                stock: parseInt(productForm.stock),
-                category: productForm.category,
-                images: productForm.images.length > 0 ? productForm.images : ['/api/placeholder/300/200']
+            // Convert types for API and ensure images
+            const submissionData = {
+                ...productForm,
+                price: parseFloat(productForm.price) || 0,
+                stock: parseInt(productForm.stock) || 0,
+                images: productForm.images.length > 0
+                    ? productForm.images
+                    : [{ url: '/api/placeholder/300/200', thumbnail: '/api/placeholder/300/200', isMain: true }]
             };
 
             if (editingProduct) {
-                await marketplaceService.updateProduct(editingProduct.id, payload);
-                alert('Product updated successfully!');
+                await marketplaceService.updateProduct(editingProduct.id, submissionData);
+                toast.success('Product updated successfully!');
             } else {
-                await marketplaceService.createProduct(payload);
-                alert('Product created successfully!');
+                await marketplaceService.createProduct(submissionData);
+                toast.success('Product created successfully!');
             }
             setShowProductForm(false);
             loadData();
@@ -478,8 +489,7 @@ export default function SellerDashboard() {
                                     <Label>Product Images</Label>
 
                                     {/* File Upload from Computer */}
-                                    <div className="mt-2 border-2 border-dashed rounded-lg p-3 hover:border-primary transition-colors">
-                                        <p className="text-sm font-medium mb-2">📁 Upload from Computer</p>
+                                    <div className="mt-2 border-2 border-dashed rounded-lg p-3 hover:border-primary transition-colors relative group">
                                         <Input
                                             type="file"
                                             accept="image/*"
@@ -490,45 +500,37 @@ export default function SellerDashboard() {
 
                                                 setSubmitting(true);
                                                 try {
-                                                    const uploadedUrls: string[] = [];
+                                                    const uploadedImages = await marketplaceService.uploadMultipleImages(files);
 
-                                                    for (const file of files) {
-                                                        const formDataUpload = new FormData();
-                                                        formDataUpload.append('image', file);
+                                                    const updatedImages = [...productForm.images, ...uploadedImages];
 
-                                                        const response = await fetch('http://localhost:3001/api/v1/marketplace/upload/image', {
-                                                            method: 'POST',
-                                                            headers: {
-                                                                'Authorization': `Bearer ${localStorage.getItem('token')}`
-                                                            },
-                                                            body: formDataUpload
-                                                        });
-
-                                                        if (!response.ok) throw new Error('Upload failed');
-
-                                                        const data = await response.json();
-                                                        uploadedUrls.push(data.url);
+                                                    // Set first image as main if none exists
+                                                    if (updatedImages.length > 0 && !updatedImages.some(img => img.isMain)) {
+                                                        updatedImages[0].isMain = true;
                                                     }
 
                                                     setProductForm({
                                                         ...productForm,
-                                                        images: [...productForm.images, ...uploadedUrls]
+                                                        images: updatedImages
                                                     });
 
-                                                    alert(`✅ ${uploadedUrls.length} image(s) uploaded!`);
+                                                    toast.success(`✅ ${uploadedImages.length} image(s) uploaded!`);
                                                 } catch (error) {
                                                     console.error('Upload error:', error);
-                                                    alert('❌ Failed to upload images');
+                                                    toast.error('❌ Failed to upload images');
                                                 } finally {
                                                     setSubmitting(false);
                                                 }
                                             }}
-                                            className="cursor-pointer"
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
                                             disabled={submitting}
                                         />
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {submitting ? 'Uploading...' : 'JPG, PNG, WebP'}
-                                        </p>
+                                        <div className="text-center py-2">
+                                            <Upload className="h-6 w-6 mx-auto text-muted-foreground group-hover:text-primary mb-2" />
+                                            <p className="text-xs font-medium group-hover:text-primary">
+                                                {submitting ? 'Uploading...' : 'Click or drag to upload (JPG, PNG, WebP)'}
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {/* URL Input */}
@@ -548,9 +550,14 @@ export default function SellerDashboard() {
                                                         try {
                                                             setSubmitting(true);
                                                             const result = await marketplaceService.uploadFromUrl(url);
+                                                            const newImage: ProductImage = {
+                                                                url: result.url,
+                                                                thumbnail: result.thumbnail || result.url,
+                                                                isMain: productForm.images.length === 0
+                                                            };
                                                             setProductForm({
                                                                 ...productForm,
-                                                                images: [...productForm.images, result.url]
+                                                                images: [...productForm.images, newImage]
                                                             });
                                                             input.value = '';
                                                         } catch (err) {
@@ -569,23 +576,59 @@ export default function SellerDashboard() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="flex gap-2 mt-2 flex-wrap">
+                                    <div className="grid grid-cols-3 gap-3 mt-3">
                                         {productForm.images.map((img, idx) => (
-                                            <Badge key={idx} variant="secondary">
-                                                Image {idx + 1}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setProductForm({
-                                                            ...productForm,
-                                                            images: productForm.images.filter((_, i) => i !== idx)
-                                                        });
-                                                    }}
-                                                    className="ml-2"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            </Badge>
+                                            <div key={idx} className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${img.isMain ? 'border-primary shadow-md' : 'border-muted hover:border-primary/50'}`}>
+                                                <img src={img.url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+
+                                                {img.isMain && (
+                                                    <div className="absolute top-1 left-1 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+                                                        <Check className="h-2 w-2" /> Utama
+                                                    </div>
+                                                )}
+
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                                                    {!img.isMain && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                            size="icon"
+                                                            className="h-6 w-6 rounded-full"
+                                                            onClick={() => {
+                                                                const updated = productForm.images.map((im, i) => ({
+                                                                    ...im,
+                                                                    isMain: i === idx
+                                                                }));
+                                                                setProductForm({ ...productForm, images: updated });
+                                                            }}
+                                                        >
+                                                            <Star className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="h-6 w-6 rounded-full"
+                                                        onClick={() => {
+                                                            const updated = productForm.images.filter((_, i) => i !== idx);
+                                                            // If we removed the main image, make the first remaining one main
+                                                            if (img.isMain && updated.length > 0) {
+                                                                updated[0].isMain = true;
+                                                            }
+                                                            setProductForm({ ...productForm, images: updated });
+                                                        }}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+
+                                                {img.metadata && (
+                                                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[7px] px-1 rounded">
+                                                        {(img.metadata.size / 1024).toFixed(0)} KB
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>

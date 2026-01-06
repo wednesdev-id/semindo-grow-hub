@@ -222,15 +222,6 @@ export class MarketplaceController {
         }
     }
 
-    async findProductsByStore(req: Request, res: Response) {
-        try {
-            const { storeId } = req.params;
-            const products = await marketplaceService.findProductsByStore(storeId);
-            res.json({ data: products });
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
 
     async updateProductStatus(req: Request, res: Response) {
         try {
@@ -283,8 +274,27 @@ export class MarketplaceController {
         try {
             const { id, imageId } = req.params;
             const userId = (req as any).user.id;
-            const product = await marketplaceService.deleteProductImage(id, imageId, userId);
+            const product = await marketplaceService.deleteProductImage(id, userId, imageId);
             res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
+    async getCategories(req: Request, res: Response) {
+        try {
+            const categories = await marketplaceService.getCategories();
+            res.json({ data: categories });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getTopSellers(req: Request, res: Response) {
+        try {
+            const sellers = await marketplaceService.getTopSellers();
+            res.json({ data: sellers });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }

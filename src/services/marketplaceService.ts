@@ -17,18 +17,49 @@ export interface Category {
     count: number;
 }
 
+
+export interface StoreDetails {
+    id: string;
+    name: string;
+    slug: string;
+    description: string;
+    logoUrl?: string;
+    bannerUrl?: string;
+    rating: number;
+    totalSales: number;
+    user?: {
+        fullName: string;
+        businessName: string;
+        profilePictureUrl?: string;
+    };
+    products: Product[];
+}
+
+export interface ProductImage {
+    url: string;
+    thumbnail: string;
+    isMain?: boolean;
+    metadata?: {
+        width: number;
+        height: number;
+        size: number;
+        format: string;
+        originalName?: string;
+    };
+}
+
 export interface Product {
     id: string;
     name: string;
     slug: string;
     seller: string;
     location: string;
-    price: string;
+    price: string | number;
     originalPrice?: string;
     rating: number;
     reviews: number;
     image: string;
-    images?: string[];
+    images: ProductImage[];
     category: string;
     badges: string[];
     description: string;
@@ -57,81 +88,89 @@ export interface Order {
 
 export const marketplaceService = {
     getCategories: async (): Promise<Category[]> => {
-        // Still mock for now as we don't have a category endpoint
-        return [
-            { id: "Kuliner", name: "Kuliner & F&B", count: 245 },
-            { id: "Fashion", name: "Fashion & Tekstil", count: 189 },
-            { id: "Kerajinan", name: "Kerajinan Tangan", count: 156 },
-            { id: "Teknologi", name: "Teknologi & Digital", count: 98 },
-            { id: "Kesehatan", name: "Kesehatan & Kecantikan", count: 134 },
-            { id: "Pertanian", name: "Pertanian & Organik", count: 87 },
-            { id: "Otomotif", name: "Otomotif & Spare Part", count: 76 },
-            { id: "Elektronik", name: "Elektronik & Gadget", count: 112 }
-        ];
+        const response = await api.get<{ data: Category[] }>('/marketplace/products/categories');
+        return response.data;
     },
 
     getFeaturedProducts: async (): Promise<Product[]> => {
         const response = await api.get<{ data: any[] }>('/marketplace/products');
-        return response.data.map((p: any) => ({
-            id: p.id,
-            name: p.title,
-            slug: p.slug,
-            seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-            location: p.seller?.city || 'Indonesia',
-            price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-            rating: 0,
-            reviews: 0,
-            image: p.images?.[0] || "/api/placeholder/300/200",
-            images: p.images || [],
-            category: p.category,
-            badges: [],
-            description: p.description || '',
-            stock: p.stock,
-            status: p.status,
-            externalLinks: p.externalLinks
-        }));
+        return response.data.map((p: any) => {
+            const firstImage = p.images?.[0];
+            const imageUrl = typeof firstImage === 'string'
+                ? firstImage
+                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
+            return {
+                id: p.id,
+                name: p.title,
+                slug: p.slug,
+                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
+                location: p.seller?.umkmProfile?.city || 'Indonesia',
+                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                rating: 0,
+                reviews: 0,
+                image: imageUrl,
+                images: Array.isArray(p.images) ? p.images : [],
+                category: p.category,
+                badges: [],
+                description: p.description || '',
+                stock: p.stock,
+                status: p.status,
+                externalLinks: p.externalLinks
+            };
+        });
     },
 
     // Admin: Get ALL products from all sellers (including drafts and unpublished)
     getAllProductsForAdmin: async (): Promise<Product[]> => {
-        const response = await api.get<{ data: any[] }>('/marketplace/products', {
-            params: { includeAll: true } // This will bypass isPublished filter
+        const response = await api.get<{ data: any[] }>('/marketplace/products?includeAll=true');
+        return response.data.map((p: any) => {
+            const firstImage = p.images?.[0];
+            const imageUrl = typeof firstImage === 'string'
+                ? firstImage
+                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
+            return {
+                id: p.id,
+                name: p.title,
+                slug: p.slug,
+                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
+                location: p.seller?.umkmProfile?.city || 'Indonesia',
+                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                rating: 0,
+                reviews: 0,
+                image: imageUrl,
+                images: Array.isArray(p.images) ? p.images : [],
+                category: p.category,
+                badges: [],
+                description: p.description || '',
+                stock: p.stock,
+                status: p.status,
+                externalLinks: p.externalLinks
+            };
         });
-        return response.data.map((p: any) => ({
-            id: p.id,
-            name: p.title,
-            slug: p.slug,
-            seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-            location: p.seller?.city || 'Indonesia',
-            price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-            rating: 0,
-            reviews: 0,
-            image: p.images?.[0] || "/api/placeholder/300/200",
-            images: p.images || [],
-            category: p.category,
-            badges: [],
-            description: p.description || '',
-            stock: p.stock,
-            status: p.status,
-            externalLinks: p.externalLinks
-        }));
     },
 
     getProductBySlug: async (slug: string): Promise<Product | undefined> => {
         try {
             const response = await api.get<{ data: any }>(`/marketplace/products/${slug}`);
             const p = response.data;
+            const firstImage = p.images?.[0];
+            const imageUrl = typeof firstImage === 'string'
+                ? firstImage
+                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
             return {
                 id: p.id,
                 name: p.title,
                 slug: p.slug,
                 seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-                location: p.seller?.city || 'Indonesia',
+                location: p.seller?.umkmProfile?.city || 'Indonesia',
                 price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
                 rating: 0,
                 reviews: 0,
-                image: p.images?.[0] || "/api/placeholder/300/200",
-                images: p.images || [],
+                image: imageUrl,
+                images: Array.isArray(p.images) ? p.images : [],
                 category: p.category,
                 badges: [],
                 description: p.description || '',
@@ -152,12 +191,34 @@ export const marketplaceService = {
         });
     },
 
-    uploadMultipleImages: async (files: File[]): Promise<{ images: { url: string; thumbnail: string; metadata: any }[] }> => {
+    uploadMultipleImages: async (files: File[]): Promise<ProductImage[]> => {
         const formData = new FormData();
         files.forEach(file => formData.append('images', file));
-        return api.post('/marketplace/upload/images', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        try {
+            const response = await api.post<{ data: ProductImage[] } | any>('/marketplace/upload/images', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            console.log('[MarketplaceService] Raw upload response:', response);
+
+            // Handle berbagai struktur respon secara defensif
+            if (response && response.data && Array.isArray(response.data)) {
+                return response.data;
+            } else if (response && response.data && response.data.data && Array.isArray(response.data.data)) {
+                return response.data.data;
+            } else if (response && Array.isArray(response)) {
+                return response;
+            } else if (response && response.results && Array.isArray(response.results)) {
+                return response.results;
+            }
+
+            // Log detail jika masih gagal
+            console.error('Unexpected upload response structure:', JSON.stringify(response));
+            return [];
+        } catch (error) {
+            console.error('Upload request failed:', error);
+            throw error;
+        }
     },
 
     uploadFromUrl: async (url: string): Promise<{ url: string; thumbnail: string; metadata: any }> => {
@@ -212,17 +273,22 @@ export const marketplaceService = {
                 displayStatus = p.isPublished ? 'active' : 'draft';
             }
 
+            const firstImage = p.images?.[0];
+            const imageUrl = typeof firstImage === 'string'
+                ? firstImage
+                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
             return {
                 id: p.id,
                 name: p.title,
                 slug: p.slug,
                 seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-                location: p.seller?.city || 'Indonesia',
+                location: p.seller?.umkmProfile?.city || 'Indonesia',
                 price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
                 rating: 0,
                 reviews: 0,
-                image: p.images?.[0] || "/api/placeholder/300/200",
-                images: p.images || [],
+                image: imageUrl,
+                images: Array.isArray(p.images) ? p.images : [],
                 category: p.category,
                 badges: [],
                 description: p.description || '',
@@ -239,7 +305,7 @@ export const marketplaceService = {
     },
 
     archiveProduct: async (id: string) => {
-        return api.patch(`/marketplace/products/${id}/archive`);
+        return api.patch(`/marketplace/products/${id}/archive`, {});
     },
 
     updateProduct: async (id: string, data: any) => {
@@ -247,50 +313,22 @@ export const marketplaceService = {
     },
 
     getTopSellers: async (): Promise<Seller[]> => {
-        return [
-            {
-                id: "1",
-                name: "CV Kopi Nusantara",
-                location: "Aceh",
-                products: 24,
-                rating: 4.8,
-                totalSales: "2.5K+",
-                verified: true,
-                image: "/api/placeholder/80/80"
-            },
-            {
-                id: "2",
-                name: "Batik Heritage Solo",
-                location: "Solo",
-                products: 156,
-                rating: 4.9,
-                totalSales: "1.8K+",
-                verified: true,
-                image: "/api/placeholder/80/80"
-            },
-            {
-                id: "3",
-                name: "TechSolution Indonesia",
-                location: "Jakarta",
-                products: 12,
-                rating: 4.7,
-                totalSales: "3.2K+",
-                verified: true,
-                image: "/api/placeholder/80/80"
-            }
-        ];
+        const response = await api.get<{ data: Seller[] }>('/marketplace/products/top-sellers');
+        return response.data;
     },
 
     getAdminStats: async () => {
+        const response = await api.get<{ data: any }>('/marketplace/analytics/admin');
+        const data = response.data;
         return {
-            totalSales: 150000000,
-            totalOrders: 450,
-            activeProducts: 120,
-            pendingVerifications: 8,
-            salesTrend: { value: 15, positive: true },
-            ordersTrend: { value: 8, positive: true },
-            productsTrend: { value: 5, positive: true },
-            verificationTrend: { value: 2, positive: false },
+            totalSales: data.totalSales || 0,
+            totalOrders: data.totalOrders || 0,
+            activeProducts: data.activeProducts || 0,
+            pendingVerifications: data.pendingProducts || 0,
+            salesTrend: { value: 0, positive: true },
+            ordersTrend: { value: 0, positive: true },
+            productsTrend: { value: 0, positive: true },
+            verificationTrend: { value: 0, positive: false },
         };
     },
 
@@ -300,8 +338,8 @@ export const marketplaceService = {
         return response.data;
     },
 
-    addToCart: async (productId: string, quantity: number, variantId?: string) => {
-        const response = await api.post<{ data: any }>('/marketplace/cart/items', { productId, quantity, variantId });
+    addToCart: async (productId: string, quantity: number) => {
+        const response = await api.post<{ data: any }>('/marketplace/cart/items', { productId, quantity });
         return response.data;
     },
 
@@ -346,5 +384,6 @@ export const marketplaceService = {
     async verifyProduct(id: string, approved: boolean) {
         const response = await api.post<{ data: any }>(`/marketplace/products/${id}/verify`, { approved });
         return response.data;
-    }
+    },
+
 };

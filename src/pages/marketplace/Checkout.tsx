@@ -85,7 +85,7 @@ export default function Checkout() {
             // Create order with cart items
             const items = cart.items.map(item => ({
                 productId: item.product.id,
-                quantity: item.quantity
+                quantity: item.quantity,
             }));
 
             const orderResponse = await marketplaceService.createOrder(items);
@@ -249,7 +249,7 @@ export default function Checkout() {
                                                 />
                                                 <div className="flex-1">
                                                     <p className="font-medium text-sm line-clamp-2">{item.product.title}</p>
-                                                    <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                                                 </div>
                                                 <p className="font-semibold text-sm">
                                                     Rp {(item.product.price * item.quantity).toLocaleString('id-ID')}

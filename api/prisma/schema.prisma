@@ -735,31 +735,12 @@ model Product {
 
   store           Store?                      @relation(fields: [storeId], references: [id])
   seller          User?                       @relation(fields: [sellerId], references: [id]) // Keep for backward compat during migration
-  variants        ProductVariant[]
   cartItems       CartItem[]
   orderItems      OrderItem[]
   reviews         Review[]
   channelProducts MarketplaceChannelProduct[]
 
   @@map("products")
-}
-
-model ProductVariant {
-  id        String  @id @default(uuid())
-  productId String  @map("product_id")
-  name      String // e.g., "Red, XL"
-  sku       String?
-  price     Decimal @db.Decimal(15, 2)
-  stock     Int     @default(0)
-  image     String?
-
-  options Json? // { "Color": "Red", "Size": "XL" }
-
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderItems OrderItem[]
-  cartItems  CartItem[]
-
-  @@map("product_variants")
 }
 
 model Cart {
@@ -778,12 +759,10 @@ model CartItem {
   id        String  @id @default(uuid())
   cartId    String  @map("cart_id")
   productId String  @map("product_id")
-  variantId String? @map("variant_id")
   quantity  Int     @default(1)
 
   cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product Product         @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@map("cart_items")
 }
@@ -828,7 +807,6 @@ model OrderItem {
   id        String  @id @default(uuid())
   orderId   String  @map("order_id")
   productId String  @map("product_id")
-  variantId String? @map("variant_id")
 
   quantity Int     @default(1)
   price    Decimal @db.Decimal(15, 2) // Price at purchase time
@@ -836,7 +814,6 @@ model OrderItem {
 
   order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product         @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@map("order_items")
 }
