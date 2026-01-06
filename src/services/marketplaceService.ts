@@ -151,6 +151,78 @@ export const marketplaceService = {
         });
     },
 
+    // Search and filter products
+    searchProducts: async (params: {
+        search?: string;
+        category?: string;
+        minPrice?: number;
+        maxPrice?: number;
+        stockStatus?: string;
+        sortBy?: string;
+        page?: number;
+        limit?: number;
+    }): Promise<{
+        products: Product[];
+        pagination: {
+            total: number;
+            page: number;
+            limit: number;
+            totalPages: number;
+        };
+    }> => {
+        const queryParams = new URLSearchParams();
+
+        if (params.search) queryParams.append('search', params.search);
+        if (params.category) queryParams.append('category', params.category);
+        if (params.minPrice) queryParams.append('minPrice', params.minPrice.toString());
+        if (params.maxPrice) queryParams.append('maxPrice', params.maxPrice.toString());
+        if (params.stockStatus) queryParams.append('stockStatus', params.stockStatus);
+        if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+        if (params.page) queryParams.append('page', params.page.toString());
+        if (params.limit) queryParams.append('limit', params.limit.toString());
+
+        const response = await api.get<{
+            products: any[];
+            pagination: {
+                total: number;
+                page: number;
+                limit: number;
+                totalPages: number;
+            };
+        }>(`/marketplace/search?${queryParams.toString()}`);
+
+        const products = response.products.map((p: any) => {
+            const firstImage = p.images?.[0];
+            const imageUrl = typeof firstImage === 'string'
+                ? firstImage
+                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
+            return {
+                id: p.id,
+                name: p.title,
+                slug: p.slug,
+                seller: p.store?.name || 'Unknown Seller',
+                location: 'Indonesia',
+                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                rating: p.store?.rating || 0,
+                reviews: 0,
+                image: imageUrl,
+                images: Array.isArray(p.images) ? p.images : [],
+                category: p.category,
+                badges: [],
+                description: p.description || '',
+                stock: p.stock,
+                status: p.status,
+                externalLinks: p.externalLinks
+            };
+        });
+
+        return {
+            products,
+            pagination: response.pagination
+        };
+    },
+
     getProductBySlug: async (slug: string): Promise<Product | undefined> => {
         try {
             const response = await api.get<{ data: any }>(`/marketplace/products/${slug}`);

@@ -11,6 +11,7 @@ router.post('/products/:id/verify', authenticate, controller.verifyProduct);
 
 // Public routes
 router.get('/products', controller.findAllProducts);
+router.get('/search', controller.searchProducts); // New search endpoint
 router.get('/products/categories', controller.getCategories);
 router.get('/products/top-sellers', controller.getTopSellers);
 router.get('/products/:slug', controller.findProductBySlug);

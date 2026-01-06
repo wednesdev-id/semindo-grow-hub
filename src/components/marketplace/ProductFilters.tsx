@@ -21,9 +21,8 @@ export interface ProductFilters {
     category: string | null;
     minPrice: number;
     maxPrice: number;
-    inStock: boolean | null;
-    sortBy: 'price' | 'createdAt' | 'rating' | 'soldCount' | 'viewCount';
-    sortOrder: 'asc' | 'desc';
+    stockStatus: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock';
+    sortBy: 'newest' | 'price_asc' | 'price_desc' | 'popular';
 }
 
 interface ProductFiltersComponentProps {
@@ -50,9 +49,8 @@ export function ProductFiltersComponent({ filters, onFiltersChange, categories }
             category: null,
             minPrice: 0,
             maxPrice: 10000000,
-            inStock: null,
-            sortBy: 'createdAt',
-            sortOrder: 'desc',
+            stockStatus: 'all',
+            sortBy: 'newest',
         };
         setLocalFilters(resetFilters);
         setPriceRange([0, 10000000]);
@@ -87,21 +85,22 @@ export function ProductFiltersComponent({ filters, onFiltersChange, categories }
             {/* Stock Status */}
             <div className="space-y-3">
                 <Label>Status Stok</Label>
-                <div className="flex items-center space-x-2">
-                    <Checkbox
-                        id="inStock"
-                        checked={localFilters.inStock === true}
-                        onCheckedChange={(checked) =>
-                            setLocalFilters({ ...localFilters, inStock: checked ? true : null })
-                        }
-                    />
-                    <label
-                        htmlFor="inStock"
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                        Hanya Produk Tersedia
-                    </label>
-                </div>
+                <Select
+                    value={localFilters.stockStatus}
+                    onValueChange={(value) =>
+                        setLocalFilters({ ...localFilters, stockStatus: value as any })
+                    }
+                >
+                    <SelectTrigger>
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Semua Status</SelectItem>
+                        <SelectItem value="in_stock">Tersedia</SelectItem>
+                        <SelectItem value="low_stock">Stok Menipis</SelectItem>
+                        <SelectItem value="out_of_stock">Habis</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {/* Sort Options */}
@@ -117,34 +116,10 @@ export function ProductFiltersComponent({ filters, onFiltersChange, categories }
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="createdAt">Terbaru</SelectItem>
-                        <SelectItem value="price">Harga</SelectItem>
-                        <SelectItem value="rating">Rating</SelectItem>
-                        <SelectItem value="soldCount">Terlaris</SelectItem>
-                        <SelectItem value="viewCount">Terpopuler</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {/* Sort Order */}
-            <div className="space-y-3">
-                <Label>Urutan</Label>
-                <Select
-                    value={localFilters.sortOrder}
-                    onValueChange={(value) =>
-                        setLocalFilters({ ...localFilters, sortOrder: value as 'asc' | 'desc' })
-                    }
-                >
-                    <SelectTrigger>
-                        <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="asc">
-                            {localFilters.sortBy === 'price' ? 'Termurah' : 'A-Z'}
-                        </SelectItem>
-                        <SelectItem value="desc">
-                            {localFilters.sortBy === 'price' ? 'Termahal' : 'Z-A'}
-                        </SelectItem>
+                        <SelectItem value="newest">Terbaru</SelectItem>
+                        <SelectItem value="price_asc">Harga Terendah</SelectItem>
+                        <SelectItem value="price_desc">Harga Tertinggi</SelectItem>
+                        <SelectItem value="popular">Terpopuler</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -163,41 +138,24 @@ export function ProductFiltersComponent({ filters, onFiltersChange, categories }
     );
 
     return (
-        <>
-            {/* Desktop Filter */}
-            <div className="hidden lg:block">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">Filter Produk</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <FilterContent />
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Mobile Filter */}
-            <div className="lg:hidden">
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="outline" size="sm">
-                            <SlidersHorizontal className="h-4 w-4 mr-2" />
-                            Filter
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                        <SheetHeader>
-                            <SheetTitle>Filter Produk</SheetTitle>
-                            <SheetDescription>
-                                Sesuaikan pencarian produk Anda
-                            </SheetDescription>
-                        </SheetHeader>
-                        <div className="mt-6">
-                            <FilterContent />
-                        </div>
-                    </SheetContent>
-                </Sheet>
-            </div>
-        </>
+        <Sheet>
+            <SheetTrigger asChild>
+                <Button variant="outline" size="sm">
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Filter
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                <SheetHeader>
+                    <SheetTitle>Filter Produk</SheetTitle>
+                    <SheetDescription>
+                        Sesuaikan pencarian produk Anda
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6">
+                    <FilterContent />
+                </div>
+            </SheetContent>
+        </Sheet>
     );
 }

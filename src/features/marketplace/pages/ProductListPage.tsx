@@ -5,17 +5,26 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, ShoppingCart, MapPin, Star, ShoppingBag, Heart } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Filter, ShoppingBag, ShoppingCart, MapPin, Star, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCategoryColor } from '@/config/categoryColors';
+import { ProductFiltersComponent } from '@/components/marketplace/ProductFilters';
 
 export default function ProductListPage() {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [filters, setFilters] = useState({
+        search: '',
+        category: null as string | null,
+        sortBy: 'newest',
+    });
 
-    const { data: products, isLoading: isLoadingProducts } = useQuery({
-        queryKey: ['marketplace-products'],
-        queryFn: marketplaceService.getFeaturedProducts
+    const { data: searchResults, isLoading: isLoadingProducts } = useQuery({
+        queryKey: ['marketplace-products', filters],
+        queryFn: () => marketplaceService.searchProducts({
+            ...filters,
+            category: filters.category || undefined,
+            limit: 20
+        })
     });
 
     const { data: categories } = useQuery({
@@ -23,12 +32,7 @@ export default function ProductListPage() {
         queryFn: marketplaceService.getCategories
     });
 
-    const filteredProducts = products?.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory ? product.category === selectedCategory : true;
-        return matchesSearch && matchesCategory;
-    });
+    const products = searchResults?.products || [];
 
     return (
         <div className="space-y-8">
@@ -47,21 +51,30 @@ export default function ProductListPage() {
                             type="search"
                             placeholder="Cari produk..."
                             className="pl-8"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            value={filters.search}
+                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                         />
                     </div>
-                    <Button variant="outline" size="icon">
-                        <Filter className="h-4 w-4" />
-                    </Button>
+                    <ProductFiltersComponent
+                        filters={{
+                            search: filters.search,
+                            category: filters.category,
+                            sortBy: filters.sortBy as any,
+                            minPrice: 0,
+                            maxPrice: 10000000,
+                            stockStatus: 'all'
+                        }}
+                        onFiltersChange={(newFilters) => setFilters({ ...filters, ...newFilters })}
+                        categories={categories || []}
+                    />
                 </div>
             </div>
 
             {/* Categories */}
             <div className="flex gap-2 overflow-x-auto pb-4">
                 <Button
-                    variant={selectedCategory === null ? "default" : "outline"}
-                    onClick={() => setSelectedCategory(null)}
+                    variant={filters.category === null ? "default" : "outline"}
+                    onClick={() => setFilters({ ...filters, category: null })}
                     className="whitespace-nowrap"
                 >
                     Semua Kategori
@@ -69,8 +82,8 @@ export default function ProductListPage() {
                 {categories?.map((category) => (
                     <Button
                         key={category.id}
-                        variant={selectedCategory === category.id ? "default" : "outline"}
-                        onClick={() => setSelectedCategory(category.id)}
+                        variant={filters.category === category.id ? "default" : "outline"}
+                        onClick={() => setFilters({ ...filters, category: category.id })}
                         className="whitespace-nowrap"
                     >
                         {category.name}
@@ -93,7 +106,7 @@ export default function ProductListPage() {
                 </div>
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {filteredProducts?.map((product) => {
+                    {products.map((product) => {
                         const categoryColor = getCategoryColor(product.category);
                         return (
                             <Link key={product.id} to={`/marketplace/products/${product.slug}`}>
@@ -168,7 +181,7 @@ export default function ProductListPage() {
                 </div>
             )}
 
-            {!isLoadingProducts && filteredProducts?.length === 0 && (
+            {!isLoadingProducts && products.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                     <ShoppingBag className="h-12 w-12 text-muted-foreground/50" />
                     <h3 className="mt-4 text-lg font-semibold">Tidak ada produk ditemukan</h3>

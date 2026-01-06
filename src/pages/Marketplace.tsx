@@ -12,16 +12,31 @@ import { marketplaceService } from "@/services/marketplaceService";
 import { Link } from "react-router-dom";
 import { getCategoryIcon } from "@/config/categoryIcons";
 import { getCategoryColor } from "@/config/categoryColors";
+import { useState } from "react";
+import { ProductFiltersComponent } from "@/components/marketplace/ProductFilters";
 
 const Marketplace = () => {
+  // Filters state
+  const [filters, setFilters] = useState({
+    search: '',
+    category: null as string | null,
+    sortBy: 'newest',
+  });
+
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
     queryKey: ['marketplace-categories'],
     queryFn: marketplaceService.getCategories
   });
 
-  const { data: featuredProducts, isLoading: isLoadingProducts } = useQuery({
-    queryKey: ['marketplace-featured'],
-    queryFn: marketplaceService.getFeaturedProducts
+  // Use searchProducts instead of getFeaturedProducts
+  const { data: searchResults, isLoading: isLoadingProducts } = useQuery({
+    queryKey: ['marketplace-search', filters],
+    queryFn: () => marketplaceService.searchProducts({
+      search: filters.search || undefined,
+      category: filters.category || undefined,
+      sortBy: filters.sortBy || 'newest',
+      limit: 20
+    })
   });
 
   const { data: topSellers, isLoading: isLoadingSellers } = useQuery({
@@ -30,6 +45,10 @@ const Marketplace = () => {
   });
 
   const isLoading = isLoadingCategories || isLoadingProducts || isLoadingSellers;
+
+  const handleSearch = () => {
+    // Search is handled via state change
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,7 +79,7 @@ const Marketplace = () => {
             Marketplace UMKM – Produk Unggulan & Siap Ekspor
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8">
-            Temukan dan beli produk berkualitas dari UMKM binaan Semindo. Dari kuliner hingga teknologi, semua siap untuk pasar lokal dan ekspor.
+            Temukan dan beli produk berkualitas dari UMKM binaan Semindo. Dari kuliner hingga teknologi, semua siap untuk pasar lokal and ekspor.
           </p>
 
           {/* Simplified Search Bar - Center Aligned */}
@@ -70,9 +89,14 @@ const Marketplace = () => {
               <Input
                 placeholder="Cari produk, kategori, atau nama toko..."
                 className="pl-10 h-12"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearch();
+                }}
               />
             </div>
-            <Button size="lg" className="h-12 px-6">
+            <Button size="lg" className="h-12 px-6" onClick={handleSearch}>
               Cari
             </Button>
           </div>
@@ -94,7 +118,11 @@ const Marketplace = () => {
                   const CategoryIcon = getCategoryIcon(category.name);
                   const categoryColor = getCategoryColor(category.name);
                   return (
-                    <Link key={category.id} to="/marketplace/products">
+                    <div
+                      key={category.id}
+                      onClick={() => setFilters({ ...filters, category: category.id })}
+                      className="cursor-pointer"
+                    >
                       <Card className="hover:shadow-lg transition-all hover:scale-105 cursor-pointer h-full">
                         <CardContent className="p-6 text-center">
                           {/* Icon with colored background */}
@@ -111,7 +139,7 @@ const Marketplace = () => {
                           <p className="text-xs text-muted-foreground">{category.count} produk</p>
                         </CardContent>
                       </Card>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>
@@ -123,28 +151,22 @@ const Marketplace = () => {
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold">Produk Unggulan</h2>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filter
-                  </Button>
-                  <Select>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Urutkan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="popular">Terpopuler</SelectItem>
-                      <SelectItem value="newest">Terbaru</SelectItem>
-                      <SelectItem value="price-low">Harga Terendah</SelectItem>
-                      <SelectItem value="price-high">Harga Tertinggi</SelectItem>
-                      <SelectItem value="rating">Rating Tertinggi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <ProductFiltersComponent
+                  filters={{
+                    search: filters.search,
+                    category: filters.category,
+                    sortBy: filters.sortBy as any,
+                    minPrice: 0,
+                    maxPrice: 10000000,
+                    stockStatus: 'all'
+                  }}
+                  onFiltersChange={(newFilters) => setFilters({ ...filters, ...newFilters })}
+                  categories={categories || []}
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredProducts?.map((product) => (
+                {searchResults?.products?.map((product) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="relative">
                       <img
@@ -153,7 +175,7 @@ const Marketplace = () => {
                         className="w-full h-48 object-cover"
                       />
                       <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                        {product.badges.map((badge, index) => (
+                        {product.badges?.map((badge, index) => (
                           <Badge key={index} variant="secondary" className="text-xs">
                             {badge}
                           </Badge>
@@ -192,9 +214,9 @@ const Marketplace = () => {
                       <div className="flex items-center justify-between mb-3">
                         <div>
                           <span className="text-lg font-bold text-primary">{product.price}</span>
-                          {product.originalPrice && (
+                          {(product as any).originalPrice && (
                             <span className="text-sm text-muted-foreground line-through ml-2">
-                              {product.originalPrice}
+                              {(product as any).originalPrice}
                             </span>
                           )}
                         </div>

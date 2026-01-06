@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 
 const marketplaceService = new MarketplaceService();
 
-export class MarketplaceController {
+class MarketplaceController {
     async createProduct(req: Request, res: Response) {
         try {
             const userId = (req as any).user.id;
@@ -18,59 +18,75 @@ export class MarketplaceController {
 
     async findAllProducts(req: Request, res: Response) {
         try {
-            const {
-                skip,
-                take,
-                category,
-                search,
-                minPrice,
-                maxPrice,
-                inStock,
-                sortBy,
-                sortOrder
-            } = req.query;
+            const { skip, take, category, search, minPrice, maxPrice } = req.query;
 
-            // Parse query parameters
-            const parsedMinPrice = minPrice ? Number(minPrice) : undefined;
-            const parsedMaxPrice = maxPrice ? Number(maxPrice) : undefined;
-            const parsedInStock = inStock === 'true' ? true : inStock === 'false' ? false : undefined;
-            const parsedSortBy = sortBy as 'price' | 'createdAt' | 'rating' | 'soldCount' | 'viewCount' | undefined;
-            const parsedSortOrder = sortOrder as 'asc' | 'desc' | undefined;
+            const where: Prisma.ProductWhereInput = {
+                isPublished: true,
+            };
 
-            // Validate sortBy
-            const validSortFields = ['price', 'createdAt', 'rating', 'soldCount', 'viewCount'];
-            if (parsedSortBy && !validSortFields.includes(parsedSortBy)) {
-                return res.status(400).json({
-                    error: `Invalid sortBy field. Must be one of: ${validSortFields.join(', ')}`
-                });
+            if (category) where.category = String(category);
+            if (search) {
+                where.OR = [
+                    { title: { contains: String(search), mode: 'insensitive' } },
+                    { description: { contains: String(search), mode: 'insensitive' } },
+                ];
             }
-
-            // Validate sortOrder
-            if (parsedSortOrder && !['asc', 'desc'].includes(parsedSortOrder)) {
-                return res.status(400).json({
-                    error: 'Invalid sortOrder. Must be either "asc" or "desc"'
-                });
+            if (minPrice || maxPrice) {
+                where.price = {};
+                if (minPrice) where.price.gte = Number(minPrice);
+                if (maxPrice) where.price.lte = Number(maxPrice);
             }
 
             const products = await marketplaceService.findAllProducts({
                 skip: skip ? Number(skip) : undefined,
                 take: take ? Number(take) : undefined,
-                search: search ? String(search) : undefined,
-                category: category ? String(category) : undefined,
-                minPrice: parsedMinPrice,
-                maxPrice: parsedMaxPrice,
-                inStock: parsedInStock,
-                sortBy: parsedSortBy,
-                sortOrder: parsedSortOrder,
+                where,
+                orderBy: { createdAt: 'desc' },
             });
-
             res.json({ data: products });
         } catch (error: any) {
-            console.error('[MarketplaceController] findAllProducts error:', error);
             res.status(400).json({ error: error.message });
         }
     }
 
+    /**
+     * Search and filter products with pagination
+     * GET /api/v1/marketplace/search
+     */
+    async searchProducts(req: Request, res: Response) {
+        try {
+            const {
+                search,
+                category,
+                minPrice,
+                maxPrice,
+                stockStatus,
+                sortBy,
+                page,
+                limit,
+            } = req.query;
+
+            // Build params with defaults
+            const params = {
+                search: search ? String(search) : undefined,
+                category: category ? String(category) : undefined,
+                minPrice: minPrice ? Number(minPrice) : undefined,
+                maxPrice: maxPrice ? Number(maxPrice) : undefined,
+                stockStatus: (stockStatus as any) || 'all',
+                sortBy: (sortBy as any) || 'newest',
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+            };
+
+            // Call service
+            const result = await marketplaceService.searchProducts(params);
+
+            res.json(result);
+        } catch (error: any) {
+            console.error('[MarketplaceController] searchProducts error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
 
     async findProductBySlug(req: Request, res: Response) {
         try {
@@ -245,6 +261,23 @@ export class MarketplaceController {
         }
     }
 
+    async getCategories(req: Request, res: Response) {
+        try {
+            const categories = await marketplaceService.getCategories();
+            res.json({ data: categories });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getTopSellers(req: Request, res: Response) {
+        try {
+            const sellers = await marketplaceService.getTopSellers();
+            res.json({ data: sellers });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 
     async updateProductStatus(req: Request, res: Response) {
         try {
@@ -303,23 +336,6 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
-
-
-    async getCategories(req: Request, res: Response) {
-        try {
-            const categories = await marketplaceService.getCategories();
-            res.json({ data: categories });
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    async getTopSellers(req: Request, res: Response) {
-        try {
-            const sellers = await marketplaceService.getTopSellers();
-            res.json({ data: sellers });
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
 }
+
+export { MarketplaceController };

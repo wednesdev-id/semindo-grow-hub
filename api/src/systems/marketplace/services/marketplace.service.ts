@@ -3,6 +3,7 @@ import { prisma } from '../../../lib/prisma';
 import { paymentService } from './payment.service';
 import { shopeeAdapter, tokopediaAdapter } from '../adapters/mock.adapter';
 import { options } from 'pdfkit';
+import { ProductSearchDto, ProductSearchResponse } from '../dto';
 
 // Order Status Enum
 enum OrderStatus {
@@ -147,6 +148,144 @@ export class MarketplaceService {
                 },
             },
         });
+    }
+
+    /**
+     * Search and filter products with pagination
+     * New method using ProductSearchDto
+     */
+    async searchProducts(params: ProductSearchDto): Promise<ProductSearchResponse> {
+        const {
+            search,
+            category,
+            minPrice,
+            maxPrice,
+            stockStatus = 'all',
+            sortBy = 'newest',
+            page = 1,
+            limit = 20,
+            sellerId,
+            status
+        } = params;
+
+        // Build where clause
+        const where: Prisma.ProductWhereInput = {
+            deletedAt: null,
+            isPublished: true,
+        };
+
+        // Search by title or description
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        // Filter by category
+        if (category) {
+            where.category = category;
+        }
+
+        // Filter by price range
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            where.price = {};
+            if (minPrice !== undefined) {
+                where.price.gte = minPrice;
+            }
+            if (maxPrice !== undefined) {
+                where.price.lte = maxPrice;
+            }
+        }
+
+        // Filter by stock status
+        if (stockStatus === 'in_stock') {
+            where.stock = { gt: 0 };
+        } else if (stockStatus === 'low_stock') {
+            where.AND = [
+                { stock: { gt: 0 } },
+                { stock: { lt: 10 } }
+            ];
+        } else if (stockStatus === 'out_of_stock') {
+            where.stock = { lte: 0 };
+        }
+
+        // Filter by seller (for admin/specific use cases)
+        if (sellerId) {
+            where.sellerId = sellerId;
+        }
+
+        // Filter by status (for admin)
+        if (status) {
+            if (status === 'active') {
+                where.isPublished = true;
+            } else if (status === 'inactive') {
+                where.isPublished = false;
+            }
+        }
+
+        // Build orderBy clause
+        let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+
+        switch (sortBy) {
+            case 'price_asc':
+                orderBy = { price: 'asc' };
+                break;
+            case 'price_desc':
+                orderBy = { price: 'desc' };
+                break;
+            case 'popular':
+                orderBy = { viewCount: 'desc' };
+                break;
+            default:
+                orderBy = { createdAt: 'desc' };
+        }
+
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+
+        // Execute query with count
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                orderBy,
+                skip,
+                take: limit,
+                include: {
+                    store: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true,
+                            rating: true,
+                        }
+                    },
+                },
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        // Calculate total pages
+        const totalPages = Math.ceil(total / limit);
+
+        // Return formatted response
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages
+            },
+            filters: {
+                search,
+                category,
+                minPrice,
+                maxPrice,
+                stockStatus,
+                sortBy
+            }
+        };
     }
 
 
