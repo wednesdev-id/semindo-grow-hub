@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingCart, Heart, Share2, Star, MapPin, Store, Truck, Shield, ArrowLeft, Plus, Minus, Loader2 } from 'lucide-react';
-import { useAuth } from '@/core/auth/hooks/useAuth';
 import SEOHead from '@/components/ui/seo-head';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function ProductDetail() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { addToCart } = useCart();
+    const { toast } = useToast();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
@@ -43,43 +45,55 @@ export default function ProductDetail() {
     };
 
     const handleAddToCart = async () => {
-        if (!user) {
-            alert('Please login to add items to cart');
-            navigate('/auth/login');
-            return;
-        }
-
         if (!product) return;
 
         try {
             setAddingToCart(true);
-            await marketplaceService.addToCart(product.id, quantity);
-            alert('Product added to cart!');
-            navigate('/marketplace/cart');
+
+            // Add to cart with quantity
+            for (let i = 0; i < quantity; i++) {
+                addToCart(product);
+            }
+
+            toast({
+                title: "Berhasil!",
+                description: `${quantity} ${product.name} ditambahkan ke keranjang`,
+            });
+
+            // Reset quantity
+            setQuantity(1);
         } catch (error) {
             console.error('Failed to add to cart:', error);
-            alert('Failed to add to cart');
+            toast({
+                title: "Gagal",
+                description: "Gagal menambahkan produk ke keranjang",
+                variant: "destructive",
+            });
         } finally {
             setAddingToCart(false);
         }
     };
 
     const handleBuyNow = async () => {
-        if (!user) {
-            alert('Please login to purchase');
-            navigate('/auth/login');
-            return;
-        }
-
         if (!product) return;
 
         try {
             setAddingToCart(true);
-            await marketplaceService.addToCart(product.id, quantity);
-            navigate('/marketplace/checkout');
+
+            // Add to cart with quantity
+            for (let i = 0; i < quantity; i++) {
+                addToCart(product);
+            }
+
+            // Navigate to cart
+            navigate('/marketplace/cart');
         } catch (error) {
             console.error('Failed to add to cart:', error);
-            alert('Failed to proceed to checkout');
+            toast({
+                title: "Gagal",
+                description: "Gagal menambahkan produk ke keranjang",
+                variant: "destructive",
+            });
             setAddingToCart(false);
         }
     };

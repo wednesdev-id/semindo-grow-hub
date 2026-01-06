@@ -18,36 +18,59 @@ export class MarketplaceController {
 
     async findAllProducts(req: Request, res: Response) {
         try {
-            const { skip, take, category, search, minPrice, maxPrice } = req.query;
+            const {
+                skip,
+                take,
+                category,
+                search,
+                minPrice,
+                maxPrice,
+                inStock,
+                sortBy,
+                sortOrder
+            } = req.query;
 
-            const where: Prisma.ProductWhereInput = {
-                isPublished: true,
-            };
+            // Parse query parameters
+            const parsedMinPrice = minPrice ? Number(minPrice) : undefined;
+            const parsedMaxPrice = maxPrice ? Number(maxPrice) : undefined;
+            const parsedInStock = inStock === 'true' ? true : inStock === 'false' ? false : undefined;
+            const parsedSortBy = sortBy as 'price' | 'createdAt' | 'rating' | 'soldCount' | 'viewCount' | undefined;
+            const parsedSortOrder = sortOrder as 'asc' | 'desc' | undefined;
 
-            if (category) where.category = String(category);
-            if (search) {
-                where.OR = [
-                    { title: { contains: String(search), mode: 'insensitive' } },
-                    { description: { contains: String(search), mode: 'insensitive' } },
-                ];
+            // Validate sortBy
+            const validSortFields = ['price', 'createdAt', 'rating', 'soldCount', 'viewCount'];
+            if (parsedSortBy && !validSortFields.includes(parsedSortBy)) {
+                return res.status(400).json({
+                    error: `Invalid sortBy field. Must be one of: ${validSortFields.join(', ')}`
+                });
             }
-            if (minPrice || maxPrice) {
-                where.price = {};
-                if (minPrice) where.price.gte = Number(minPrice);
-                if (maxPrice) where.price.lte = Number(maxPrice);
+
+            // Validate sortOrder
+            if (parsedSortOrder && !['asc', 'desc'].includes(parsedSortOrder)) {
+                return res.status(400).json({
+                    error: 'Invalid sortOrder. Must be either "asc" or "desc"'
+                });
             }
 
             const products = await marketplaceService.findAllProducts({
                 skip: skip ? Number(skip) : undefined,
                 take: take ? Number(take) : undefined,
-                where,
-                orderBy: { createdAt: 'desc' },
+                search: search ? String(search) : undefined,
+                category: category ? String(category) : undefined,
+                minPrice: parsedMinPrice,
+                maxPrice: parsedMaxPrice,
+                inStock: parsedInStock,
+                sortBy: parsedSortBy,
+                sortOrder: parsedSortOrder,
             });
+
             res.json({ data: products });
         } catch (error: any) {
+            console.error('[MarketplaceController] findAllProducts error:', error);
             res.status(400).json({ error: error.message });
         }
     }
+
 
     async findProductBySlug(req: Request, res: Response) {
         try {

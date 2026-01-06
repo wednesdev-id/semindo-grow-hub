@@ -65,6 +65,7 @@ const Navigation = () => {
             <Button className="bg-gradient-primary hover:opacity-90 text-white font-medium">
               Mulai Konsultasi
             </Button>
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

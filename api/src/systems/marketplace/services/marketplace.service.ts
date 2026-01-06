@@ -48,13 +48,81 @@ export class MarketplaceService {
         });
     }
 
+
+
     async findAllProducts(params: {
         skip?: number;
         take?: number;
         where?: Prisma.ProductWhereInput;
         orderBy?: Prisma.ProductOrderByWithRelationInput;
+        // New search and filter parameters
+        search?: string;
+        category?: string;
+        minPrice?: number;
+        maxPrice?: number;
+        inStock?: boolean;
+        sortBy?: 'price' | 'createdAt' | 'rating' | 'soldCount' | 'viewCount';
+        sortOrder?: 'asc' | 'desc';
     }): Promise<Product[]> {
-        const { skip, take, where, orderBy } = params;
+        const {
+            skip,
+            take,
+            where,
+            orderBy,
+            search,
+            category,
+            minPrice,
+            maxPrice,
+            inStock,
+            sortBy,
+            sortOrder
+        } = params;
+
+        // Build dynamic where clause
+        const dynamicWhere: Prisma.ProductWhereInput = {
+            ...where,
+        };
+
+        // Search by product title or description
+        if (search) {
+            dynamicWhere.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        // Filter by category
+        if (category) {
+            dynamicWhere.category = category;
+        }
+
+        // Filter by price range
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            dynamicWhere.price = {};
+            if (minPrice !== undefined) {
+                dynamicWhere.price.gte = minPrice;
+            }
+            if (maxPrice !== undefined) {
+                dynamicWhere.price.lte = maxPrice;
+            }
+        }
+
+        // Filter by stock status
+        if (inStock !== undefined) {
+            if (inStock) {
+                dynamicWhere.stock = { gt: 0 };
+            } else {
+                dynamicWhere.stock = { lte: 0 };
+            }
+        }
+
+        // Build dynamic orderBy clause
+        let dynamicOrderBy: Prisma.ProductOrderByWithRelationInput = orderBy || { createdAt: 'desc' };
+
+        if (sortBy) {
+            const order = sortOrder || 'desc';
+            dynamicOrderBy = { [sortBy]: order };
+        }
 
         // If where clause already has deletedAt filter (admin view), don't add isPublished filter
         const hasDeletedAtFilter = where && 'deletedAt' in where;
@@ -62,12 +130,12 @@ export class MarketplaceService {
         return prisma.product.findMany({
             skip,
             take,
-            where: hasDeletedAtFilter ? where : {
-                ...where,
+            where: hasDeletedAtFilter ? dynamicWhere : {
+                ...dynamicWhere,
                 deletedAt: null,
                 isPublished: true // Only show published products for public
             },
-            orderBy,
+            orderBy: dynamicOrderBy,
             include: {
                 store: {
                     select: {
@@ -80,6 +148,7 @@ export class MarketplaceService {
             },
         });
     }
+
 
     async findProductBySlug(slug: string): Promise<Product | null> {
         return prisma.product.findFirst({

@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, ShoppingCart, MapPin, Star, ShoppingBag } from 'lucide-react';
+import { Search, Filter, ShoppingCart, MapPin, Star, ShoppingBag, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getCategoryColor } from '@/config/categoryColors';
 
 export default function ProductListPage() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -92,44 +93,78 @@ export default function ProductListPage() {
                 </div>
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {filteredProducts?.map((product) => (
-                        <Link key={product.id} to={`/marketplace/products/${product.slug}`}>
-                            <Card className="h-full overflow-hidden transition-all hover:shadow-lg">
-                                <div className="aspect-video w-full overflow-hidden bg-muted">
-                                    <img
-                                        src={product.image}
-                                        alt={product.name}
-                                        className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                                    />
-                                </div>
-                                <CardContent className="p-4">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <Badge variant="secondary" className="text-xs">
+                    {filteredProducts?.map((product) => {
+                        const categoryColor = getCategoryColor(product.category);
+                        return (
+                            <Link key={product.id} to={`/marketplace/products/${product.slug}`}>
+                                <Card className="h-full overflow-hidden transition-all hover:shadow-lg">
+                                    <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                                        <img
+                                            src={product.image}
+                                            alt={product.name}
+                                            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                                        />
+                                    </div>
+                                    <CardContent className="p-4">
+                                        {/* Category Badge with Dynamic Color */}
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-xs mb-2"
+                                            style={{
+                                                color: categoryColor.text,
+                                                backgroundColor: categoryColor.background,
+                                                borderColor: categoryColor.stroke,
+                                                border: `1px solid ${categoryColor.stroke}`
+                                            }}
+                                        >
                                             {product.category}
                                         </Badge>
-                                        <div className="flex items-center text-yellow-500">
+
+                                        {/* Product Name with Like Button */}
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <h3 className="line-clamp-2 text-lg font-semibold flex-1">
+                                                {product.name}
+                                            </h3>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    // TODO: Implement like functionality
+                                                }}
+                                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                            >
+                                                <Heart className="h-5 w-5" />
+                                            </button>
+                                        </div>
+
+                                        {/* Rating */}
+                                        <div className="flex items-center text-yellow-500 mb-2">
                                             <Star className="mr-1 h-3 w-3 fill-current" />
                                             <span className="text-xs font-medium">{product.rating || 'New'}</span>
                                         </div>
-                                    </div>
-                                    <h3 className="line-clamp-2 text-lg font-semibold">{product.name}</h3>
-                                    <div className="mt-2 flex items-center text-sm text-muted-foreground">
-                                        <MapPin className="mr-1 h-3 w-3" />
-                                        {product.location}
-                                    </div>
-                                    <div className="mt-2 font-bold text-primary">
-                                        {product.price}
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="p-4 pt-0">
-                                    <Button className="w-full" variant="outline">
-                                        <ShoppingBag className="mr-2 h-4 w-4" />
-                                        Lihat Detail
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        </Link>
-                    ))}
+
+                                        {/* Location */}
+                                        <div className="flex items-center text-sm text-muted-foreground mb-2">
+                                            <MapPin className="mr-1 h-3 w-3" />
+                                            {product.location}
+                                        </div>
+
+                                        {/* Price */}
+                                        <div className="font-bold text-primary text-lg">
+                                            {product.price}
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="p-4 pt-0">
+                                        <Button
+                                            className="w-full"
+                                        >
+                                            <ShoppingCart className="mr-2 h-4 w-4" />
+                                            Beli Sekarang
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
 

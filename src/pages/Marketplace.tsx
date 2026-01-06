@@ -10,6 +10,8 @@ import SEOHead from "@/components/ui/seo-head";
 import { useQuery } from "@tanstack/react-query";
 import { marketplaceService } from "@/services/marketplaceService";
 import { Link } from "react-router-dom";
+import { getCategoryIcon } from "@/config/categoryIcons";
+import { getCategoryColor } from "@/config/categoryColors";
 
 const Marketplace = () => {
   const { data: categories, isLoading: isLoadingCategories } = useQuery({
@@ -39,8 +41,21 @@ const Marketplace = () => {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="pt-20 pb-12 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
-        <div className="max-w-7xl mx-auto text-center">
+      <section className="pt-32 pb-12 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
+        <div className="max-w-7xl mx-auto text-center relative">
+          {/* Cart Icon - Top Right of Container */}
+          <div className="absolute -top-16 right-0">
+            <Link to="/marketplace/cart">
+              <Button size="lg" variant="outline" className="relative">
+                <ShoppingCart className="h-5 w-5" />
+                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-5 w-5 text-xs flex items-center justify-center">
+                  0
+                </span>
+              </Button>
+            </Link>
+          </div>
+
+          {/* Heading - Center Aligned */}
           <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
             Marketplace UMKM – Produk Unggulan & Siap Ekspor
           </h1>
@@ -48,8 +63,8 @@ const Marketplace = () => {
             Temukan dan beli produk berkualitas dari UMKM binaan Semindo. Dari kuliner hingga teknologi, semua siap untuk pasar lokal dan ekspor.
           </p>
 
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto flex gap-4 mb-8">
+          {/* Simplified Search Bar - Center Aligned */}
+          <div className="max-w-2xl mx-auto flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -57,21 +72,7 @@ const Marketplace = () => {
                 className="pl-10 h-12"
               />
             </div>
-            <Select>
-              <SelectTrigger className="w-48 h-12">
-                <SelectValue placeholder="Semua Kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Kategori</SelectItem>
-                {categories?.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button size="lg" className="h-12 px-8">
-              <Search className="h-4 w-4 mr-2" />
+            <Button size="lg" className="h-12 px-6">
               Cari
             </Button>
           </div>
@@ -88,15 +89,31 @@ const Marketplace = () => {
           <section className="py-12 px-4">
             <div className="max-w-7xl mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">Kategori Produk</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {categories?.map((category) => (
-                  <Card key={category.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-                    <CardContent className="p-6 text-center">
-                      <h3 className="font-semibold mb-2">{category.name}</h3>
-                      <p className="text-sm text-muted-foreground">{category.count} produk</p>
-                    </CardContent>
-                  </Card>
-                ))}
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {categories?.map((category) => {
+                  const CategoryIcon = getCategoryIcon(category.name);
+                  const categoryColor = getCategoryColor(category.name);
+                  return (
+                    <Link key={category.id} to="/marketplace/products">
+                      <Card className="hover:shadow-lg transition-all hover:scale-105 cursor-pointer h-full">
+                        <CardContent className="p-6 text-center">
+                          {/* Icon with colored background */}
+                          <div
+                            className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: categoryColor.background }}
+                          >
+                            <CategoryIcon
+                              className="h-8 w-8"
+                              style={{ color: categoryColor.text }}
+                            />
+                          </div>
+                          <h3 className="font-semibold mb-2 text-sm">{category.name}</h3>
+                          <p className="text-xs text-muted-foreground">{category.count} produk</p>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </section>
