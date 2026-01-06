@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
 import type { ConsultantProfile } from '../../types/consultation';
-import { Star, Clock, Calendar } from 'lucide-react';
+import { Star, Clock, Calendar, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function ConsultantProfile() {
     const { id } = useParams<{ id: string }>();
@@ -47,6 +48,14 @@ export default function ConsultantProfile() {
 
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* Back to Learning Hub */}
+            <div className="max-w-5xl mx-auto px-4 pt-4">
+                <Link to="/learning-hub" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
+                    <ArrowLeft className="h-4 w-4" />
+                    Kembali ke Learning Hub
+                </Link>
+            </div>
+
             <div className="max-w-5xl mx-auto px-4 py-8">
                 {/* Header Card */}
                 <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
@@ -159,7 +168,7 @@ export default function ConsultantProfile() {
 }
 
 // Booking Modal Component
-function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }) {
+function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }): JSX.Element {
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState('');
     const [availableSlots, setAvailableSlots] = useState<{ date: string; startTime: string; endTime: string; status: string }[]>([]);
@@ -186,7 +195,16 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
             setLoadingSlots(true);
             // Fetch for the specific date (start = end = date)
             const slots = await consultationService.getAvailableSlots(consultant.id, date, date);
-            setAvailableSlots(slots);
+
+            // Map AvailabilitySlot[] to the expected format
+            const mappedSlots = slots.map(slot => ({
+                date: slot.specificDate || date,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                status: slot.isAvailable ? 'available' : 'booked'
+            }));
+
+            setAvailableSlots(mappedSlots);
         } catch (error) {
             console.error('Failed to fetch slots:', error);
         } finally {
@@ -205,8 +223,8 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
             setSubmitting(true);
 
             // Calculate duration in minutes
-            const start = new Date(\`\${selectedSlot.date}T\${selectedSlot.startTime}\`);
-            const end = new Date(\`\${selectedSlot.date}T\${selectedSlot.endTime}\`);
+            const start = new Date(`${selectedSlot.date}T${selectedSlot.startTime}`);
+            const end = new Date(`${selectedSlot.date}T${selectedSlot.endTime}`);
             const durationMinutes = (end.getTime() - start.getTime()) / 60000;
 
             await consultationService.createRequest({
@@ -272,11 +290,10 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                                             key={idx}
                                             type="button"
                                             onClick={() => setSelectedSlot(slot)}
-                                            className={`px - 3 py - 2 text - sm rounded - md border transition - all ${
-                selectedSlot === slot
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
-                                            }`}
+                                            className={`px-3 py-2 text-sm rounded-md border transition-all ${selectedSlot === slot
+                                                ? 'bg-blue-600 text-white border-blue-600'
+                                                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
+                                                }`}
                                         >
                                             {slot.startTime} - {slot.endTime}
                                         </button>

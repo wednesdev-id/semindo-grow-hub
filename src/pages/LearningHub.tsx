@@ -63,32 +63,21 @@ const LearningHub = () => {
     }
   ];
 
-  const mentors = [
-    {
-      name: "Sarah Dewi",
-      expertise: "Digital Marketing Specialist",
-      experience: "8 tahun",
-      rating: 4.9,
-      sessions: 150,
-      price: "Rp 250K/jam"
-    },
-    {
-      name: "Robert Chen",
-      expertise: "Export Trade Consultant",
-      experience: "12 tahun",
-      rating: 4.8,
-      sessions: 200,
-      price: "Rp 400K/jam"
-    },
-    {
-      name: "Indira Sari",
-      expertise: "Financial Advisor",
-      experience: "10 tahun",
-      rating: 4.9,
-      sessions: 180,
-      price: "Rp 350K/jam"
+  // Fetch instructors from database
+  const { data: instructors = [] } = useQuery({
+    queryKey: ['instructors'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/v1/consultation/instructors');
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.data || [];
+      } catch (error) {
+        console.error('Failed to fetch instructors:', error);
+        return [];
+      }
     }
-  ];
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -182,6 +171,16 @@ const LearningHub = () => {
               </TabsContent>
             ))}
           </Tabs>
+
+          {/* View All Courses CTA */}
+          <div className="text-center mt-8">
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/explore/courses">
+                <BookOpen className="h-5 w-5 mr-2" />
+                Lihat Semua Kursus
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -233,52 +232,215 @@ const LearningHub = () => {
               </Card>
             ))}
           </div>
+
+          {/* View All Webinars CTA */}
+          <div className="text-center mt-8">
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/community/events">
+                <Video className="h-5 w-5 mr-2" />
+                Lihat Semua Webinar & Event
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/* Mentor Directory */}
+      {/* Course Instructors */}
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Mentor & Trainer Directory
+              Instruktur Berpengalaman
             </h2>
             <p className="text-xl text-muted-foreground">
-              Belajar langsung dari para ahli dengan sesi mentoring 1-on-1
+              Belajar dari mentor dan expert yang berpengalaman di bidangnya
             </p>
           </div>
 
-          <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
-            {mentors.map((mentor, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
-                    <Users className="h-10 w-10 text-primary" />
-                  </div>
-                  <CardTitle>{mentor.name}</CardTitle>
-                  <CardDescription>{mentor.expertise}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Pengalaman:</span>
-                    <span className="font-medium">{mentor.experience}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Rating:</span>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{mentor.rating}</span>
+          {(!instructors?.mentors?.length && !instructors?.consultants?.length) ? (
+            <div className="text-center p-8 text-muted-foreground">
+              Instruktur akan segera hadir
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Display Mentors */}
+              {instructors?.mentors?.map((mentor: any) => (
+                <Card key={mentor.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                      {mentor.user?.profilePictureUrl ? (
+                        <img src={mentor.user.profilePictureUrl} alt={mentor.user?.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="h-10 w-10 text-primary" />
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Sesi:</span>
-                    <span className="font-medium">{mentor.sessions}+</span>
-                  </div>
-                  <div className="text-lg font-semibold text-primary">{mentor.price}</div>
-                  <Button className="w-full">Book Mentoring</Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <CardTitle className="text-center text-base">{mentor.user?.fullName || 'Mentor'}</CardTitle>
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                        Mentor
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-center">{mentor.title}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {mentor.expertise?.slice(0, 2).map((exp: string, idx: number) => (
+                        <Badge key={idx} variant="outline">{exp}</Badge>
+                      ))}
+                    </div>
+                    {mentor.yearsExperience && (
+                      <div className="text-center text-sm text-muted-foreground">
+                        {mentor.yearsExperience} tahun pengalaman
+                      </div>
+                    )}
+                    <div className="text-center text-sm text-muted-foreground">
+                      {mentor.courses?.length || 0} kursus
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full" asChild>
+                      <Link to={`/lms/instructor/mentor/${mentor.id}`}>Lihat Kursus</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Display Consultants who teach */}
+              {instructors?.consultants?.map((consultant: any) => (
+                <Card key={consultant.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                      {consultant.user?.profilePictureUrl ? (
+                        <img src={consultant.user.profilePictureUrl} alt={consultant.user?.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="h-10 w-10 text-primary" />
+                      )}
+                    </div>
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <CardTitle className="text-center text-base">{consultant.user?.fullName || 'Consultant'}</CardTitle>
+                      <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
+                        Consultant
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-center">{consultant.title}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {consultant.expertise?.slice(0, 2).map((exp: string, idx: number) => (
+                        <Badge key={idx} variant="outline">{exp}</Badge>
+                      ))}
+                    </div>
+                    {consultant.yearsExperience && (
+                      <div className="text-center text-sm text-muted-foreground">
+                        {consultant.yearsExperience} tahun pengalaman
+                      </div>
+                    )}
+                    <div className="text-center text-sm text-muted-foreground">
+                      {consultant.courses?.length || 0} kursus
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full" asChild>
+                      <Link to={`/consultants/${consultant.id}`}>Lihat Profile</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Bottom CTA: Clear Pathways */}
+      <section className="py-16 px-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Butuh Bimbingan Lebih Lanjut?
+          </h2>
+          <p className="text-center text-muted-foreground mb-12">
+            Pilih jalur pembelajaran yang sesuai dengan kebutuhan Anda
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Option 1: Free Mentoring */}
+            <Card className="border-2 border-blue-200 dark:border-blue-800">
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    🎓 Program Mentoring
+                  </CardTitle>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Gratis</Badge>
+                </div>
+                <CardDescription className="text-base">
+                  Bimbingan berkelanjutan 3-6 bulan
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></div>
+                    </div>
+                    <span>Mentor profesional di-assign khusus untuk Anda</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></div>
+                    </div>
+                    <span>Follow-up rutin dan monitoring progress bisnis</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></div>
+                    </div>
+                    <span>Cocok untuk UMKM pemula yang membutuhkan bimbingan menyeluruh</span>
+                  </li>
+                </ul>
+                <Button className="w-full" variant="outline" size="lg" asChild>
+                  <Link to="/explore/mentors">
+                    Cari Mentor →
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Option 2: Paid Consultation */}
+            <Card className="border-2 border-purple-200 dark:border-purple-800">
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    💼 Konsultasi Expert
+                  </CardTitle>
+                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">On-Demand</Badge>
+                </div>
+                <CardDescription className="text-base">
+                  Solusi cepat untuk masalah spesifik
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                    </div>
+                    <span>Pilih expert sesuai kebutuhan dan budget Anda</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                    </div>
+                    <span>Booking langsung, fleksibel sesuai jadwal Anda</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                    </div>
+                    <span>Sesi 1-2 jam untuk mendapat solusi cepat</span>
+                  </li>
+                </ul>
+                <Button className="w-full" size="lg" asChild>
+                  <Link to="/explore/consultants">
+                    Cari Konsultan →
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

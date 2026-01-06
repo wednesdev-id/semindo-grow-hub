@@ -121,9 +121,17 @@ export const consultationService = {
     },
 
     async rejectRequest(id: string, reason?: string) {
-        const response = await api.patch<{ success: boolean; data: ConsultationRequest }>(
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
             `${BASE_URL}/requests/${id}/reject`,
             { reason }
+        );
+        return response.data;
+    },
+
+    async completeSession(id: string, data: { sessionNotes: string; recommendations?: string }) {
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/complete`,
+            data
         );
         return response.data;
     },
@@ -216,6 +224,21 @@ export const consultationService = {
     async getAdminChatHistory(channelId: string) {
         const response = await api.get<{ success: boolean; data: ChatMessage[] }>(
             `${BASE_URL}/admin/chat/${channelId}/messages`
+        );
+        return response.data;
+    },
+
+    // Archive Management
+    async archiveRequest(id: string) {
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/archive`
+        );
+        return response.data;
+    },
+
+    async unarchiveRequest(id: string) {
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/unarchive`
         );
         return response.data;
     },

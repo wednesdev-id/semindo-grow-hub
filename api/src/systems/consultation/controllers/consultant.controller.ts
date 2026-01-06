@@ -117,7 +117,13 @@ export const getOwnProfile = async (req: Request, res: Response, next: NextFunct
  */
 export const getOwnAvailability = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = (req as any).user.id;
+        const userId = (req as any).user?.userId || (req as any).user?.id;
+        console.log(`[Controller] getOwnAvailability for user: ${userId}`);
+
+        if (!userId) {
+            return res.status(401).json({ error: 'User ID missing in request' });
+        }
+
         const availability = await consultantService.getConsultantAvailability(userId);
 
         res.json({
@@ -134,7 +140,13 @@ export const getOwnAvailability = async (req: Request, res: Response, next: Next
  */
 export const addAvailability = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const userId = (req as any).user.id;
+        const userId = (req as any).user?.userId || (req as any).user?.id;
+        console.log(`[Controller] addAvailability for user: ${userId}`);
+
+        if (!userId) {
+            return res.status(401).json({ error: 'User ID missing in request' });
+        }
+
         const slotData = req.body;
 
         const slot = await consultantService.addAvailabilitySlot(userId, slotData);
@@ -206,3 +218,20 @@ export const rejectConsultant = async (req: Request, res: Response, next: NextFu
         next(error);
     }
 };
+
+/**
+ * Public: Get instructors (consultants who teach courses)
+ */
+export const getInstructors = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const instructors = await consultantService.getInstructors();
+
+        res.json({
+            success: true,
+            data: instructors
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+

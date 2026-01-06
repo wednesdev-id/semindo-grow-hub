@@ -21,30 +21,20 @@ const router = Router();
 // ============================================
 
 // Public routes - Browse consultants
+// Public routes - Browse consultants
 router.get('/consultants', consultantController.listConsultants);
-router.get('/consultants/:id', consultantController.getConsultant);
-router.get('/consultants/:consultantId/slots', bookingController.getAvailableSlots); // New slot endpoint
 
-// Protected routes - Manage own profile
-router.post('/consultants/profile',
-    authenticate,
-    requirePermission('consultation.consultant.create'),
-    consultantController.createProfile
-);
+// Public route - Get instructors (consultants who teach courses)
+router.get('/instructors', consultantController.getInstructors);
 
-router.patch('/consultants/profile',
-    authenticate,
-    requirePermission('consultation.consultant.update'),
-    consultantController.updateProfile
-);
 
-// Get own profile (must be before /:id to avoid route conflict)
+// Protected routes - Manage own profile (Must be before /:id)
 router.get('/consultants/profile/me',
     authenticate,
     consultantController.getOwnProfile
 );
 
-// Availability management
+// Availability management (Must be before /:id)
 router.get('/consultants/availability',
     authenticate,
     consultantController.getOwnAvailability
@@ -60,6 +50,23 @@ router.delete('/consultants/availability/:id',
     authenticate,
     requirePermission('consultation.consultant.update'),
     consultantController.removeAvailability
+);
+
+// Specific ID routes (Must be last)
+router.get('/consultants/:id', consultantController.getConsultant);
+router.get('/consultants/:consultantId/slots', bookingController.getAvailableSlots);
+
+// Profile Management Actions
+router.patch('/consultants/profile',
+    authenticate,
+    requirePermission('consultation.consultant.update'),
+    consultantController.updateProfile
+);
+
+router.post('/consultants/profile',
+    authenticate,
+    requirePermission('consultation.consultant.create'),
+    consultantController.createProfile
 );
 
 // ============================================
@@ -90,16 +97,37 @@ router.patch('/requests/:id/accept',
     bookingController.acceptRequest
 );
 
-router.patch('/requests/:id/reject',
-    authenticate,
-    requirePermission('consultation.consultant.respond'),
+router.post(
+    '/requests/:id/reject',
+    authenticate, // Assuming requireAuth() is a typo and authenticate should be used
+    requirePermission('consultation.booking.update'),
     bookingController.rejectRequest
 );
+
+// Complete session (Consultant only)
+router.post(
+    '/requests/:id/complete',
+    authenticate, // Assuming requireAuth() is a typo and authenticate should be used
+    requirePermission('consultation.booking.update'),
+    bookingController.completeSession
+);
+
 
 router.patch('/requests/:id/meeting-link',
     authenticate,
     requirePermission('consultation.consultant.update'),
     bookingController.updateMeetingLink
+);
+
+// Archive/Unarchive routes
+router.post('/requests/:id/archive',
+    authenticate,
+    bookingController.archiveRequest
+);
+
+router.post('/requests/:id/unarchive',
+    authenticate,
+    bookingController.unarchiveRequest
 );
 
 // ============================================

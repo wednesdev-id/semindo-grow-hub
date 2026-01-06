@@ -28,6 +28,7 @@ export default function ConsultantProfileSettings() {
         videoIntroUrl: ''
     });
     const [newExpertise, setNewExpertise] = useState('');
+    const [isNewProfile, setIsNewProfile] = useState(false);
 
     // Availability Data
     const [slots, setSlots] = useState<any[]>([]);
@@ -41,13 +42,15 @@ export default function ConsultantProfileSettings() {
 
     useEffect(() => {
         fetchProfile();
-        fetchAvailability();
     }, []);
 
     const fetchProfile = async () => {
         try {
             const response = await consultationService.getOwnProfile();
             const profile = (response as any).data || response;
+
+            if (!profile) throw new Error("Profile not found");
+
             setFormData({
                 title: profile.title || '',
                 bio: profile.bio || '',
@@ -56,8 +59,16 @@ export default function ConsultantProfileSettings() {
                 isAcceptingNewClients: profile.isAcceptingNewClients || false,
                 videoIntroUrl: profile.videoIntroUrl || ''
             });
+
+            setIsNewProfile(false);
+            // Only fetch availability if we are SURE profile exists and response was successful
+            fetchAvailability();
         } catch (error: any) {
-            console.error(error);
+            console.warn("Profile fetch error/not found:", error.message);
+            // If 404, it means profile doesn't exist yet
+            if (error.response?.status === 404 || error.message?.includes('not found') || error.message?.includes('404')) {
+                setIsNewProfile(true);
+            }
         } finally {
             setLoading(false);
         }
@@ -66,8 +77,14 @@ export default function ConsultantProfileSettings() {
     const fetchAvailability = async () => {
         try {
             const response = await consultationService.getAvailability();
-            setSlots((response as any).data || []);
-        } catch (error) {
+            setSlots((response as any) || []);
+        } catch (error: any) {
+            // Silently handle 404 since it just means no availability/profile yet
+            if (error.response?.status === 404 || error.message?.includes('not found') || error.message?.includes('404')) {
+                console.warn("Availability not found (likely new consultant):", error.message);
+                setSlots([]);
+                return;
+            }
             console.error("Failed to load availability", error);
         }
     };
@@ -76,14 +93,30 @@ export default function ConsultantProfileSettings() {
         e.preventDefault();
         setSaving(true);
         try {
-            await consultationService.updateProfile({
-                title: formData.title,
-                bio: formData.bio,
-                hourlyRate: parseFloat(formData.hourlyRate.toString()),
-                expertiseAreas: formData.expertiseAreas,
-                isAcceptingNewClients: formData.isAcceptingNewClients
-            });
-            toast({ title: 'Success', description: 'Profile updated successfully' });
+            if (isNewProfile) {
+                await consultationService.createProfile({
+                    title: formData.title,
+                    bio: formData.bio,
+                    hourlyRate: parseFloat(formData.hourlyRate.toString()),
+                    expertiseAreas: formData.expertiseAreas,
+                    // Default values for required fields
+                    yearsExperience: 1,
+                    certifications: '',
+                    education: '',
+                    languages: ['Indonesian']
+                });
+                setIsNewProfile(false);
+                toast({ title: 'Success', description: 'Profile created successfully' });
+            } else {
+                await consultationService.updateProfile({
+                    title: formData.title,
+                    bio: formData.bio,
+                    hourlyRate: parseFloat(formData.hourlyRate.toString()),
+                    expertiseAreas: formData.expertiseAreas,
+                    isAcceptingNewClients: formData.isAcceptingNewClients
+                });
+                toast({ title: 'Success', description: 'Profile updated successfully' });
+            }
         } catch (error: any) {
             toast({ title: 'Error', description: error.message, variant: 'destructive' });
         } finally {
@@ -92,6 +125,11 @@ export default function ConsultantProfileSettings() {
     };
 
     const handleAddSlot = async () => {
+        if (isNewProfile) {
+            toast({ title: 'Error', description: 'Please create your profile first before adding slots.', variant: 'destructive' });
+            return;
+        }
+
         if (!newSlot.startTime || !newSlot.endTime) {
             toast({ title: 'Error', description: 'Please fill time details', variant: 'destructive' });
             return;
@@ -157,7 +195,7 @@ export default function ConsultantProfileSettings() {
             <Tabs defaultValue="profile">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="profile">Profile Settings</TabsTrigger>
-                    <TabsTrigger value="availability">Availability & Slots</TabsTrigger>
+                    <TabsTrigger value="availability" disabled={isNewProfile} title={isNewProfile ? "Create profile first" : ""} >Availability & Slots</TabsTrigger>
                 </TabsList>
 
                 {/* PROFILE TAB */}
@@ -230,7 +268,7 @@ export default function ConsultantProfileSettings() {
                                 </div>
                                 <div className="flex justify-end pt-4">
                                     <Button type="submit" disabled={saving}>
-                                        {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : 'Save Profile Changes'}
+                                        {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : (isNewProfile ? 'Create Profile' : 'Save Profile Changes')}
                                     </Button>
                                 </div>
                             </form>
@@ -330,7 +368,9 @@ export default function ConsultantProfileSettings() {
                                                                 : format(new Date(slot.specificDate || slot.date), 'EEE, dd MMM yyyy')
                                                             }
                                                         </div>
-                                                        <div className="text-muted-foreground">{slot.startTime.toString().slice(0, 5)} - {slot.endTime.toString().slice(0, 5)}</div>
+                                                        <div className="text-muted-foreground">
+                                                            {format(new Date(slot.startTime), 'HH:mm')} - {format(new Date(slot.endTime), 'HH:mm')}
+                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">

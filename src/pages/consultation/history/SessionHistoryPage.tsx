@@ -38,8 +38,10 @@ export default function SessionHistoryPage() {
             setLoading(true);
             // Fetch as client by default (backend handles role logic if needed, or we might need a role switcher)
             // Assuming 'client' role for now as this is "Riwayat Konsultasi Saya"
-            const data = await consultationService.getRequests();
-            setSessions(data);
+            const response = await consultationService.getRequests();
+            // Extract the data array from response object
+            const sessionsData = Array.isArray(response) ? response : (response as any).data || [];
+            setSessions(sessionsData);
         } catch (error) {
             toast({
                 title: "Error fetching history",
@@ -113,6 +115,7 @@ export default function SessionHistoryPage() {
                                     <SelectItem value="approved">Upcoming</SelectItem>
                                     <SelectItem value="completed">Completed</SelectItem>
                                     <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="rejected">Rejected</SelectItem>
                                     <SelectItem value="cancelled">Cancelled</SelectItem>
                                 </SelectContent>
                             </Select>

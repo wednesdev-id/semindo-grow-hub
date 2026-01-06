@@ -58,7 +58,7 @@ export default function SchedulePage() {
 
             // Map AvailabilitySlot[] to Slot[]
             const mappedSlots: Slot[] = slots.map(s => ({
-                date: s.specificDate || s.date || format(new Date(), 'yyyy-MM-dd'), // Fallback or correct mapping
+                date: s.specificDate || format(new Date(), 'yyyy-MM-dd'), // Use specificDate from AvailabilitySlot
                 startTime: s.startTime,
                 endTime: s.endTime,
                 status: s.isAvailable ? 'available' : 'booked'

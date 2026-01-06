@@ -113,7 +113,7 @@ export default function ConsultantList() {
                         {consultants.map((consultant) => (
                             <Link
                                 key={consultant.id}
-                                to={`/consultation/consultants/${consultant.id}`}
+                                to={`/consultation/consultant/${consultant.id}`}
                                 className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden"
                             >
                                 <div className="p-6">

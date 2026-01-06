@@ -229,6 +229,7 @@ export const getConsultantAvailability = async (userId: string) => {
         throw new Error('Consultant profile not found');
     }
 
+    console.log(`[Service] Found availability for user ${userId}:`, profile.availability.length, 'slots');
     return profile.availability;
 };
 
@@ -244,18 +245,29 @@ export const addAvailabilitySlot = async (userId: string, slotData: any) => {
         throw new Error('Consultant profile not found');
     }
 
-    return await prisma.consultantAvailability.create({
+    // Convert time strings (HH:mm) to Date objects
+    // Prisma requires a Date object for DateTime fields, even if mapped to @db.Time
+    const today = new Date().toISOString().split('T')[0];
+    const baseDate = slotData.specificDate ? new Date(slotData.specificDate).toISOString().split('T')[0] : today;
+
+    const startTimeDate = new Date(`${baseDate}T${slotData.startTime}:00`);
+    const endTimeDate = new Date(`${baseDate}T${slotData.endTime}:00`);
+
+    const newSlot = await prisma.consultantAvailability.create({
         data: {
             consultantId: profile.id,
             dayOfWeek: slotData.dayOfWeek,
-            startTime: slotData.startTime,
-            endTime: slotData.endTime,
+            startTime: startTimeDate,
+            endTime: endTimeDate,
             isRecurring: slotData.isRecurring ?? true,
-            specificDate: slotData.specificDate,
+            specificDate: slotData.specificDate ? new Date(slotData.specificDate) : null,
             isAvailable: slotData.isAvailable ?? true,
             timezone: slotData.timezone || 'Asia/Jakarta'
         }
     });
+
+    console.log('[Service] Created newly slot:', newSlot);
+    return newSlot;
 };
 
 /**
@@ -311,3 +323,83 @@ export const rejectConsultant = async (consultantId: string, reason: string) => 
         }
     });
 };
+
+/**
+ * Public: Get instructors (mentors + consultants who teach courses)
+ */
+export const getInstructors = async () => {
+    // Get mentors (all mentors can teach)
+    const mentors = await prisma.mentorProfile.findMany({
+        where: {
+            isVerified: true
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    profilePictureUrl: true
+                }
+            },
+            courses: {
+                where: { isPublished: true },
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    thumbnail: true
+                }
+            }
+        },
+        orderBy: {
+            rating: 'desc'
+        }
+    });
+
+    // Get consultants who opted-in to teaching
+    const consultants = await prisma.consultantProfile.findMany({
+        where: {
+            canTeachCourses: true,
+            status: 'approved'
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    profilePictureUrl: true
+                }
+            },
+            courses: {
+                where: { isPublished: true },
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    thumbnail: true
+                }
+            }
+        },
+        orderBy: {
+            totalCoursesCreated: 'desc'
+        }
+    });
+
+    // Merge and add type indicator
+    return {
+        mentors: mentors.map(m => ({
+            ...m,
+            type: 'mentor' as const,
+            expertise: m.expertise,
+            yearsExperience: m.experience
+        })),
+        consultants: consultants.map(c => ({
+            ...c,
+            type: 'consultant' as const,
+            expertise: c.expertiseAreas,
+            yearsExperience: c.yearsExperience
+        }))
+    };
+};
+
+

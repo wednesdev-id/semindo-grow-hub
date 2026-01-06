@@ -10,6 +10,8 @@ export interface ConsultantProfile {
     industries: string[];
     languages: string[];
     yearsExperience?: number;
+    certifications?: string;
+    education?: string;
     hourlyRate?: number;
     currency: string;
     isAcceptingNewClients: boolean;
@@ -41,6 +43,8 @@ export interface ConsultationRequest {
     meetingPlatform?: string;
     sessionNotes?: string;
     timezone?: string;
+    isArchived?: boolean;
+    archivedAt?: string;
     createdAt: string;
     consultant?: ConsultantProfile;
     client?: {
