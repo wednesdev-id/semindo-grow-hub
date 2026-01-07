@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { consultationService } from '../../services/consultationService';
+import { api } from '@/services/api';
+import { ExpertiseCategory } from '@/types/consultation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +12,9 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, X, Calendar, Clock, Trash2 } from 'lucide-react';
+import { Loader2, Plus, X, Calendar, Clock, Trash2, Check } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
+import PackagesTab from '@/components/consultation/PackagesTab';
 
 export default function ConsultantProfileSettings() {
     const [loading, setLoading] = useState(true);
@@ -23,11 +26,12 @@ export default function ConsultantProfileSettings() {
         title: '',
         bio: '',
         hourlyRate: 0,
-        expertiseAreas: [] as string[],
+        expertiseAreas: [] as string[], // Deprecated, kept for backward compatibility
+        expertiseIds: [] as string[], // New: selected expertise IDs
         isAcceptingNewClients: false,
         videoIntroUrl: ''
     });
-    const [newExpertise, setNewExpertise] = useState('');
+    const [expertiseList, setExpertiseList] = useState<ExpertiseCategory[]>([]);
     const [isNewProfile, setIsNewProfile] = useState(false);
 
     // Availability Data
@@ -41,8 +45,19 @@ export default function ConsultantProfileSettings() {
     });
 
     useEffect(() => {
+        fetchExpertise();
         fetchProfile();
     }, []);
+
+    const fetchExpertise = async () => {
+        try {
+            const response = await api.get<{ success: boolean; data: ExpertiseCategory[] }>('/consultation/expertise/active');
+            const data = response.data || response;
+            setExpertiseList(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Failed to load expertise:', error);
+        }
+    };
 
     const fetchProfile = async () => {
         try {
@@ -56,6 +71,7 @@ export default function ConsultantProfileSettings() {
                 bio: profile.bio || '',
                 hourlyRate: profile.hourlyRate || 0,
                 expertiseAreas: profile.expertiseAreas || [],
+                expertiseIds: profile.expertise?.map((e: any) => e.expertise?.id || e.id) || [],
                 isAcceptingNewClients: profile.isAcceptingNewClients || false,
                 videoIntroUrl: profile.videoIntroUrl || ''
             });
@@ -98,7 +114,7 @@ export default function ConsultantProfileSettings() {
                     title: formData.title,
                     bio: formData.bio,
                     hourlyRate: parseFloat(formData.hourlyRate.toString()),
-                    expertiseAreas: formData.expertiseAreas,
+                    expertiseIds: formData.expertiseIds,
                     // Default values for required fields
                     yearsExperience: 1,
                     certifications: '',
@@ -112,7 +128,7 @@ export default function ConsultantProfileSettings() {
                     title: formData.title,
                     bio: formData.bio,
                     hourlyRate: parseFloat(formData.hourlyRate.toString()),
-                    expertiseAreas: formData.expertiseAreas,
+                    expertiseIds: formData.expertiseIds,
                     isAcceptingNewClients: formData.isAcceptingNewClients
                 });
                 toast({ title: 'Success', description: 'Profile updated successfully' });
@@ -172,15 +188,21 @@ export default function ConsultantProfileSettings() {
         }
     };
 
-    const addExpertise = () => {
-        if (!newExpertise.trim()) return;
-        if (formData.expertiseAreas.includes(newExpertise.trim())) return;
-        setFormData(prev => ({ ...prev, expertiseAreas: [...prev.expertiseAreas, newExpertise.trim()] }));
-        setNewExpertise('');
-    };
-
-    const removeExpertise = (area: string) => {
-        setFormData(prev => ({ ...prev, expertiseAreas: prev.expertiseAreas.filter(a => a !== area) }));
+    const toggleExpertise = (expertiseId: string) => {
+        setFormData(prev => {
+            const isSelected = prev.expertiseIds.includes(expertiseId);
+            if (isSelected) {
+                // Remove if already selected
+                return { ...prev, expertiseIds: prev.expertiseIds.filter(id => id !== expertiseId) };
+            } else {
+                // Add if not at max (5)
+                if (prev.expertiseIds.length >= 5) {
+                    toast({ title: 'Limit reached', description: 'Maximum 5 expertise areas allowed', variant: 'destructive' });
+                    return prev;
+                }
+                return { ...prev, expertiseIds: [...prev.expertiseIds, expertiseId] };
+            }
+        });
     };
 
     if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
@@ -193,8 +215,9 @@ export default function ConsultantProfileSettings() {
             </div>
 
             <Tabs defaultValue="profile">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="profile">Profile Settings</TabsTrigger>
+                    <TabsTrigger value="packages" disabled={isNewProfile} title={isNewProfile ? "Create profile first" : ""}>Packages</TabsTrigger>
                     <TabsTrigger value="availability" disabled={isNewProfile} title={isNewProfile ? "Create profile first" : ""} >Availability & Slots</TabsTrigger>
                 </TabsList>
 
@@ -217,25 +240,14 @@ export default function ConsultantProfileSettings() {
                                         onCheckedChange={(checked) => setFormData({ ...formData, isAcceptingNewClients: checked })}
                                     />
                                 </div>
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="title">Professional Title</Label>
-                                        <Input
-                                            id="title"
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                            placeholder="e.g. Senior Financial Advisor"
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="hourlyRate">Hourly Rate (IDR)</Label>
-                                        <Input
-                                            id="hourlyRate"
-                                            type="number"
-                                            value={formData.hourlyRate}
-                                            onChange={(e) => setFormData({ ...formData, hourlyRate: Number(e.target.value) })}
-                                        />
-                                    </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="title">Professional Title</Label>
+                                    <Input
+                                        id="title"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        placeholder="e.g. Senior Financial Advisor"
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="bio">Professional Bio</Label>
@@ -247,23 +259,29 @@ export default function ConsultantProfileSettings() {
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label>Expertise Areas</Label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            value={newExpertise}
-                                            onChange={(e) => setNewExpertise(e.target.value)}
-                                            placeholder="Add expertise..."
-                                            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addExpertise())}
-                                        />
-                                        <Button type="button" onClick={addExpertise} variant="outline"><Plus className="h-4 w-4" /></Button>
+                                    <Label>Expertise Areas *</Label>
+                                    <p className="text-sm text-muted-foreground">Select 1-5 areas of expertise</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {expertiseList.map((expertise) => {
+                                            const isSelected = formData.expertiseIds.includes(expertise.id);
+                                            return (
+                                                <button
+                                                    key={expertise.id}
+                                                    type="button"
+                                                    onClick={() => toggleExpertise(expertise.id)}
+                                                    className={`flex items-center justify-between gap-2 p-3 rounded-lg border-2 transition-all ${isSelected
+                                                        ? 'border-primary bg-primary/5 text-primary'
+                                                        : 'border-gray-200 hover:border-gray-300'
+                                                        }`}
+                                                >
+                                                    <span className="text-sm font-medium text-left">{expertise.name}</span>
+                                                    {isSelected && <Check className="h-4 w-4 flex-shrink-0" />}
+                                                </button>
+                                            );
+                                        })}
                                     </div>
-                                    <div className="flex flex-wrap gap-2 mt-2">
-                                        {formData.expertiseAreas.map((area) => (
-                                            <Badge key={area} variant="secondary" className="flex items-center gap-1">
-                                                {area}
-                                                <X className="h-3 w-3 cursor-pointer hover:text-destructive" onClick={() => removeExpertise(area)} />
-                                            </Badge>
-                                        ))}
+                                    <div className="text-sm text-muted-foreground">
+                                        Selected: {formData.expertiseIds.length}/5
                                     </div>
                                 </div>
                                 <div className="flex justify-end pt-4">
@@ -386,6 +404,11 @@ export default function ConsultantProfileSettings() {
                             </div>
                         </CardContent>
                     </Card>
+                </TabsContent>
+
+                {/* PACKAGES TAB */}
+                <TabsContent value="packages">
+                    <PackagesTab />
                 </TabsContent>
             </Tabs>
         </div>

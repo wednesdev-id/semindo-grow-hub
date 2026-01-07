@@ -78,8 +78,7 @@ const getMenuItems = (): {
         { name: "Kelola Admin", path: "/users/admins", roles: ["admin"] },
         { name: "Import / Export Data User", path: "/users/import-export", roles: ["admin"] },
         { name: "Audit User Activity", path: "/users/audit", roles: ["admin", "management"] },
-        // Consultant Self-Service
-        { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
+
       ],
     },
     // 3. UMKM Database
@@ -192,15 +191,17 @@ const getMenuItems = (): {
       name: "Consultation Management",
       subItems: [
         // User Features (All can access)
-        { name: "Browse Consultants", path: "/consultation/consultants" },
-        { name: "My Consultations", path: "/consultation/dashboard" },
-        { name: "Schedule Consultation", path: "/consultation/schedule" }, // Preview
+        { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
+        { name: "Browse Consultants", path: "/consultation/consultants", roles: ["admin", "management", "umkm"] },
+        { name: "My Consultations", path: "/consultation/dashboard", roles: ["consultant", "konsultan"] },
+        { name: "Schedule Consultation", path: "/consultation/schedule", roles: ["admin", "management", "umkm"] }, // Preview
         { name: "Consultation History", path: "/consultation/history" }, // Preview
 
         // Admin Features
         { name: "Dashboard Overview", path: "/dashboard/consultation/dashboard", roles: ["admin", "management"] },
         { name: "Pending Approvals", path: "/dashboard/consultation/consultants/pending", roles: ["admin", "management"] },
         { name: "Active Consultants", path: "/dashboard/consultation/consultants/active", roles: ["admin", "management"] }, // Preview
+        { name: "Expertise Categories", path: "/dashboard/consultation/expertise", roles: ["admin", "management"] },
         { name: "All Requests", path: "/dashboard/consultation/requests/all", roles: ["admin", "management"] }, // Preview
         { name: "Chat Monitoring", path: "/dashboard/consultation/chat-monitoring", roles: ["admin", "management"] }, // Preview
         { name: "Reports & Analytics", path: "/dashboard/consultation/reports", roles: ["admin", "management"] }, // Preview

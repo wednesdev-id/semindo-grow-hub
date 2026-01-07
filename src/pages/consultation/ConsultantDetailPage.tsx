@@ -14,6 +14,7 @@ import {
     Star, Clock, Calendar, ArrowLeft, Briefcase, CheckCircle,
     MapPin, Globe, Users, Award, MessageSquare, Video
 } from 'lucide-react';
+import ReviewList from '@/components/consultation/ReviewList';
 
 export default function ConsultantDetailPage() {
     const { id } = useParams<{ id: string }>();
@@ -107,7 +108,11 @@ export default function ConsultantDetailPage() {
                                 </div>
                                 <div className="flex flex-col items-start md:items-end gap-2">
                                     <div className="text-2xl font-bold text-blue-600">
-                                        Rp {consultant.hourlyRate?.toLocaleString('id-ID')}/jam
+                                        {(consultant as any).packages?.length ? (
+                                            <>Mulai Rp {Math.min(...(consultant as any).packages.map((p: any) => p.price)).toLocaleString('id-ID')}</>
+                                        ) : consultant.hourlyRate ? (
+                                            <>Rp {consultant.hourlyRate.toLocaleString('id-ID')}/jam</>
+                                        ) : null}
                                     </div>
                                     <Button
                                         size="lg"
@@ -221,6 +226,9 @@ export default function ConsultantDetailPage() {
                             </CardContent>
                         </Card>
                     )}
+
+                    {/* Reviews Section */}
+                    <ReviewList consultantId={id!} />
                 </div>
 
                 {/* Right Column - Sidebar */}

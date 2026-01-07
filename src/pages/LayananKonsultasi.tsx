@@ -1,61 +1,132 @@
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Navigation from "@/components/ui/navigation";
 import Footer from "@/components/ui/footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bot, DollarSign, FileCheck, Globe, Calendar, Phone, Clock } from "lucide-react";
+import {
+  Star, Calendar, Phone, Clock, TrendingUp, Briefcase,
+  Scale, Globe, Laptop, DollarSign, Users, ArrowRight
+} from "lucide-react";
 import SEOHead from "@/components/ui/seo-head";
+import { consultationService } from '@/services/consultationService';
+import { api } from '@/services/api';
+import type { ConsultantProfile, ExpertiseCategory } from '@/types/consultation';
+import { BookingForm } from '@/components/consultation/BookingForm';
 
 const LayananKonsultasi = () => {
-  const services = [
-    {
-      icon: Bot,
-      title: "Konsultasi Digital",
-      description: "Transformasi digital dengan AI chatbot dan meeting online",
-      features: ["AI-powered analysis", "Virtual consultation", "Digital roadmap", "Tech recommendations"],
-      price: "Mulai Rp 500K"
-    },
-    {
-      icon: DollarSign,
-      title: "Konsultasi Keuangan",
-      description: "Pembukuan, pembiayaan, dan akses permodalan UMKM",
-      features: ["Financial health check", "Bookkeeping setup", "Funding access", "Investment planning"],
-      price: "Mulai Rp 750K"
-    },
-    {
-      icon: FileCheck,
-      title: "Sertifikasi & Legalitas",
-      description: "Halal, BPOM, HAKI, dan perizinan usaha lengkap",
-      features: ["Halal certification", "BPOM guidance", "IP protection", "Business permits"],
-      price: "Mulai Rp 1M"
-    },
-    {
-      icon: Globe,
-      title: "Pasar & Ekspor",
-      description: "Riset pasar, buyer matching, dan strategi ekspor",
-      features: ["Market research", "Export strategy", "Buyer connections", "Trade facilitation"],
-      price: "Mulai Rp 2M"
+  const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [consultants, setConsultants] = useState<ConsultantProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [bookingCategory, setBookingCategory] = useState<string>('');
+  const [expertiseCategories, setExpertiseCategories] = useState<ExpertiseCategory[]>([]);
+  const [bookingConsultantId, setBookingConsultantId] = useState<string>('');
+  const [availableConsultants, setAvailableConsultants] = useState<ConsultantProfile[]>([]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    fetchExpertiseCategories();
+  }, []);
+
+  useEffect(() => {
+    loadConsultants();
+  }, [selectedCategory]);
+
+  // Update consultants when category changes
+  useEffect(() => {
+    if (bookingCategory) {
+      // Find category name to match legacy expertiseAreas
+      const category = expertiseCategories.find(c => c.id === bookingCategory);
+      if (category) {
+        fetchConsultantsByCategory(category.name);
+        setBookingConsultantId('');
+      }
+    } else {
+      setAvailableConsultants([]);
     }
-  ];
+  }, [bookingCategory, expertiseCategories]);
+
+  const fetchExpertiseCategories = async () => {
+    try {
+      const response = await api.get<{ success: boolean; data: ExpertiseCategory[] }>('/consultation/expertise/active');
+      const data = (response as any)?.data || response;
+      setExpertiseCategories(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load expertise categories:', error);
+    }
+  };
+
+  const loadConsultants = async () => {
+    try {
+      setLoading(true);
+      const response = await consultationService.listConsultants({
+        expertise: selectedCategory === 'all' ? undefined : selectedCategory,
+        status: 'approved'
+      });
+
+      // Get featured consultants (top rated, max 8)
+      const data = (response as any)?.data || response;
+      const featured = data
+        .filter((c: ConsultantProfile) => c.isAcceptingNewClients)
+        .sort((a: ConsultantProfile, b: ConsultantProfile) => b.averageRating - a.averageRating)
+        .slice(0, 8);
+
+      setConsultants(featured);
+    } catch (error) {
+      console.error('Failed to load consultants:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchConsultantsByCategory = async (expertiseId: string) => {
+    try {
+      const response = await consultationService.listConsultants({
+        expertise: expertiseId,
+        status: 'approved'
+      });
+      const data = (response as any)?.data || response;
+      setAvailableConsultants(data);
+    } catch (error) {
+      console.error('Failed to load consultants for booking:', error);
+    }
+  };
+
+  const getInitials = (name: string) => {
+    return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'CN';
+  };
+
+  const handleQuickBook = () => {
+    if (bookingConsultantId) {
+      navigate(`/consultants/${bookingConsultantId}`);
+    } else if (bookingCategory) {
+      navigate(`/explore/consultants?expertise=${bookingCategory}`);
+    } else {
+      navigate('/explore/consultants');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead 
+      <SEOHead
         title="Layanan Konsultasi UMKM – Digital, Keuangan, Sertifikasi, Ekspor"
         description="Dapatkan konsultasi online untuk keuangan, digitalisasi, legalitas, dan ekspor. Booking jadwal dengan konsultan ahli Semindo secara mudah."
         keywords="konsultasi UMKM, konsultasi digital, konsultasi keuangan, sertifikasi halal, konsultasi ekspor"
       />
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="pt-20 pb-12 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-7xl mx-auto text-center">
           <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
-            Layanan <span className="text-primary">Konsultasi</span>
+            Konsultasi dengan <span className="text-primary">Expert Ahli</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
             Solusi konsultasi komprehensif untuk mengakselerasi pertumbuhan UMKM Anda
@@ -63,51 +134,147 @@ const LayananKonsultasi = () => {
         </div>
       </section>
 
-      {/* Services Grid */}
-      <section className="py-16 px-4">
+      {/* Category Pills */}
+      <section className="py-8 px-4 bg-background border-b">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-8">
-            {services.map((service, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                      <service.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <Badge variant="secondary">{service.price}</Badge>
-                  </div>
-                  <CardTitle className="text-xl">{service.title}</CardTitle>
-                  <CardDescription>{service.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3 mb-6">
-                    {service.features.map((feature, idx) => (
-                      <div key={idx} className="flex items-center text-sm text-muted-foreground">
-                        <div className="w-2 h-2 bg-primary rounded-full mr-3"></div>
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                  <Button className="w-full">Konsultasi Sekarang</Button>
-                </CardContent>
-              </Card>
+          <div className="flex flex-wrap gap-2 justify-center">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`px-4 py-2 rounded-full flex items-center gap-2 transition-all ${selectedCategory === 'all'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'bg-muted hover:bg-muted/80'
+                }`}
+            >
+              <Users className="h-4 w-4" />
+              Semua
+            </button>
+            {expertiseCategories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setSelectedCategory(category.name)}
+                className={`px-4 py-2 rounded-full flex items-center gap-2 transition-all ${selectedCategory === category.name
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'bg-muted hover:bg-muted/80'
+                  }`}
+              >
+                {category.name}
+              </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Booking Form */}
+      {/* Featured Consultants */}
+      <section className="py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              Konsultan Tersedia
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Pilih konsultan yang sesuai dengan kebutuhan Anda
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2 mx-auto"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : consultants.length === 0 ? (
+            <div className="text-center py-12">
+              <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-lg text-muted-foreground">
+                Belum ada konsultan tersedia untuk kategori ini
+              </p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {consultants.map((consultant) => (
+                <Card key={consultant.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <Link to={`/consultants/${consultant.id}`}>
+                      <div className="text-center">
+                        <Avatar className="h-20 w-20 mx-auto mb-4">
+                          <AvatarImage src={(consultant.user as any)?.profilePictureUrl} />
+                          <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                            {getInitials((consultant.user as any)?.fullName || 'CN')}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <h3 className="font-semibold text-lg mb-1">
+                          {(consultant.user as any)?.fullName || 'Consultant'}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {consultant.title}
+                        </p>
+
+                        <div className="flex items-center justify-center gap-1 mb-3">
+                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          <span className="font-semibold">{consultant.averageRating?.toFixed(1) || '0.0'}</span>
+                          <span className="text-sm text-muted-foreground">
+                            ({consultant.totalSessions || 0})
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1 justify-center mb-4">
+                          {((consultant as any).expertise?.slice(0, 2) || []).map((exp: any, idx: number) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {exp.expertise?.name || exp.name}
+                            </Badge>
+                          ))}
+                        </div>
+
+                        <p className="text-primary font-semibold mb-4">
+                          {(consultant as any).packages?.length ? (
+                            <>Mulai Rp {Math.min(...(consultant as any).packages.map((p: any) => p.price)).toLocaleString('id-ID')}</>
+                          ) : consultant.hourlyRate ? (
+                            <>Rp {consultant.hourlyRate.toLocaleString('id-ID')}/jam</>
+                          ) : 'Lihat profil'}
+                        </p>
+
+                        <Button className="w-full" size="sm">
+                          Lihat Profile
+                        </Button>
+                      </div>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* View All Button */}
+          <div className="text-center mt-12">
+            <Button variant="outline" size="lg" asChild>
+              <Link to="/explore/consultants">
+                Lihat Semua Konsultan
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Booking Form */}
       <section className="py-16 px-4 bg-muted/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Book Konsultasi Online
+              Book Konsultasi Cepat
             </h2>
             <p className="text-xl text-muted-foreground">
-              Jadwalkan sesi konsultasi dengan para ahli kami
+              Kami akan carikan konsultan yang sesuai kebutuhan Anda
             </p>
           </div>
-          
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -115,88 +282,97 @@ const LayananKonsultasi = () => {
                 Form Booking Konsultasi
               </CardTitle>
               <CardDescription>
-                Isi formulir di bawah untuk menjadwalkan konsultasi
+                Isi kategori konsultasi yang Anda butuhkan
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nama Lengkap</Label>
-                  <Input id="name" placeholder="Masukkan nama lengkap" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="company">Nama Perusahaan/UMKM</Label>
-                  <Input id="company" placeholder="Nama bisnis Anda" />
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="email@domain.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">No. WhatsApp</Label>
-                  <Input id="phone" placeholder="081234567890" />
-                </div>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Jenis Konsultasi</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih jenis konsultasi" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="digital">Konsultasi Digital</SelectItem>
-                      <SelectItem value="financial">Konsultasi Keuangan</SelectItem>
-                      <SelectItem value="legal">Sertifikasi & Legalitas</SelectItem>
-                      <SelectItem value="export">Pasar & Ekspor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Skala Usaha</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih skala usaha" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="mikro">Usaha Mikro</SelectItem>
-                      <SelectItem value="kecil">Usaha Kecil</SelectItem>
-                      <SelectItem value="menengah">Usaha Menengah</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
               <div className="space-y-2">
-                <Label htmlFor="description">Deskripsi Kebutuhan</Label>
-                <Textarea 
-                  id="description" 
-                  placeholder="Jelaskan tantangan atau kebutuhan konsultasi Anda..."
-                  rows={4}
-                />
+                <Label>Kategori Konsultasi</Label>
+                <Select value={bookingCategory} onValueChange={setBookingCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih kategori konsultasi" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expertiseCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button className="flex-1">
-                  <Phone className="h-4 w-4 mr-2" />
-                  Konsultasi via WhatsApp
-                </Button>
-                <Button variant="outline" className="flex-1">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Jadwalkan Meeting Online
-                </Button>
+
+              <div className="space-y-2">
+                <Label>Pilih Konsultan (Opsional)</Label>
+                <Select value={bookingConsultantId} onValueChange={setBookingConsultantId} disabled={!bookingCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={bookingCategory ? "Pilih konsultan" : "Pilih kategori terlebih dahulu"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableConsultants.map((consultant) => (
+                      <SelectItem key={consultant.id} value={consultant.id}>
+                        {(consultant.user as any)?.fullName || 'Consultant'} - {
+                          (consultant as any).packages?.length
+                            ? `Mulai Rp ${Math.min(...(consultant as any).packages.map((p: any) => p.price)).toLocaleString('id-ID')}`
+                            : consultant.hourlyRate
+                              ? `Rp ${consultant.hourlyRate.toLocaleString('id-ID')}/jam`
+                              : ''
+                        }
+                      </SelectItem>
+                    ))}
+                    {availableConsultants.length === 0 && (
+                      <SelectItem value="none" disabled>Tidak ada konsultan tersedia</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
+
+
+
+              {bookingConsultantId && availableConsultants.find(c => c.id === bookingConsultantId) ? (
+                <div className="bg-background border rounded-lg p-4 mt-6 animate-in slide-in-from-top-2">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Lengkapi Detail Booking
+                  </h3>
+                  <BookingForm
+                    consultant={availableConsultants.find(c => c.id === bookingConsultantId)!}
+                    onSuccess={() => {
+                      // Success handled by form internally (createRequest)
+                      // Note: BookingForm onSuccess prop is void. 
+                      // We can add confetti or toast here.
+                      navigate('/consultation/dashboard');
+                      // Alert is already in BookingForm? 
+                      // Wait, BookingForm component I wrote has built-in Alert and Navigation?
+                      // Let's check Step 1705.
+                      // It calls onSuccess() THEN nothing else. 
+                      // It alerts "Booking request submitted" inside handleSubmit? No, I refactored it to call onSuccess.
+                      // Wait, Step 1705:
+                      // await createRequest...
+                      // onSuccess();
+                      // It DOES NOT alert or navigate inside the component itself.
+                      // So I MUST alert and navigate here.
+                      alert('Booking Berhasil! Silakan cek status pending di riwayat konsultasi.');
+                      navigate('/consultation/history?tab=pending');
+                    }}
+                    onCancel={() => setBookingConsultantId('')}
+                  />
+                </div>
+              ) : (
+                <div className="flex gap-4">
+                  <Button className="flex-1" onClick={handleQuickBook} disabled={!bookingCategory}>
+                    <Users className="h-4 w-4 mr-2" />
+                    {bookingCategory ? "Lihat Semua Konsultan Kategori Ini" : "Lihat Semua Konsultan"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
-      </section>
+      </section >
 
       <Footer />
-    </div>
+    </div >
   );
 };
 

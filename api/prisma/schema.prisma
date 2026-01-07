@@ -46,6 +46,8 @@ model User {
   store                 Store?
   umkmProfile           UMKMProfile?
   userRoles             UserRole[]
+  createdExpertise      ExpertiseCategory[]
+  expertiseAuditLogs    ExpertiseAuditLog[]
 
   @@map("users")
 }
@@ -1060,8 +1062,28 @@ model ConsultantProfile {
   consultationRequests  ConsultationRequest[]
   reviews               ConsultationReview[]
   courses               Course[]                 @relation("ConsultantCourses")
+  expertise             ConsultantExpertise[]
+  packages              ConsultationPackage[]
 
   @@map("consultant_profiles")
+}
+
+model ConsultationPackage {
+  id              String            @id @default(uuid())
+  consultantId    String            @map("consultant_id")
+  name            String
+  durationMinutes Int               @map("duration_minutes")
+  price           Int               // Price in IDR
+  description     String?
+  isActive        Boolean           @default(true) @map("is_active")
+  sortOrder       Int               @default(0) @map("sort_order")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  consultant      ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  requests        ConsultationRequest[]
+
+  @@map("consultation_packages")
 }
 
 model ConsultantAvailability {
@@ -1126,9 +1148,11 @@ model ConsultationRequest {
   isArchived         Boolean           @default(false) @map("is_archived")
   archivedAt         DateTime?         @map("archived_at")
   chatChannel        ChatChannel?
+  packageId          String?           @map("package_id")
   client             User              @relation(fields: [clientId], references: [id])
   consultant         ConsultantProfile @relation(fields: [consultantId], references: [id])
   type               ConsultationType? @relation(fields: [typeId], references: [id])
+  package            ConsultationPackage? @relation(fields: [packageId], references: [id])
   sessionFiles       SessionFile[]
 
   @@map("consultation_requests")
@@ -1190,4 +1214,56 @@ model ConsultationReview {
   consultant   ConsultantProfile @relation(fields: [consultantId], references: [id])
 
   @@map("consultation_reviews")
+}
+
+model ExpertiseCategory {
+  id              String                @id @default(uuid())
+  name            String                @unique
+  slug            String                @unique
+  description     String?
+  icon            String                @default("Briefcase")
+  categoryGroup   String?               @map("category_group")
+  isActive        Boolean               @default(true) @map("is_active")
+  isDeleted       Boolean               @default(false) @map("is_deleted")
+  deletedAt       DateTime?             @map("deleted_at")
+  createdBy       String?               @map("created_by")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  consultants     ConsultantExpertise[]
+  auditLogs       ExpertiseAuditLog[]
+  creator         User?                 @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([isActive, isDeleted])
+  @@index([slug])
+  @@map("expertise_categories")
+}
+
+model ConsultantExpertise {
+  id            String            @id @default(uuid())
+  consultantId  String            @map("consultant_id")
+  expertiseId   String            @map("expertise_id")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  consultant    ConsultantProfile @relation(fields: [consultantId], references: [id], onDelete: Cascade)
+  expertise     ExpertiseCategory @relation(fields: [expertiseId], references: [id], onDelete: Restrict)
+
+  @@unique([consultantId, expertiseId])
+  @@index([consultantId])
+  @@index([expertiseId])
+  @@map("consultant_expertise")
+}
+
+model ExpertiseAuditLog {
+  id          String            @id @default(uuid())
+  expertiseId String?           @map("expertise_id")
+  action      String
+  oldValue    Json?             @map("old_value")
+  newValue    Json?             @map("new_value")
+  changedBy   String?           @map("changed_by")
+  changedAt   DateTime          @default(now()) @map("changed_at")
+  expertise   ExpertiseCategory? @relation(fields: [expertiseId], references: [id], onDelete: SetNull)
+  user        User?             @relation(fields: [changedBy], references: [id], onDelete: SetNull)
+
+  @@index([expertiseId])
+  @@index([changedBy])
+  @@map("expertise_audit_logs")
 }

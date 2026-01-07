@@ -25,9 +25,26 @@ export const listConsultants = async (filters: ListConsultantsFilters) => {
     }
 
     if (filters.expertise) {
-        where.expertiseAreas = {
-            has: filters.expertise
-        };
+        // Filter by junction table OR legacy array
+        where.OR = [
+            {
+                expertise: {
+                    some: {
+                        expertise: {
+                            OR: [
+                                { name: filters.expertise },
+                                { id: filters.expertise }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                expertiseAreas: {
+                    has: filters.expertise
+                }
+            }
+        ];
     }
 
     if (filters.minRating) {
@@ -59,6 +76,15 @@ export const listConsultants = async (filters: ListConsultantsFilters) => {
                     businessName: true
                 }
             },
+            expertise: {
+                include: {
+                    expertise: true
+                }
+            },
+            packages: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' }
+            },
             _count: {
                 select: {
                     reviews: true
@@ -87,7 +113,16 @@ export const getConsultantProfile = async (consultantId: string) => {
                     email: true
                 }
             },
+            expertise: {
+                include: {
+                    expertise: true
+                }
+            },
             availability: true,
+            packages: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' }
+            },
             reviews: {
                 where: { isPublished: true },
                 include: {
@@ -120,13 +155,14 @@ export const createConsultantProfile = async (userId: string, data: any) => {
         throw new Error('User already has a consultant profile');
     }
 
-    return await prisma.consultantProfile.create({
+    // Create profile
+    const profile = await prisma.consultantProfile.create({
         data: {
             userId,
             title: data.title,
             tagline: data.tagline,
             bio: data.bio,
-            expertiseAreas: data.expertiseAreas || [],
+            expertiseAreas: data.expertiseAreas || [], // Keep for backward compatibility
             industries: data.industries || [],
             languages: data.languages || ['Indonesian'],
             yearsExperience: data.yearsExperience,
@@ -136,6 +172,18 @@ export const createConsultantProfile = async (userId: string, data: any) => {
             status: 'pending' // Requires admin approval
         }
     });
+
+    // Create expertise associations if provided
+    if (data.expertiseIds && Array.isArray(data.expertiseIds) && data.expertiseIds.length > 0) {
+        await prisma.consultantExpertise.createMany({
+            data: data.expertiseIds.map((expertiseId: string) => ({
+                consultantId: profile.id,
+                expertiseId
+            }))
+        });
+    }
+
+    return profile;
 };
 
 /**
@@ -150,13 +198,14 @@ export const updateConsultantProfile = async (userId: string, updates: any) => {
         throw new Error('Consultant profile not found');
     }
 
-    return await prisma.consultantProfile.update({
+    // Update profile
+    const updatedProfile = await prisma.consultantProfile.update({
         where: { userId },
         data: {
             title: updates.title,
             tagline: updates.tagline,
             bio: updates.bio,
-            expertiseAreas: updates.expertiseAreas,
+            expertiseAreas: updates.expertiseAreas, // Keep for backward compatibility
             industries: updates.industries,
             languages: updates.languages,
             yearsExperience: updates.yearsExperience,
@@ -167,6 +216,26 @@ export const updateConsultantProfile = async (userId: string, updates: any) => {
             cancellationPolicy: updates.cancellationPolicy
         }
     });
+
+    // Handle expertise updates if provided
+    if (updates.expertiseIds && Array.isArray(updates.expertiseIds)) {
+        // Delete all existing expertise associations
+        await prisma.consultantExpertise.deleteMany({
+            where: { consultantId: profile.id }
+        });
+
+        // Create new associations
+        if (updates.expertiseIds.length > 0) {
+            await prisma.consultantExpertise.createMany({
+                data: updates.expertiseIds.map((expertiseId: string) => ({
+                    consultantId: profile.id,
+                    expertiseId
+                }))
+            });
+        }
+    }
+
+    return updatedProfile;
 };
 
 /**
@@ -184,8 +253,16 @@ export const getProfileByUserId = async (userId: string) => {
                     profilePictureUrl: true
                 }
             },
+            expertise: {
+                include: {
+                    expertise: true
+                }
+            },
             consultationType: true,
             availability: true,
+            packages: {
+                orderBy: { sortOrder: 'asc' }
+            },
             _count: {
                 select: {
                     consultationRequests: true

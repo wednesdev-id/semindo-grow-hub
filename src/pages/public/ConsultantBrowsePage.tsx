@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,13 +11,31 @@ import { useAuth } from '@/contexts/AuthContext';
 import SEOHead from '@/components/SEOHead';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
+import type { ExpertiseCategory } from '@/types/consultation';
 
 export default function ConsultantBrowsePage() {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
+    const [searchParams] = useSearchParams();
     const [searchQuery, setSearchQuery] = useState('');
-    const [expertiseFilter, setExpertiseFilter] = useState('all');
+    const [expertiseFilter, setExpertiseFilter] = useState(searchParams.get('expertise') || 'all');
     const [priceFilter, setPriceFilter] = useState('all');
+    const [expertiseCategories, setExpertiseCategories] = useState<ExpertiseCategory[]>([]);
+
+    // Fetch expertise categories
+    useEffect(() => {
+        window.scrollTo(0, 0);
+        const fetchExpertise = async () => {
+            try {
+                const response = await fetch('/api/v1/consultation/expertise/active');
+                const data = await response.json();
+                setExpertiseCategories(data.data || []);
+            } catch (error) {
+                console.error('Failed to load expertise:', error);
+            }
+        };
+        fetchExpertise();
+    }, []);
 
     // Fetch consultants
     const { data: consultants = [], isLoading } = useQuery({
@@ -38,10 +56,15 @@ export default function ConsultantBrowsePage() {
         const matchesSearch = consultant.user?.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             consultant.title?.toLowerCase().includes(searchQuery.toLowerCase());
 
+        // Use minimum package price or fallback to hourlyRate
+        const price = consultant.packages?.length
+            ? Math.min(...consultant.packages.map((p: any) => p.price))
+            : consultant.hourlyRate || 0;
+
         const matchesPrice = priceFilter === 'all' ||
-            (priceFilter === 'low' && consultant.hourlyRate < 200000) ||
-            (priceFilter === 'mid' && consultant.hourlyRate >= 200000 && consultant.hourlyRate < 400000) ||
-            (priceFilter === 'high' && consultant.hourlyRate >= 400000);
+            (priceFilter === 'low' && price < 200000) ||
+            (priceFilter === 'mid' && price >= 200000 && price < 400000) ||
+            (priceFilter === 'high' && price >= 400000);
 
         return matchesSearch && matchesPrice;
     });
@@ -114,11 +137,11 @@ export default function ConsultantBrowsePage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="all">Semua Keahlian</SelectItem>
-                                    <SelectItem value="Marketing">Marketing</SelectItem>
-                                    <SelectItem value="Finance">Finance</SelectItem>
-                                    <SelectItem value="Business Strategy">Business Strategy</SelectItem>
-                                    <SelectItem value="Export">Export</SelectItem>
-                                    <SelectItem value="Digital">Digital</SelectItem>
+                                    {expertiseCategories.map((category) => (
+                                        <SelectItem key={category.id} value={category.name}>
+                                            {category.name}
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
 
@@ -192,9 +215,9 @@ export default function ConsultantBrowsePage() {
                                         <CardContent className="space-y-4">
                                             {/* Expertise Tags */}
                                             <div className="flex flex-wrap gap-2 justify-center">
-                                                {consultant.expertiseAreas?.slice(0, 3).map((expertise: string, idx: number) => (
+                                                {(consultant.expertise?.slice(0, 3) || []).map((exp: any, idx: number) => (
                                                     <Badge key={idx} variant="secondary" className="text-xs">
-                                                        {expertise}
+                                                        {exp.expertise?.name || exp.name}
                                                     </Badge>
                                                 ))}
                                             </div>
@@ -215,7 +238,11 @@ export default function ConsultantBrowsePage() {
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-muted-foreground">Tarif:</span>
                                                     <span className="font-semibold text-primary">
-                                                        Rp {consultant.hourlyRate?.toLocaleString('id-ID')}/jam
+                                                        {(consultant as any).packages?.length ? (
+                                                            <>Mulai Rp {Math.min(...(consultant as any).packages.map((p: any) => p.price)).toLocaleString('id-ID')}</>
+                                                        ) : consultant.hourlyRate ? (
+                                                            <>Rp {consultant.hourlyRate.toLocaleString('id-ID')}/jam</>
+                                                        ) : 'Lihat profil'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -223,7 +250,7 @@ export default function ConsultantBrowsePage() {
                                             {/* Action Buttons */}
                                             <div className="flex gap-2 pt-2">
                                                 <Button variant="outline" size="sm" className="flex-1" asChild>
-                                                    <Link to={`/consultation/consultant/${consultant.id}`}>
+                                                    <Link to={`/consultants/${consultant.id}`}>
                                                         <Briefcase className="h-4 w-4 mr-2" />
                                                         Lihat Profile
                                                     </Link>

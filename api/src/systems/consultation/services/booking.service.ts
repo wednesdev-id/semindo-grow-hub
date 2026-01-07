@@ -95,7 +95,18 @@ export const getUserRequests = async (userId: string, role?: string) => {
                     select: {
                         fullName: true,
                         email: true,
-                        phone: true
+                        phone: true,
+                        profilePictureUrl: true
+                    }
+                },
+                consultant: {
+                    include: {
+                        user: {
+                            select: {
+                                fullName: true,
+                                profilePictureUrl: true
+                            }
+                        }
                     }
                 },
                 type: true
@@ -119,6 +130,15 @@ export const getUserRequests = async (userId: string, role?: string) => {
                             fullName: true,
                             profilePictureUrl: true
                         }
+                    },
+                    expertise: {
+                        include: {
+                            expertise: true
+                        }
+                    },
+                    packages: {
+                        where: { isActive: true },
+                        orderBy: { sortOrder: 'asc' }
                     }
                 }
             },

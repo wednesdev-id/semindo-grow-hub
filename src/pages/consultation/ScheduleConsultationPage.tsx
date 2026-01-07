@@ -236,9 +236,12 @@ export default function ScheduleConsultationPage() {
                                         </h3>
                                         <p className="text-sm text-gray-500 mb-1">{consultant.title}</p>
 
-                                        {consultant.expertiseAreas && consultant.expertiseAreas.length > 0 && (
+                                        {(consultant.expertise?.length > 0 || (consultant.expertiseAreas && consultant.expertiseAreas.length > 0)) && (
                                             <div className="flex flex-wrap justify-center gap-1 mb-4">
-                                                {consultant.expertiseAreas.slice(0, 2).map((area, idx) => (
+                                                {(consultant.expertise?.length > 0
+                                                    ? consultant.expertise.map((e: any) => e.expertise.name)
+                                                    : consultant.expertiseAreas
+                                                ).slice(0, 2).map((area: string, idx: number) => (
                                                     <Badge key={idx} variant="secondary" className="text-xs">
                                                         {area}
                                                     </Badge>

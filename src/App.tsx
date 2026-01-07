@@ -115,6 +115,7 @@ const ConsultationManagement = lazy(() => import("./pages/admin/consultation/Con
 const ChatMonitoringPage = lazy(() => import("./pages/admin/consultation/ChatMonitoringPage"));
 const ChatTranscriptPage = lazy(() => import("./pages/admin/consultation/ChatTranscriptPage"));
 const PendingConsultants = lazy(() => import("./pages/admin/consultation/PendingConsultants"));
+const ExpertiseManagement = lazy(() => import("./pages/admin/consultation/ExpertiseManagement"));
 
 // Public Browse Pages
 const PublicConsultantBrowse = lazy(() => import("./pages/public/ConsultantBrowsePage"));
@@ -577,6 +578,9 @@ const App = () => {
                         description="Layanan konsultasi spesialis."
                         features={["Specialist directory", "Booking flow", "Service packages"]}
                       />} />
+
+                      {/* Consultation Admin */}
+                      <Route path="/dashboard/consultation/expertise" element={<ExpertiseManagement />} />
 
                       {/* Community Platform Manager */}
                       <Route path="/community/forum" element={<FeaturePreviewPage

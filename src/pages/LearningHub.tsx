@@ -257,7 +257,7 @@ const LearningHub = () => {
             </p>
           </div>
 
-          {(!instructors?.mentors?.length && !instructors?.consultants?.length) ? (
+          {(!instructors?.mentors?.length) ? (
             <div className="text-center p-8 text-muted-foreground">
               Instruktur akan segera hadir
             </div>
@@ -298,46 +298,6 @@ const LearningHub = () => {
                     </div>
                     <Button variant="outline" size="sm" className="w-full" asChild>
                       <Link to={`/lms/instructor/mentor/${mentor.id}`}>Lihat Kursus</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Display Consultants who teach */}
-              {instructors?.consultants?.map((consultant: any) => (
-                <Card key={consultant.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center overflow-hidden">
-                      {consultant.user?.profilePictureUrl ? (
-                        <img src={consultant.user.profilePictureUrl} alt={consultant.user?.fullName} className="w-full h-full object-cover" />
-                      ) : (
-                        <Users className="h-10 w-10 text-primary" />
-                      )}
-                    </div>
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <CardTitle className="text-center text-base">{consultant.user?.fullName || 'Consultant'}</CardTitle>
-                      <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">
-                        Consultant
-                      </Badge>
-                    </div>
-                    <CardDescription className="text-center">{consultant.title}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {consultant.expertise?.slice(0, 2).map((exp: string, idx: number) => (
-                        <Badge key={idx} variant="outline">{exp}</Badge>
-                      ))}
-                    </div>
-                    {consultant.yearsExperience && (
-                      <div className="text-center text-sm text-muted-foreground">
-                        {consultant.yearsExperience} tahun pengalaman
-                      </div>
-                    )}
-                    <div className="text-center text-sm text-muted-foreground">
-                      {consultant.courses?.length || 0} kursus
-                    </div>
-                    <Button variant="outline" size="sm" className="w-full" asChild>
-                      <Link to={`/consultants/${consultant.id}`}>Lihat Profile</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -435,7 +395,7 @@ const LearningHub = () => {
                   </li>
                 </ul>
                 <Button className="w-full" size="lg" asChild>
-                  <Link to="/explore/consultants">
+                  <Link to="/layanan-konsultasi">
                     Cari Konsultan →
                   </Link>
                 </Button>

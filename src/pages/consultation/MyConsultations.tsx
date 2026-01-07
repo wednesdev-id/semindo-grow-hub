@@ -7,22 +7,44 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, Clock, Video, ExternalLink, FileText, User, CheckCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Calendar, Clock, Video, ExternalLink, FileText, User, CheckCircle, Star } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export default function MyConsultations() {
-    const { user } = useAuth();
+    const { user, hasRole } = useAuth();
+    // Check if user has consultant role (handle array or string role, including Indonesian 'konsultan')
+    // Check both 'roles' (array) and 'role' (string/legacy)
+    const userRoles = (user as any)?.roles || [];
+    const userRole = (user as any)?.role;
+
+    // Check if user has consultant role (handle array or string role, including Indonesian 'konsultan')
+    const isConsultant = hasRole('consultant') || hasRole('konsultan') ||
+        userRole === 'consultant' || userRole === 'konsultan' ||
+        (Array.isArray(userRoles) && (userRoles.includes('consultant') || userRoles.includes('konsultan')));
+
+    console.log('[MyConsultations] Debug Role:', {
+        user,
+        userRoles,
+        userRole,
+        isConsultant,
+        hasRoleConsultant: hasRole('consultant'),
+        hasRoleKonsultan: hasRole('konsultan')
+    });
+    const viewRole = isConsultant ? 'consultant' : 'client';
+
     const [requests, setRequests] = useState<ConsultationRequest[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        loadConsultations();
-    }, []);
+        if (user) {
+            loadConsultations();
+        }
+    }, [viewRole, user]);
 
     const loadConsultations = async () => {
         try {
             setLoading(true);
-            const response = await consultationService.getRequests('client');
+            const response = await consultationService.getRequests(viewRole);
             // Extract the data array from response object
             const data = Array.isArray(response) ? response : (response as any).data || [];
             setRequests(data);
@@ -54,6 +76,9 @@ export default function MyConsultations() {
     };
 
     const getConsultantName = (request: ConsultationRequest) => {
+        if (isConsultant) {
+            return request.client?.fullName || 'Client';
+        }
         return request.consultant?.user?.fullName || 'Consultant';
     };
 
@@ -73,6 +98,22 @@ export default function MyConsultations() {
     const historyRequests = requests.filter(r => ['completed', 'rejected', 'cancelled'].includes(r.status))
         .sort((a, b) => new Date(b.requestedDate).getTime() - new Date(a.requestedDate).getTime());
 
+    const [searchParams, setSearchParams] = useSearchParams();
+    const defaultTab = searchParams.get('tab') || 'upcoming';
+    const [activeTab, setActiveTab] = useState(defaultTab);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (tab && ['upcoming', 'pending', 'history'].includes(tab)) {
+            setActiveTab(tab);
+        }
+    }, [searchParams]);
+
+    const handleTabChange = (value: string) => {
+        setActiveTab(value);
+        setSearchParams({ tab: value });
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -85,7 +126,7 @@ export default function MyConsultations() {
 
             {/* Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Tabs defaultValue="upcoming" className="space-y-6">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
                     <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
                         <TabsTrigger value="upcoming">
                             Upcoming ({upcomingRequests.length})
@@ -207,14 +248,14 @@ export default function MyConsultations() {
                     {/* Consultant Info */}
                     <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={(request.consultant?.user as any)?.profilePictureUrl} />
+                            <AvatarImage src={isConsultant ? request.client?.profilePictureUrl : (request.consultant?.user as any)?.profilePictureUrl} />
                             <AvatarFallback className="bg-blue-100 text-blue-700">
                                 {getInitials(consultantName)}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                             <p className="font-semibold">{consultantName}</p>
-                            <p className="text-sm text-gray-600">{request.consultant?.expertise || 'Business Consultant'}</p>
+                            <p className="text-sm text-gray-600">{request.consultant?.expertise?.map((e: any) => e.expertise?.name).filter(Boolean).join(', ') || request.consultant?.expertiseAreas?.join(', ') || 'Business Consultant'}</p>
                         </div>
                     </div>
 
@@ -265,14 +306,14 @@ export default function MyConsultations() {
                     {/* Consultant Info */}
                     <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={(request.consultant?.user as any)?.profilePictureUrl} />
+                            <AvatarImage src={isConsultant ? request.client?.profilePictureUrl : (request.consultant?.user as any)?.profilePictureUrl} />
                             <AvatarFallback className="bg-yellow-100 text-yellow-700">
                                 {getInitials(consultantName)}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                             <p className="font-semibold">{consultantName}</p>
-                            <p className="text-sm text-gray-600">{request.consultant?.expertise || 'Business Consultant'}</p>
+                            <p className="text-sm text-gray-600">{request.consultant?.expertise?.map((e: any) => e.expertise?.name).filter(Boolean).join(', ') || request.consultant?.expertiseAreas?.join(', ') || 'Business Consultant'}</p>
                         </div>
                     </div>
 
@@ -343,14 +384,14 @@ export default function MyConsultations() {
                     {/* Consultant Info */}
                     <div className="flex items-center gap-3">
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={(request.consultant?.user as any)?.profilePictureUrl} />
+                            <AvatarImage src={isConsultant ? request.client?.profilePictureUrl : (request.consultant?.user as any)?.profilePictureUrl} />
                             <AvatarFallback className={config.avatarBg}>
                                 {getInitials(consultantName)}
                             </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                             <p className="font-semibold">{consultantName}</p>
-                            <p className="text-sm text-gray-600">{request.consultant?.expertise || 'Business Consultant'}</p>
+                            <p className="text-sm text-gray-600">{request.consultant?.expertise?.map((e: any) => e.expertise?.name).filter(Boolean).join(', ') || request.consultant?.expertiseAreas?.join(', ') || 'Business Consultant'}</p>
                         </div>
                     </div>
 
@@ -380,6 +421,21 @@ export default function MyConsultations() {
                             <p className="text-sm font-semibold text-gray-700 mb-2">Session Summary:</p>
                             <p className="text-sm text-gray-600 whitespace-pre-wrap">{request.sessionNotes}</p>
                         </div>
+                    )}
+
+                    {/* Leave Review Button (for completed sessions) */}
+                    {request.status === 'completed' && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            asChild
+                        >
+                            <Link to={`/consultation/consultant/${request.consultantId}`}>
+                                <Star className="h-4 w-4 mr-2" />
+                                Leave a Review
+                            </Link>
+                        </Button>
                     )}
                 </CardContent>
             </Card>

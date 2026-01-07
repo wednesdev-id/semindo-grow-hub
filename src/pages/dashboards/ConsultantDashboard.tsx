@@ -22,7 +22,7 @@ interface DashboardStats {
 export default function ConsultantDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [activeMode, setActiveMode] = useState<'marketplace' | 'lms'>('marketplace');
+  // const [activeMode, setActiveMode] = useState<'marketplace' | 'lms'>('marketplace'); // REMOVED
   const [stats, setStats] = useState<DashboardStats>({
     earnings: 0,
     sessions: 0,
@@ -59,6 +59,8 @@ export default function ConsultantDashboard() {
     try {
       setLoadingRequests(true);
       const requests = await consultationService.getRequests('consultant');
+      const profileResponse = await consultationService.getOwnProfile();
+      const profile = Array.isArray(profileResponse) ? profileResponse[0] : (profileResponse as any);
 
       // Filter pending
       const pending = requests.filter(r => r.status === 'pending');
@@ -68,9 +70,21 @@ export default function ConsultantDashboard() {
       const now = new Date();
       const upcoming = requests
         .filter(r => r.status === 'approved' && new Date(r.requestedDate) >= now)
-        .sort((a, b) => new Date(a.requestedDate).getTime() - new Date(b.requestedDate).getTime())
-        .slice(0, 3); // Show next 3
-      setUpcomingRequests(upcoming);
+        .sort((a, b) => new Date(a.requestedDate).getTime() - new Date(b.requestedDate).getTime());
+
+      setUpcomingRequests(upcoming.slice(0, 5)); // Show next 5 in sidebar/main
+
+      // Calculate Stats
+      const completedSessions = requests.filter(r => r.status === 'completed');
+      const totalEarnings = completedSessions.reduce((sum, r) => sum + (r.quotedPrice || 0), 0);
+
+      setStats(prev => ({
+        ...prev,
+        earnings: totalEarnings,
+        sessions: completedSessions.length,
+        rating: profile?.averageRating || prev.rating || 0
+      }));
+
     } catch (error) {
       console.error('Failed to load requests:', error);
       toast({
@@ -198,72 +212,36 @@ export default function ConsultantDashboard() {
           <p className="text-gray-600">Welcome back, {user?.profile?.fullName}</p>
         </div>
 
-        <div className="bg-gray-100 p-1 rounded-lg flex">
-          <button
-            onClick={() => setActiveMode('marketplace')}
-            className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${activeMode === 'marketplace'
-              ? 'bg-white shadow text-blue-600 font-medium'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <DollarSign size={18} />
-            Marketplace
-          </button>
-          <button
-            onClick={() => setActiveMode('lms')}
-            className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${activeMode === 'lms'
-              ? 'bg-white shadow text-purple-600 font-medium'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <BookOpen size={18} />
-            LMS Instructor
-          </button>
-        </div>
+
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {activeMode === 'marketplace' ? (
-          <>
-            <StatsCard label="Total Earnings" value={`Rp ${stats.earnings.toLocaleString()}`} icon={<DollarSign />} color="blue" />
-            <StatsCard label="Completed Sessions" value={stats.sessions} icon={<Video />} color="green" />
-            <StatsCard label="Average Rating" value={stats.rating} icon={<BarChart2 />} color="yellow" />
-            <Link to="/consultation/requests" className="block">
-              <StatsCard
-                label="Pending Requests"
-                value={pendingRequests.length}
-                icon={<Bell />}
-                color="orange"
-              />
-            </Link>
-          </>
-        ) : (
-          <>
-            <StatsCard label="Course Revenue" value={`Rp ${(stats.earnings * 0.4).toLocaleString()}`} icon={<DollarSign />} color="purple" />
-            <StatsCard label="Total Students" value={stats.students} icon={<BookOpen />} color="pink" />
-            <StatsCard label="Active Courses" value={stats.courses} icon={<Layout />} color="indigo" />
-            <StatsCard label="Avg. Course Rating" value="4.9" icon={<BarChart2 />} color="yellow" />
-          </>
-        )}
+        <StatsCard label="Total Earnings" value={`Rp ${stats.earnings.toLocaleString()}`} icon={<DollarSign />} color="blue" />
+        <StatsCard label="Completed Sessions" value={stats.sessions} icon={<Video />} color="green" />
+        <StatsCard label="Average Rating" value={stats.rating} icon={<BarChart2 />} color="yellow" />
+        <Link to="/consultation/requests" className="block">
+          <StatsCard
+            label="Pending Requests"
+            value={pendingRequests.length}
+            icon={<Bell />}
+            color="orange"
+          />
+        </Link>
       </div>
 
       {/* Main Content Area */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column - Main Actions */}
         <div className="lg:col-span-2 space-y-6">
-          {activeMode === 'marketplace' ? (
-            <MarketplaceSection
-              pendingRequests={pendingRequests}
-              upcomingRequests={upcomingRequests}
-              loading={loadingRequests}
-              onAccept={handleAcceptRequest}
-              onReject={handleRejectRequest}
-              onComplete={handleCompleteSession}
-            />
-          ) : (
-            <LMSSection />
-          )}
+          <MarketplaceSection
+            pendingRequests={pendingRequests}
+            upcomingRequests={upcomingRequests}
+            loading={loadingRequests}
+            onAccept={handleAcceptRequest}
+            onReject={handleRejectRequest}
+            onComplete={handleCompleteSession}
+          />
         </div>
 
         {/* Right Column - Schedule / Notifications */}
@@ -271,9 +249,18 @@ export default function ConsultantDashboard() {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h3 className="font-semibold mb-4">Upcoming Schedule</h3>
             <div className="space-y-4">
-              <ScheduledItem time="10:00 AM" title="Consultation with UMKM Maju" type="Consultation" />
-              <ScheduledItem time="02:00 PM" title="Mentoring Session" type="Mentoring" />
-              <ScheduledItem time="04:00 PM" title="Live Q&A: Digital Marketing" type="Course Live" />
+              {upcomingRequests.length > 0 ? (
+                upcomingRequests.slice(0, 3).map(req => (
+                  <ScheduledItem
+                    key={req.id}
+                    time={formatTime(req.requestedStartTime)}
+                    title={`Consultation with ${req.client?.fullName || 'Client'}`}
+                    type={req.type?.name || 'Consultation'}
+                  />
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">No upcoming sessions scheduled</p>
+              )}
             </div>
           </div>
         </div>
@@ -387,23 +374,7 @@ function MarketplaceSection({
 
   return (
     <div className="space-y-6">
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <Link
-          to="/consultation/requests"
-          className="bg-blue-600 text-white p-4 rounded-xl shadow-sm hover:bg-blue-700 transition flex items-center justify-center gap-2 font-medium"
-        >
-          <Video size={20} />
-          Manage Requests
-        </Link>
-        <Link
-          to="/consultation/settings"
-          className="bg-white text-gray-700 border border-gray-200 p-4 rounded-xl shadow-sm hover:bg-gray-50 transition font-medium flex items-center justify-center gap-2"
-        >
-          <Layout size={20} />
-          Profile Settings
-        </Link>
-      </div>
+
 
       {/* Pending Requests */}
       <div className="space-y-4">
@@ -477,78 +448,6 @@ function MarketplaceSection({
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function LMSSection() {
-  return (
-    <div className="space-y-6">
-      {/* Quick Actions */}
-      <div className="flex gap-4">
-        <Link
-          to="/lms/create-course"
-          className="flex-1 bg-purple-600 text-white p-4 rounded-xl shadow-sm hover:bg-purple-700 transition flex items-center justify-center gap-2 font-medium"
-        >
-          <Plus size={20} />
-          Create New Course
-        </Link>
-        <button className="flex-1 bg-white text-gray-700 border border-gray-200 p-4 rounded-xl shadow-sm hover:bg-gray-50 transition font-medium">
-          Manage Assignments
-        </button>
-      </div>
-
-      {/* My Courses */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-semibold text-lg">My Courses</h3>
-          <Link to="/lms/instructor/courses" className="text-purple-600 text-sm hover:underline">View All</Link>
-        </div>
-        <div className="divide-y divide-gray-100">
-          <CourseRow
-            title="Digital Marketing Mastery 2024"
-            students={120}
-            rating={4.9}
-            status="Published"
-            revenue={4500000}
-          />
-          <CourseRow
-            title="Financial Planning for UMKM"
-            students={36}
-            rating={4.7}
-            status="Published"
-            revenue={1200000}
-          />
-          <CourseRow
-            title="Export Strategy: Entering Global Market"
-            students={0}
-            rating={0}
-            status="Draft"
-            revenue={0}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CourseRow({ title, students, rating, status, revenue }: any) {
-  return (
-    <div className="p-4 hover:bg-gray-50 flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <div className="h-12 w-16 bg-gray-200 rounded-md"></div>
-        <div>
-          <p className="font-medium text-gray-900">{title}</p>
-          <p className="text-sm text-gray-500">{students} Students • {rating} ★ Rating</p>
-        </div>
-      </div>
-      <div className="text-right">
-        <p className="font-medium text-gray-900">Rp {revenue.toLocaleString()}</p>
-        <span className={`text-xs px-2 py-1 rounded-full ${status === 'Published' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-          }`}>
-          {status}
-        </span>
-      </div>
     </div>
   );
 }
