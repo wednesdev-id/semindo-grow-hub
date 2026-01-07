@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
-import type { ConsultantProfile } from '../../types/consultation';
+import type { ConsultantProfile, BookingSlot } from '../../types/consultation';
 import { Star, Clock, Calendar } from 'lucide-react';
 
 export default function ConsultantProfile() {
@@ -162,8 +162,8 @@ export default function ConsultantProfile() {
 function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }) {
     const navigate = useNavigate();
     const [selectedDate, setSelectedDate] = useState('');
-    const [availableSlots, setAvailableSlots] = useState<{ date: string; startTime: string; endTime: string; status: string }[]>([]);
-    const [selectedSlot, setSelectedSlot] = useState<{ date: string; startTime: string; endTime: string } | null>(null);
+    const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
+    const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
     const [loadingSlots, setLoadingSlots] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -205,8 +205,8 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
             setSubmitting(true);
 
             // Calculate duration in minutes
-            const start = new Date(\`\${selectedSlot.date}T\${selectedSlot.startTime}\`);
-            const end = new Date(\`\${selectedSlot.date}T\${selectedSlot.endTime}\`);
+            const start = new Date(`${selectedSlot.date}T${selectedSlot.startTime}`);
+            const end = new Date(`${selectedSlot.date}T${selectedSlot.endTime}`);
             const durationMinutes = (end.getTime() - start.getTime()) / 60000;
 
             await consultationService.createRequest({

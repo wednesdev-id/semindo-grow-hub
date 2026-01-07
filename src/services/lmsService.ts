@@ -69,7 +69,8 @@ export interface Course {
         fullName: string;
     };
     _count?: {
-        modules: number;
+        modules?: number;
+        enrollments?: number;
     };
     modules?: Module[];
 }

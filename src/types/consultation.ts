@@ -83,6 +83,13 @@ export interface AvailabilitySlot {
     isAvailable: boolean;
 }
 
+export interface BookingSlot {
+    date: string;
+    startTime: string;
+    endTime: string;
+    status: string;
+}
+
 export interface SessionFile {
     id: string;
     requestId: string;

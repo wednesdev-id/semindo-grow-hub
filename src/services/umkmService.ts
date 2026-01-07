@@ -217,3 +217,164 @@ export const umkmService = {
         return { data: mockCategories };
     },
 };
+
+// ============================================
+// SEGMENTATION & REGION MAPPING API
+// ============================================
+
+export interface SegmentationStats {
+    total: number;
+    bySegmentation: { name: string; count: number; percentage: number }[];
+    byLevel: { name: string; count: number; percentage: number }[];
+    byProvince: { province: string; count: number; percentage: number }[];
+    trends: {
+        newThisMonth: number;
+        growthRate: number;
+    };
+}
+
+export interface UMKMSegmentItem {
+    id: string;
+    businessName: string;
+    ownerName: string;
+    province: string | null;
+    city: string | null;
+    segmentation: string | null;
+    level: string | null;
+    turnover: number | null;
+    employees: number | null;
+    sector: string | null;
+    status: string;
+    createdAt: string;
+}
+
+export interface ProvinceData {
+    province: string;
+    count: number;
+    lat?: number;
+    lng?: number;
+}
+
+export interface RegionStats {
+    province: string;
+    city?: string;
+    totalUMKM: number;
+    bySegmentation: Record<string, number>;
+    byLevel: Record<string, number>;
+    avgTurnover: number;
+    avgEmployees: number;
+    verifiedCount: number;
+}
+
+export interface MapDataPoint {
+    id: string;
+    businessName: string;
+    ownerName?: string;
+    province: string;
+    city: string;
+    lat: number | null;
+    lng: number | null;
+    segmentation: string;
+    level: string;
+    sector: string | null;
+    // Additional statistics
+    turnover?: number | null;
+    employees?: number | null;
+    status?: string;
+}
+
+export const segmentationApi = {
+    getStats: async (): Promise<SegmentationStats> => {
+        const response = await api.get<{ success: boolean; data: SegmentationStats }>('/umkm/segmentation/stats');
+        return response.data;
+    },
+
+    getList: async (params?: {
+        segmentation?: string;
+        level?: string;
+        province?: string;
+        city?: string;
+        page?: number;
+        limit?: number;
+        search?: string;
+    }): Promise<{ data: UMKMSegmentItem[]; meta: { total: number; page: number; limit: number; totalPages: number } }> => {
+        const queryParams = new URLSearchParams();
+        if (params?.segmentation) queryParams.append('segmentation', params.segmentation);
+        if (params?.level) queryParams.append('level', params.level);
+        if (params?.province) queryParams.append('province', params.province);
+        if (params?.city) queryParams.append('city', params.city);
+        if (params?.page) queryParams.append('page', params.page.toString());
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+        if (params?.search) queryParams.append('search', params.search);
+
+        const url = `/umkm/segmentation/list${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+        const response = await api.get<{ success: boolean; data: UMKMSegmentItem[]; meta: { total: number; page: number; limit: number; totalPages: number } }>(url);
+        return { data: response.data, meta: response.meta };
+    },
+
+    calculatePreview: async (data: {
+        turnover?: number;
+        assets?: number;
+        employees?: number;
+        selfAssessmentScore?: number;
+    }): Promise<{ segmentation: string; level: string; reason: string; score: number }> => {
+        const response = await api.post<{ success: boolean; data: { segmentation: string; level: string; reason: string; score: number } }>('/umkm/calculate-segmentation', data);
+        return response.data;
+    },
+
+    recalculate: async (id: string): Promise<void> => {
+        await api.post(`/umkm/${id}/recalculate-segmentation`, {});
+    },
+
+    bulkRecalculate: async (): Promise<{ processed: number; updated: number }> => {
+        const response = await api.post<{ success: boolean; data: { processed: number; updated: number } }>('/umkm/segmentation/bulk-recalculate', {});
+        return response.data;
+    },
+};
+
+export const regionApi = {
+    getProvinces: async (): Promise<ProvinceData[]> => {
+        const response = await api.get<{ success: boolean; data: ProvinceData[] }>('/umkm/regions');
+        return response.data;
+    },
+
+    getProvinceStats: async (province: string): Promise<RegionStats> => {
+        const response = await api.get<{ success: boolean; data: RegionStats }>(`/umkm/regions/${encodeURIComponent(province)}`);
+        return response.data;
+    },
+
+    getCities: async (province: string): Promise<{ city: string; count: number }[]> => {
+        const response = await api.get<{ success: boolean; data: { city: string; count: number }[] }>(`/umkm/regions/${encodeURIComponent(province)}/cities`);
+        return response.data;
+    },
+
+    getCityStats: async (province: string, city: string): Promise<RegionStats> => {
+        const response = await api.get<{ success: boolean; data: RegionStats }>(`/umkm/regions/${encodeURIComponent(province)}/${encodeURIComponent(city)}`);
+        return response.data;
+    },
+
+    getMapData: async (params?: {
+        province?: string;
+        city?: string;
+        segmentation?: string;
+        level?: string;
+        limit?: number;
+    }): Promise<MapDataPoint[]> => {
+        const queryParams = new URLSearchParams();
+        if (params?.province) queryParams.append('province', params.province);
+        if (params?.city) queryParams.append('city', params.city);
+        if (params?.segmentation) queryParams.append('segmentation', params.segmentation);
+        if (params?.level) queryParams.append('level', params.level);
+        if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+        const url = `/umkm/map-data${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+        const response = await api.get<{ success: boolean; data: MapDataPoint[] }>(url);
+        return response.data;
+    },
+
+    getHeatmap: async (): Promise<{ lat: number; lng: number; weight: number; province: string }[]> => {
+        const response = await api.get<{ success: boolean; data: { lat: number; lng: number; weight: number; province: string }[] }>('/umkm/heatmap');
+        return response.data;
+    },
+};
+
