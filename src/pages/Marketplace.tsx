@@ -9,13 +9,18 @@ import { Search, Filter, Star, MapPin, ShoppingCart, Eye, Heart, Award, Truck, G
 import SEOHead from "@/components/ui/seo-head";
 import { useQuery } from "@tanstack/react-query";
 import { marketplaceService } from "@/services/marketplaceService";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getCategoryIcon } from "@/config/categoryIcons";
 import { getCategoryColor } from "@/config/categoryColors";
 import { useState } from "react";
 import { ProductFiltersComponent } from "@/components/marketplace/ProductFilters";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "sonner";
 
 const Marketplace = () => {
+  const navigate = useNavigate();
+  const { addToCart, itemCount } = useCart();
+
   // Filters state
   const [filters, setFilters] = useState({
     search: '',
@@ -50,6 +55,16 @@ const Marketplace = () => {
     // Search is handled via state change
   };
 
+  const handleAddToCart = (e: React.MouseEvent, product: any) => {
+    e.stopPropagation(); // Prevent card click
+    addToCart(product);
+    toast.success(`${product.name} ditambahkan ke keranjang!`);
+  };
+
+  const handleCardClick = (slug: string) => {
+    navigate(`/marketplace/product/${slug}`);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
@@ -68,7 +83,7 @@ const Marketplace = () => {
               <Button size="lg" variant="outline" className="relative">
                 <ShoppingCart className="h-5 w-5" />
                 <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground rounded-full h-5 w-5 text-xs flex items-center justify-center">
-                  0
+                  {itemCount}
                 </span>
               </Button>
             </Link>
@@ -167,7 +182,11 @@ const Marketplace = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {searchResults?.products?.map((product) => (
-                  <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card
+                    key={product.id}
+                    className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => handleCardClick(product.slug)}
+                  >
                     <div className="relative">
                       <img
                         src={product.image}
@@ -182,10 +201,20 @@ const Marketplace = () => {
                         ))}
                       </div>
                       <div className="absolute top-2 right-2 flex gap-1">
-                        <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Heart className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="secondary" className="h-8 w-8 p-0">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
                       </div>
@@ -225,11 +254,20 @@ const Marketplace = () => {
                       <p className="text-sm text-muted-foreground mb-3">oleh {product.seller}</p>
 
                       <div className="flex gap-2">
-                        <Button className="flex-1" size="sm">
+                        <Button
+                          className="flex-1"
+                          size="sm"
+                          onClick={(e) => handleAddToCart(e, product)}
+                        >
                           <ShoppingCart className="h-4 w-4 mr-2" />
                           Beli Sekarang
                         </Button>
-                        <Button variant="outline" size="sm" asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => e.stopPropagation()}
+                          asChild
+                        >
                           <Link to={`/marketplace/product/${product.slug}`}>
                             Detail
                           </Link>

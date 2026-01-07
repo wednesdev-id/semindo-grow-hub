@@ -13,6 +13,14 @@ export default function Cart() {
     const { toast } = useToast();
     const { items, itemCount, total, updateQuantity, removeFromCart, clearCart } = useCart();
 
+    // Helper function to parse price
+    const getPrice = (price: string | number): number => {
+        if (typeof price === 'string') {
+            return parseInt(price.replace(/[^0-9]/g, ''));
+        }
+        return price;
+    };
+
     const handleUpdateQuantity = (productId: string, newQuantity: number) => {
         if (newQuantity < 1) {
             handleRemoveItem(productId);
@@ -117,7 +125,7 @@ export default function Cart() {
                                                         <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted">
                                                             <img
                                                                 src={item.image || '/api/placeholder/96/96'}
-                                                                alt={item.title}
+                                                                alt={item.name}
                                                                 className="w-full h-full object-cover hover:scale-105 transition-transform"
                                                             />
                                                         </div>
@@ -125,20 +133,23 @@ export default function Cart() {
 
                                                     {/* Product Info */}
                                                     <div className="flex-1 min-w-0">
+                                                        {/* Product Title */}
                                                         <Link
                                                             to={`/marketplace/products/${item.slug}`}
-                                                            className="font-semibold text-lg hover:text-primary mb-1 block line-clamp-2"
+                                                            className="hover:text-primary"
                                                         >
-                                                            {item.title}
+                                                            <h2 className="font-bold text-lg mb-2 line-clamp-2">
+                                                                {item.name}
+                                                            </h2>
                                                         </Link>
 
-                                                        {/* Price */}
-                                                        <p className="text-xl font-bold text-primary mb-4">
-                                                            Rp {item.price.toLocaleString('id-ID')}
+                                                        {/* Price per unit */}
+                                                        <p className="text-sm text-muted-foreground mb-3">
+                                                            Rp {getPrice(item.price).toLocaleString('id-ID')} / pcs
                                                         </p>
 
                                                         {/* Quantity Controls */}
-                                                        <div className="flex items-center gap-4 flex-wrap">
+                                                        <div className="flex items-center gap-4 flex-wrap mb-3">
                                                             <div className="flex items-center gap-2 border rounded-lg p-1">
                                                                 <Button
                                                                     size="sm"
@@ -174,6 +185,14 @@ export default function Cart() {
                                                             </Button>
                                                         </div>
 
+                                                        {/* Subtotal - Mobile */}
+                                                        <div className="md:hidden">
+                                                            <p className="text-sm text-muted-foreground">Subtotal</p>
+                                                            <p className="font-bold text-lg text-primary">
+                                                                Rp {(getPrice(item.price) * item.quantity).toLocaleString('id-ID')}
+                                                            </p>
+                                                        </div>
+
                                                         {/* Stock Warning */}
                                                         {item.stock < 10 && (
                                                             <p className="text-sm text-orange-600 mt-2">
@@ -182,11 +201,11 @@ export default function Cart() {
                                                         )}
                                                     </div>
 
-                                                    {/* Subtotal */}
+                                                    {/* Subtotal - Desktop */}
                                                     <div className="text-right hidden md:block">
                                                         <p className="text-sm text-muted-foreground mb-1">Subtotal</p>
-                                                        <p className="font-bold text-xl">
-                                                            Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                                                        <p className="font-bold text-xl text-primary">
+                                                            Rp {(getPrice(item.price) * item.quantity).toLocaleString('id-ID')}
                                                         </p>
                                                     </div>
                                                 </div>

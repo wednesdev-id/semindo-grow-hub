@@ -35,7 +35,16 @@ router.delete('/products/:id/images/:imageId', controller.deleteProductImage);
 
 // Analytics
 router.get('/analytics/seller', controller.getSellerAnalytics);
+router.get('/analytics/seller', controller.getSellerAnalytics);
 router.get('/analytics/admin', controller.getAdminAnalytics);
+router.get('/admin/products', controller.getAdminProducts);
+router.get('/admin/products', controller.getAdminProducts);
+router.get('/consultant/clients/products', authenticate, controller.getConsultantClientsProducts);
+router.get('/partner/opportunities', authenticate, controller.getExportReadyProducts);
+router.get('/bank/candidates', authenticate, controller.getFinancingCandidates);
+
+
+
 
 // Product Management
 router.get('/my-products', controller.getMyProducts);

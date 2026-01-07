@@ -258,6 +258,69 @@ class MarketplaceController {
         }
     }
 
+    async getConsultantClientsProducts(req: Request, res: Response) {
+        try {
+            const consultantId = (req as any).user.id;
+            const {
+                search,
+                clientId,
+                status,
+                page,
+                limit
+            } = req.query;
+
+            const params = {
+                search: search ? String(search) : undefined,
+                clientId: clientId ? String(clientId) : undefined,
+                status: status ? String(status) : undefined,
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+            };
+
+            const result = await marketplaceService.getConsultantClientsProducts(consultantId, params);
+            res.json(result);
+        } catch (error: any) {
+            console.error('[MarketplaceController] getConsultantClientsProducts error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
+    async getAdminProducts(req: Request, res: Response) {
+        try {
+            const {
+                search,
+                category,
+                status,
+                sellerId,
+                sortBy,
+                page,
+                limit,
+                startDate,
+                endDate
+            } = req.query;
+
+            const params = {
+                search: search ? String(search) : undefined,
+                category: category ? String(category) : undefined,
+                status: status ? String(status) : undefined,
+                sellerId: sellerId ? String(sellerId) : undefined,
+                sortBy: sortBy ? String(sortBy) : 'newest',
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+                startDate: startDate ? new Date(String(startDate)) : undefined,
+                endDate: endDate ? new Date(String(endDate)) : undefined,
+            };
+
+            const result = await marketplaceService.getAdminProducts(params);
+            res.json(result);
+        } catch (error: any) {
+            console.error('[MarketplaceController] getAdminProducts error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
     async getPendingProducts(req: Request, res: Response) {
         try {
             // In real app, check for admin role
@@ -350,6 +413,39 @@ class MarketplaceController {
             const userId = (req as any).user.id;
             const product = await marketplaceService.deleteProductImage(id, userId, imageId);
             res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+    async getExportReadyProducts(req: Request, res: Response) {
+        try {
+            const { page, limit, category, region } = req.query;
+            const params = {
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+                category: category ? String(category) : undefined,
+                region: region ? String(region) : undefined,
+            };
+
+            const result = await marketplaceService.getExportReadyProducts(params);
+            res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getFinancingCandidates(req: Request, res: Response) {
+        try {
+            const { page, limit, minRevenue, location } = req.query;
+            const params = {
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+                minRevenue: minRevenue ? Number(minRevenue) : undefined,
+                location: location ? String(location) : undefined,
+            };
+
+            const result = await marketplaceService.getFinancingCandidates(params);
+            res.json(result);
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }

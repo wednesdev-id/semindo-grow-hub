@@ -288,6 +288,114 @@ export class MarketplaceService {
         };
     }
 
+    /**
+     * Admin: Get comprehensive list of products with filters
+     */
+    async getAdminProducts(params: {
+        search?: string;
+        category?: string;
+        status?: string;
+        sellerId?: string;
+        sortBy?: string;
+        page?: number;
+        limit?: number;
+        startDate?: Date;
+        endDate?: Date;
+    }) {
+        const { search, category, status, sellerId, sortBy, page = 1, limit = 20, startDate, endDate } = params;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.ProductWhereInput = {};
+
+        // Search
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+            ];
+            // Optional: Add store name search if relationship setup allows easy filtering, 
+            // but Prisma doesn't support deep relation filtering in OR easily without specific setup.
+            // We'll stick to title/desc for minimal complexity or add AND for store if possible.
+        }
+
+        // Filters
+        if (category) where.category = category;
+        if (sellerId) where.storeId = sellerId;
+
+        // Status Logic
+        if (status) {
+            switch (status) {
+                case 'active':
+                    where.isPublished = true;
+                    break;
+                case 'draft':
+                    where.status = 'draft';
+                    break;
+                case 'inactive':
+                    where.isPublished = false;
+                    break;
+                case 'archived':
+                    where.status = 'archived';
+                    break;
+                case 'rejected':
+                    where.status = 'rejected';
+                    break;
+            }
+        }
+
+        // Date Range
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) where.createdAt.gte = startDate;
+            if (endDate) where.createdAt.lte = endDate;
+        }
+
+        // Sorting
+        let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+        switch (sortBy) {
+            case 'price_asc': orderBy = { price: 'asc' }; break;
+            case 'price_desc': orderBy = { price: 'desc' }; break;
+            case 'oldest': orderBy = { createdAt: 'asc' }; break;
+            case 'name_asc': orderBy = { title: 'asc' }; break;
+            case 'name_desc': orderBy = { title: 'desc' }; break;
+            case 'newest':
+            default: orderBy = { createdAt: 'desc' };
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    store: {
+                        include: {
+                            user: {
+                                select: {
+                                    fullName: true,
+                                    email: true
+                                }
+                            }
+                        }
+                    }
+                },
+                skip,
+                take: limit,
+                orderBy
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+
 
     async findProductBySlug(slug: string): Promise<Product | null> {
         return prisma.product.findFirst({
@@ -970,5 +1078,209 @@ export class MarketplaceService {
             verified: s.isActive,
             image: s.logoUrl || s.user?.profilePictureUrl || '/api/placeholder/80/80'
         }));
+    }
+    async getConsultantClientsProducts(consultantId: string, params: {
+        search?: string;
+        clientId?: string;
+        status?: string;
+        page?: number;
+        limit?: number;
+    }) {
+        const { search, clientId, status, page = 1, limit = 10 } = params;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.ProductWhereInput = {
+            deletedAt: null
+        };
+
+        // 1. Filter by Client (Store)
+        if (clientId) {
+            where.storeId = clientId;
+        } else {
+            // For now, consistent with "Mock" consultant features, we'll return products from ALL stores
+            // In real implementation:
+            // const clients = await consultationService.getClients(consultantId);
+            // where.storeId = { in: clients.map(c => c.storeId) };
+        }
+
+        // 2. Search
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        // 3. Status Filter
+        if (status) {
+            if (status === 'active') where.isPublished = true;
+            else if (status === 'draft') where.status = 'draft';
+            else if (status === 'inactive') where.isPublished = false;
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    store: {
+                        select: {
+                            id: true,
+                            name: true,
+                            user: {
+                                select: { fullName: true }
+                            }
+                        }
+                    }
+                },
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+    async getExportReadyProducts(params: {
+        page?: number;
+        limit?: number;
+        category?: string;
+        region?: string;
+    }) {
+        const { page = 1, limit = 10, category, region } = params;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.ProductWhereInput = {
+            isPublished: true,
+            deletedAt: null,
+            // Mock criteria for "Export Ready": Rating > 4.5 OR expensive items
+            OR: [
+                { price: { gt: 500000 } }, // Expensive items assumed high quality
+                // Real implementation would have a specific flag or score
+            ]
+        };
+
+        if (category) where.category = category;
+        if (region) {
+            where.store = {
+                user: {
+                    umkmProfile: {
+                        city: { contains: region, mode: 'insensitive' }
+                    }
+                }
+            };
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    store: {
+                        select: {
+                            id: true,
+                            name: true,
+                            user: {
+                                select: {
+                                    umkmProfile: { select: { city: true } }
+                                }
+                            }
+                        }
+                    }
+                },
+                skip,
+                take: limit,
+                orderBy: { price: 'desc' }
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+    async getFinancingCandidates(params: {
+        page?: number;
+        limit?: number;
+        minRevenue?: number;
+        location?: string;
+    }) {
+        const { page = 1, limit = 10, minRevenue = 1000000, location } = params;
+        const skip = (page - 1) * limit;
+
+        // Find stores with orders sum > minRevenue
+        // This is complex with simple findMany, so we use groupBy or just fetch top stores
+        // For MVP, we'll fetch active stores and filter in memory or use the topSellers logic
+
+        const where: Prisma.StoreWhereInput = {
+            isActive: true
+        };
+
+        if (location) {
+            where.user = {
+                umkmProfile: {
+                    city: { contains: location, mode: 'insensitive' }
+                }
+            };
+        }
+
+        const [stores, total] = await Promise.all([
+            prisma.store.findMany({
+                where,
+                include: {
+                    user: {
+                        select: {
+                            fullName: true,
+                            email: true,
+                            phone: true,
+                            umkmProfile: { select: { city: true } }
+                        }
+                    },
+                    _count: {
+                        select: { orders: true }
+                    }
+                },
+                skip,
+                take: limit,
+                // approximating "revenue" by order count for sorting, ideal is Aggregation
+                orderBy: {
+                    orders: { _count: 'desc' }
+                }
+            }),
+            prisma.store.count({ where })
+        ]);
+
+        return {
+            candidates: stores.map(s => ({
+                id: s.id,
+                name: s.name,
+                owner: s.user?.fullName,
+                location: s.user?.umkmProfile?.city || 'Indramayu',
+                orderCount: s._count.orders,
+                // Mock revenue
+                estimatedRevenue: s._count.orders * 150000, // Avg order value assumption
+                status: 'Eligible'
+            })),
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
 }

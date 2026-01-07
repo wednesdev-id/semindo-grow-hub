@@ -122,19 +122,105 @@ export const marketplaceService = {
     },
 
     // Admin: Get ALL products from all sellers (including drafts and unpublished)
-    getAllProductsForAdmin: async (): Promise<Product[]> => {
-        const response = await api.get<{ data: any[] }>('/marketplace/products?includeAll=true');
-        return response.data.map((p: any) => {
+    getAllProductsForAdmin: async (filters?: {
+        search?: string;
+        category?: string;
+        status?: string;
+        sellerId?: string;
+        sortBy?: string;
+        page?: number;
+        limit?: number;
+    }): Promise<{ products: Product[]; pagination: any }> => {
+        const queryParams = new URLSearchParams();
+        if (filters?.search) queryParams.append('search', filters.search);
+        if (filters?.category) queryParams.append('category', filters.category);
+        if (filters?.status) queryParams.append('status', filters.status);
+        if (filters?.sellerId) queryParams.append('sellerId', filters.sellerId);
+        if (filters?.sortBy) queryParams.append('sortBy', filters.sortBy);
+        if (filters?.page) queryParams.append('page', filters.page.toString());
+        if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+
+        const response = await api.get<{ products: any[]; pagination: any }>(`/marketplace/admin/products?${queryParams.toString()}`);
+
+        const products = response.products.map((p: any) => {
             const firstImage = p.images?.[0];
             const imageUrl = typeof firstImage === 'string'
                 ? firstImage
                 : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
 
+            // Map store/user to seller name
+            let sellerName = 'Unknown Seller';
+            if (p.store) {
+                sellerName = p.store.name;
+                if (p.store.user?.fullName) {
+                    sellerName += ` (${p.store.user.fullName})`;
+                }
+            }
+
             return {
                 id: p.id,
                 name: p.title,
                 slug: p.slug,
-                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
+                seller: sellerName,
+                location: p.seller?.umkmProfile?.city || 'Indonesia', // This might need update if we want location from store
+                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                rating: 0,
+                reviews: 0,
+                image: imageUrl,
+                images: Array.isArray(p.images) ? p.images : [],
+                category: p.category,
+                badges: [],
+                description: p.description || '',
+                stock: p.stock,
+                status: p.status, // Should use the status from backend
+                isPublished: p.isPublished,
+                externalLinks: p.externalLinks
+            };
+        });
+
+        return {
+            products,
+            pagination: response.pagination
+        };
+    },
+
+
+    // Consultant: Get products from assigned clients
+    getConsultantProducts: async (filters?: {
+        search?: string;
+        clientId?: string;
+        status?: string;
+        page?: number;
+        limit?: number;
+    }): Promise<{ products: Product[]; pagination: any }> => {
+        const queryParams = new URLSearchParams();
+        if (filters?.search) queryParams.append('search', filters.search);
+        if (filters?.clientId) queryParams.append('clientId', filters.clientId);
+        if (filters?.status) queryParams.append('status', filters.status);
+        if (filters?.page) queryParams.append('page', filters.page.toString());
+        if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+
+        const response = await api.get<{ products: any[]; pagination: any }>(`/marketplace/consultant/clients/products?${queryParams.toString()}`);
+
+        const products = response.products.map((p: any) => {
+            const firstImage = p.images?.[0];
+            const imageUrl = typeof firstImage === 'string'
+                ? firstImage
+                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
+            let sellerName = 'Unknown Seller';
+            if (p.store) {
+                sellerName = p.store.name;
+                if (p.store.user?.fullName) {
+                    sellerName += ` (${p.store.user.fullName})`;
+                }
+            }
+
+            return {
+                id: p.id,
+                name: p.title,
+                slug: p.slug,
+                seller: sellerName,
                 location: p.seller?.umkmProfile?.city || 'Indonesia',
                 price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
                 rating: 0,
@@ -146,9 +232,15 @@ export const marketplaceService = {
                 description: p.description || '',
                 stock: p.stock,
                 status: p.status,
+                isPublished: p.isPublished,
                 externalLinks: p.externalLinks
             };
         });
+
+        return {
+            products,
+            pagination: response.pagination
+        };
     },
 
     // Search and filter products
@@ -473,4 +565,72 @@ export const marketplaceService = {
         return response.data;
     },
 
+    // Partner & Bank Services
+    getExportReadyProducts: async (filters?: {
+        page?: number;
+        limit?: number;
+        category?: string;
+        region?: string;
+    }): Promise<{ products: Product[]; pagination: any }> => {
+        const queryParams = new URLSearchParams();
+        if (filters?.category) queryParams.append('category', filters.category);
+        if (filters?.region) queryParams.append('region', filters.region);
+        if (filters?.page) queryParams.append('page', filters.page.toString());
+        if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+
+        const response = await api.get<{ products: any[]; pagination: any }>(`/marketplace/partner/opportunities?${queryParams.toString()}`);
+
+        // Map response to Product interface
+        const products = response.products.map((p: any) => {
+            const firstImage = p.images?.[0];
+            const imageUrl = typeof firstImage === 'string'
+                ? firstImage
+                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
+            let sellerName = 'Unknown Seller';
+            if (p.store) {
+                sellerName = p.store.name;
+                if (p.store.user?.fullName) {
+                    sellerName += ` (${p.store.user.fullName})`;
+                }
+            }
+
+            return {
+                id: p.id,
+                name: p.title,
+                slug: p.slug,
+                seller: sellerName,
+                location: p.store?.user?.umkmProfile?.city || 'Indonesia',
+                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                rating: 0,
+                reviews: 0,
+                image: imageUrl,
+                images: Array.isArray(p.images) ? p.images : [],
+                category: p.category,
+                badges: ['Export Ready'],
+                description: p.description || '',
+                stock: p.stock,
+                status: p.status,
+                isPublished: p.isPublished
+            };
+        });
+
+        return { products, pagination: response.pagination };
+    },
+
+    getFinancingCandidates: async (filters?: {
+        page?: number;
+        limit?: number;
+        minRevenue?: number;
+        location?: string;
+    }): Promise<{ candidates: any[]; pagination: any }> => {
+        const queryParams = new URLSearchParams();
+        if (filters?.minRevenue) queryParams.append('minRevenue', filters.minRevenue.toString());
+        if (filters?.location) queryParams.append('location', filters.location);
+        if (filters?.page) queryParams.append('page', filters.page.toString());
+        if (filters?.limit) queryParams.append('limit', filters.limit.toString());
+
+        const response = await api.get<{ candidates: any[]; pagination: any }>(`/marketplace/bank/candidates?${queryParams.toString()}`);
+        return response;
+    }
 };
