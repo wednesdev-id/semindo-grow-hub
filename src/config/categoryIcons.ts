@@ -3,13 +3,19 @@
 
 import {
     UtensilsCrossed,  // Kuliner & F&B
-    Shirt,            // Fashion & Tekstil
-    Laptop,           // Teknologi & Digital
+    Shirt,            // Fashion & Aksesoris
+    Laptop,           // Elektronik & Gadget
     Palette,          // Kerajinan Tangan
-    Heart,            // Kesehatan & Kecantikan
+    Heart,            // Kecantikan & Kesehatan
     Sprout,           // Pertanian
-    BookOpen,         // Pendidikan
+    BookOpen,         // Hobi, Buku & Alat Tulis
     Music,            // Entertainment
+    Home,             // Peralatan Rumah Tangga
+    ShoppingCart,     // Kebutuhan Harian
+    Baby,             // Ibu, Bayi & Mainan
+    Bike,             // Olahraga & Otomotif
+    Zap,              // Produk Digital
+    Plane,            // Perjalanan & Hiburan
     type LucideIcon
 } from 'lucide-react';
 
@@ -20,17 +26,20 @@ export interface CategoryIconMap {
 export const categoryIcons: CategoryIconMap = {
     'kuliner': UtensilsCrossed,
     'kuliner & f&b': UtensilsCrossed,
+    'fashion & aksesoris': Shirt,
     'fashion': Shirt,
-    'fashion & tekstil': Shirt,
-    'teknologi': Laptop,
-    'teknologi & digital': Laptop,
+    'elektronik & gadget': Laptop,
+    'kecantikan & kesehatan': Heart,
+    'peralatan rumah tangga (home & living)': Home,
+    'kebutuhan harian (groceries & fmcg)': ShoppingCart,
+    'ibu, bayi & mainan': Baby,
+    'olahraga & otomotif': Bike,
+    'hobi, buku & alat tulis': BookOpen,
+    'produk digital (billings & top-up)': Zap,
+    'perjalanan & hiburan': Plane,
     'kerajinan': Palette,
     'kerajinan tangan': Palette,
-    'kesehatan': Heart,
-    'kesehatan & kecantikan': Heart,
-    'kecantikan': Heart,
     'pertanian': Sprout,
-    'pendidikan': BookOpen,
     'entertainment': Music,
 };
 

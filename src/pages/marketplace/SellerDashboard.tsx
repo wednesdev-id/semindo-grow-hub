@@ -11,8 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive, Star, Check, Search } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth } from '@/core/auth/hooks/useAuth';
+import { MARKETPLACE_CATEGORIES } from '@/config/categories';
 import { ProductFiltersComponent, type ProductFilters } from '@/components/marketplace/ProductFilters';
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
@@ -515,12 +517,21 @@ export default function SellerDashboard() {
 
                                 <div>
                                     <Label htmlFor="category">Category</Label>
-                                    <Input
-                                        id="category"
+                                    <Select
                                         value={productForm.category}
-                                        onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                                        placeholder="e.g., Fashion, Kuliner, Kerajinan"
-                                    />
+                                        onValueChange={(value) => setProductForm({ ...productForm, category: value })}
+                                    >
+                                        <SelectTrigger id="category">
+                                            <SelectValue placeholder="Pilih kategori" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {MARKETPLACE_CATEGORIES.map((cat) => (
+                                                <SelectItem key={cat} value={cat}>
+                                                    {cat}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div>

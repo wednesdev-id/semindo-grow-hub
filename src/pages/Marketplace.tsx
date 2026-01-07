@@ -12,6 +12,7 @@ import { marketplaceService } from "@/services/marketplaceService";
 import { Link, useNavigate } from "react-router-dom";
 import { getCategoryIcon } from "@/config/categoryIcons";
 import { getCategoryColor } from "@/config/categoryColors";
+import { MARKETPLACE_CATEGORIES } from '@/config/categories';
 import { useState } from "react";
 import { ProductFiltersComponent } from "@/components/marketplace/ProductFilters";
 import { useCart } from "@/contexts/CartContext";
@@ -125,35 +126,38 @@ const Marketplace = () => {
       ) : (
         <>
           {/* Categories */}
-          <section className="py-12 px-4">
+          <section className="py-12 px-4 shadow-sm bg-white border-b overflow-x-auto">
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">Kategori Produk</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {categories?.map((category) => {
-                  const CategoryIcon = getCategoryIcon(category.name);
-                  const categoryColor = getCategoryColor(category.name);
+              <h2 className="text-xl md:text-2xl font-bold text-center mb-10 text-foreground/80">Kategori Produk</h2>
+              <div className="flex md:grid md:grid-cols-6 lg:grid-cols-11 gap-x-2 gap-y-8 pb-4 min-w-max md:min-w-0">
+                {MARKETPLACE_CATEGORIES.map((catName) => {
+                  const CategoryIcon = getCategoryIcon(catName);
+                  const colors = getCategoryColor(catName);
+                  const categoryId = categories?.find(c => c.name.toLowerCase().includes(catName.split(' ')[0].toLowerCase()))?.id;
+
                   return (
                     <div
-                      key={category.id}
-                      onClick={() => setFilters({ ...filters, category: category.id })}
-                      className="cursor-pointer"
+                      key={catName}
+                      onClick={() => categoryId && setFilters({ ...filters, category: categoryId })}
+                      className="cursor-pointer group flex flex-col items-center w-24 md:w-full"
                     >
-                      <Card className="hover:shadow-lg transition-all hover:scale-105 cursor-pointer h-full">
-                        <CardContent className="p-6 text-center">
-                          {/* Icon with colored background */}
+                      <div className="relative mb-3 flex items-center justify-center">
+                        {/* Outer Circle - White with soft shadow */}
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)] group-hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] border border-gray-50 flex items-center justify-center transition-all duration-300 group-hover:-translate-y-1 overflow-hidden">
+                          {/* Inner soft color background */}
                           <div
-                            className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
-                            style={{ backgroundColor: categoryColor.background }}
-                          >
-                            <CategoryIcon
-                              className="h-8 w-8"
-                              style={{ color: categoryColor.text }}
-                            />
-                          </div>
-                          <h3 className="font-semibold mb-2 text-sm">{category.name}</h3>
-                          <p className="text-xs text-muted-foreground">{category.count} produk</p>
-                        </CardContent>
-                      </Card>
+                            className="absolute inset-0 opacity-10"
+                            style={{ backgroundColor: colors.text }}
+                          ></div>
+                          <CategoryIcon
+                            className="h-6 w-6 md:h-7 md:w-7 relative z-10 transition-transform duration-300 group-hover:scale-110"
+                            style={{ color: colors.text }}
+                          />
+                        </div>
+                      </div>
+                      <h3 className="text-[11px] md:text-xs font-medium text-center line-clamp-2 px-1 text-foreground/70 group-hover:text-primary transition-colors h-8 leading-tight">
+                        {catName}
+                      </h3>
                     </div>
                   );
                 })}
@@ -181,101 +185,101 @@ const Marketplace = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {searchResults?.products?.map((product) => (
-                  <Card
-                    key={product.id}
-                    className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => handleCardClick(product.slug)}
-                  >
-                    <div className="relative">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                        {product.badges?.map((badge, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {badge}
+                {searchResults?.products?.map((product) => {
+                  const colors = getCategoryColor(product.category);
+                  return (
+                    <Card
+                      key={product.id}
+                      className="group overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 border-gray-100 flex flex-col h-full"
+                      onClick={() => handleCardClick(product.slug)}
+                    >
+                      <div className="relative aspect-square overflow-hidden bg-muted/20">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                          {product.badges?.map((badge, index) => (
+                            <Badge key={index} variant="secondary" className="text-[10px] h-5 bg-white/90 backdrop-blur-sm shadow-sm text-foreground/80 border-none">
+                              {badge}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      <CardContent className="p-4 flex flex-col flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] h-5"
+                            style={{
+                              color: colors.text,
+                              backgroundColor: colors.background,
+                              borderColor: colors.stroke + '40'
+                            }}
+                          >
+                            {product.category}
                           </Badge>
-                        ))}
-                      </div>
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Heart className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 w-8 p-0"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline" className="text-xs">{product.category}</Badge>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {product.location}
+                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground ml-auto">
+                            <MapPin className="h-3 w-3" />
+                            {product.location}
+                          </div>
                         </div>
-                      </div>
 
-                      <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{product.description}</p>
-
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-medium">{product.rating}</span>
+                        <div className="flex justify-between items-start mb-2 gap-2">
+                          <h3 className="font-semibold text-sm md:text-base line-clamp-2 leading-tight group-hover:text-primary transition-colors flex-1">
+                            {product.name}
+                          </h3>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 shrink-0 hover:bg-rose-50 hover:text-rose-500 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Toggle like logic could go here
+                            }}
+                          >
+                            <Heart className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <span className="text-sm text-muted-foreground">({product.reviews} ulasan)</span>
-                      </div>
 
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <span className="text-lg font-bold text-primary">{product.price}</span>
-                          {(product as any).originalPrice && (
-                            <span className="text-sm text-muted-foreground line-through ml-2">
-                              {(product as any).originalPrice}
-                            </span>
-                          )}
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2 h-8">
+                          {product.description}
+                        </p>
+
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="flex items-center gap-1">
+                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                            <span className="text-xs font-bold">{product.rating}</span>
+                          </div>
+                          <span className="text-[11px] text-muted-foreground">{product.reviews} ulasan</span>
+                          <span className="text-[11px] text-muted-foreground border-l pl-3">oleh {product.seller}</span>
                         </div>
-                      </div>
 
-                      <p className="text-sm text-muted-foreground mb-3">oleh {product.seller}</p>
+                        <div className="mt-auto">
+                          <div className="flex items-baseline gap-2 mb-4">
+                            <span className="text-lg font-bold text-primary">{product.price}</span>
+                            {(product as any).originalPrice && (
+                              <span className="text-xs text-muted-foreground line-through opacity-60">
+                                {(product as any).originalPrice}
+                              </span>
+                            )}
+                          </div>
 
-                      <div className="flex gap-2">
-                        <Button
-                          className="flex-1"
-                          size="sm"
-                          onClick={(e) => handleAddToCart(e, product)}
-                        >
-                          <ShoppingCart className="h-4 w-4 mr-2" />
-                          Beli Sekarang
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => e.stopPropagation()}
-                          asChild
-                        >
-                          <Link to={`/marketplace/product/${product.slug}`}>
-                            Detail
-                          </Link>
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                          <Button
+                            className="w-full shadow-md bg-primary hover:bg-primary/90 transition-all active:scale-[0.98]"
+                            size="default"
+                            onClick={(e) => handleAddToCart(e, product)}
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Beli Sekarang
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
 
               <div className="text-center mt-8">
