@@ -22,12 +22,22 @@ interface Order {
     status: string;
     paymentStatus: string;
     totalAmount: number;
+    sellerSubtotal?: number;
     createdAt: string;
-    user: { fullName: string };
+    user: {
+        id: string;
+        fullName: string;
+    };
     items: {
         id: string;
         quantity: number;
-        product: { title: string };
+        product: {
+            id: string;
+            title: string;
+            price: number;
+            storeId?: string;
+            sellerId?: string;
+        };
     }[];
 }
 
@@ -101,7 +111,7 @@ export default function SellerDashboard() {
                 const data = await marketplaceService.getMyProducts(filters);
                 setProducts(data);
             } else {
-                const data = await marketplaceService.getAllOrders();
+                const data = await marketplaceService.getSellerOrders();
                 setOrders(data as any);
             }
         } catch (error) {
@@ -222,7 +232,7 @@ export default function SellerDashboard() {
                         </TabsTrigger>
                         <TabsTrigger value="orders">
                             <ShoppingBag className="h-4 w-4 mr-2" />
-                            Orders
+                            Pesanan Masuk
                         </TabsTrigger>
                     </TabsList>
 
@@ -373,8 +383,8 @@ export default function SellerDashboard() {
                             <Card>
                                 <CardContent className="p-12 text-center">
                                     <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                                    <h2 className="text-xl font-semibold mb-2">No orders yet</h2>
-                                    <p className="text-muted-foreground">Orders will appear here when customers buy your products</p>
+                                    <h2 className="text-xl font-semibold mb-2">Belum ada pesanan</h2>
+                                    <p className="text-muted-foreground">Pesanan akan muncul di sini saat pelanggan membeli produk Anda</p>
                                 </CardContent>
                             </Card>
                         ) : (
@@ -394,7 +404,7 @@ export default function SellerDashboard() {
                                                 </div>
                                                 <div className="text-right">
                                                     <p className="font-bold text-lg text-primary">
-                                                        Rp {order.totalAmount.toLocaleString('id-ID')}
+                                                        Rp {(order.sellerSubtotal || order.totalAmount).toLocaleString('id-ID')}
                                                     </p>
                                                     <Badge className="mt-1">
                                                         {order.status}
@@ -406,7 +416,7 @@ export default function SellerDashboard() {
                                                 <p className="text-sm font-medium mb-2">Items:</p>
                                                 {order.items.map((item, idx) => (
                                                     <p key={idx} className="text-sm text-muted-foreground">
-                                                        {item.quantity}x {item.product.title}
+                                                        {item.quantity}x {item.product.title} (Rp {Number(item.product.price).toLocaleString('id-ID')})
                                                     </p>
                                                 ))}
                                             </div>

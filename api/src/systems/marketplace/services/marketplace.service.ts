@@ -412,9 +412,9 @@ export class MarketplaceService {
         });
     }
 
-    async createOrder(userId: string, items: { productId: string; quantity: number }[]): Promise<Order> {
+    async createOrder(userId: string, items: { productId: string; quantity: number }[], shippingAddress?: any, courier?: string, shippingCost: number = 0): Promise<Order> {
         // Calculate total amount and verify stock
-        let totalAmount = 0;
+        let subtotal = 0;
         const orderItemsData: any[] = [];
 
         for (const item of items) {
@@ -431,7 +431,7 @@ export class MarketplaceService {
                 throw new Error(`Insufficient stock for ${product.title}`);
             }
 
-            totalAmount += price * item.quantity;
+            subtotal += price * item.quantity;
             orderItemsData.push({
                 productId: item.productId,
                 quantity: item.quantity,
@@ -440,14 +440,19 @@ export class MarketplaceService {
             });
         }
 
+        const totalAmount = subtotal + shippingCost;
+
         return prisma.$transaction(async (tx) => {
             // Create order
             const order = await tx.order.create({
                 data: {
                     userId,
                     totalAmount,
+                    shippingCost,
                     paymentLink: '', // Will be updated
                     paymentStatus: 'pending',
+                    shippingAddress,
+                    courier,
                     items: {
                         create: orderItemsData,
                     },
@@ -788,33 +793,81 @@ export class MarketplaceService {
         if (!store) throw new Error('Store not found');
 
         const totalOrders = await prisma.order.count({
-            where: { storeId: store.id }
-        });
-
-        const completedOrders = await prisma.order.aggregate({
             where: {
-                storeId: store.id,
-                status: 'completed'
-            },
-            _sum: { totalAmount: true }
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
+                        }
+                    }
+                }
+            }
         });
 
-        const totalSales = Number(completedOrders._sum.totalAmount || 0);
+        const completedOrdersWithItems = await prisma.order.findMany({
+            where: {
+                status: 'completed',
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
+                        }
+                    }
+                }
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true
+                    }
+                }
+            }
+        });
+
+        let totalSales = 0;
+        completedOrdersWithItems.forEach(order => {
+            order.items.forEach(item => {
+                if (item.product.storeId === store.id || item.product.sellerId === userId) {
+                    totalSales += Number(item.price) * item.quantity;
+                }
+            });
+        });
 
         const products = await prisma.product.count({
-            where: { storeId: store.id }
+            where: {
+                OR: [
+                    { storeId: store.id },
+                    { sellerId: userId }
+                ],
+                deletedAt: null
+            }
         });
 
         const recentOrders = await prisma.order.findMany({
             where: {
-                OR: [
-                    { storeId: store.id },
-                    { items: { some: { product: { sellerId: userId } } } }
-                ]
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
+                        }
+                    }
+                }
             },
             orderBy: { createdAt: 'desc' },
             take: 5,
-            include: { user: { select: { fullName: true } } }
+            include: {
+                user: { select: { fullName: true } },
+                items: { include: { product: true } }
+            }
         });
 
         // Mock monthly sales data for chart
@@ -836,18 +889,19 @@ export class MarketplaceService {
         };
     }
 
-    async getSellerOrders(userId: string): Promise<Order[]> {
-        // Get user's store
+    async getSellerOrders(userId: string): Promise<any[]> {
         const store = await prisma.store.findUnique({ where: { userId } });
         if (!store) return [];
 
-        // Find all orders that contain products from this seller's store
-        return prisma.order.findMany({
+        const orders = await prisma.order.findMany({
             where: {
                 items: {
                     some: {
                         product: {
-                            storeId: store.id
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
                         }
                     }
                 }
@@ -862,6 +916,7 @@ export class MarketplaceService {
                                 images: true,
                                 price: true,
                                 storeId: true,
+                                sellerId: true,
                             }
                         },
                     },
@@ -889,6 +944,21 @@ export class MarketplaceService {
                 }
             },
             orderBy: { createdAt: 'desc' },
+        });
+
+        // Add seller-specific subtotal to each order
+        return orders.map(order => {
+            const sellerSubtotal = order.items.reduce((sum, item) => {
+                if (item.product.storeId === store.id || item.product.sellerId === userId) {
+                    return sum + (Number(item.price) * item.quantity);
+                }
+                return sum;
+            }, 0);
+
+            return {
+                ...order,
+                sellerSubtotal
+            };
         });
     }
 

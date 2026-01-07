@@ -102,8 +102,9 @@ class MarketplaceController {
     async createOrder(req: Request, res: Response) {
         try {
             const userId = (req as any).user.id;
-            const { items } = req.body; // items: [{ productId, quantity }]
-            const order = await marketplaceService.createOrder(userId, items);
+            const { items, shippingAddress, shippingCost } = req.body;
+            const courier = shippingAddress?.courier;
+            const order = await marketplaceService.createOrder(userId, items, shippingAddress, courier, shippingCost);
             res.status(201).json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });

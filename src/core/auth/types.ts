@@ -13,10 +13,17 @@ export type BusinessLevel = 'micro' | 'small' | 'medium';
 export interface User {
   id: string;
   email: string;
+  fullName: string; // Added
+  phone?: string; // Added
   role: UserRole;
+  roles: string[]; // Added
+  permissions: string[]; // Added
   status: UserStatus;
   profile: UserProfile;
   businessProfile?: BusinessProfile;
+  umkmProfile?: any; // Added
+  mentorProfile?: any; // Added
+  consultantProfile?: any; // Added
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;

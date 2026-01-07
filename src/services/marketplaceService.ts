@@ -394,8 +394,8 @@ export const marketplaceService = {
         return api.post('/marketplace/products', data);
     },
 
-    createOrder: async (items: { productId: string; quantity: number }[]) => {
-        return api.post('/marketplace/orders', { items });
+    createOrder: async (items: { productId: string; quantity: number }[], shippingAddress?: any, shippingCost: number = 0) => {
+        return api.post('/marketplace/orders', { items, shippingAddress, shippingCost });
     },
 
     getMyOrders: async () => {
@@ -403,10 +403,14 @@ export const marketplaceService = {
         return response.data;
     },
 
+    async getSellerOrders() {
+        const response = await api.get<{ data: any[] }>('/marketplace/seller/orders');
+        return response.data;
+    },
+
     getAllOrders: async () => {
-        // Admin endpoint - reusing getMyOrders for now or need specific admin endpoint
-        // The UI calls getAllOrders. Let's map it to getMyOrders for seller view
-        const response = await api.get<{ data: any[] }>('/marketplace/orders');
+        // Admin endpoint - reusing getSellerOrders for now for consistency in seller view
+        const response = await api.get<{ data: any[] }>('/marketplace/seller/orders');
         return response.data.map((o: any) => ({
             id: o.id,
             customer: o.user?.fullName || 'Unknown',
