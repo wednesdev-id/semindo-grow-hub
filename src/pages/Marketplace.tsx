@@ -184,96 +184,70 @@ const Marketplace = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                 {searchResults?.products?.map((product) => {
                   const colors = getCategoryColor(product.category);
                   return (
                     <Card
                       key={product.id}
-                      className="group overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-all duration-300 border-gray-100 flex flex-col h-full"
+                      className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-100 flex flex-col w-full max-w-[325px] h-[452px] mx-auto bg-white rounded-xl"
                       onClick={() => handleCardClick(product.slug)}
                     >
-                      <div className="relative aspect-square overflow-hidden bg-muted/20">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
-                        <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                          {product.badges?.map((badge, index) => (
-                            <Badge key={index} variant="secondary" className="text-[10px] h-5 bg-white/90 backdrop-blur-sm shadow-sm text-foreground/80 border-none">
-                              {badge}
-                            </Badge>
-                          ))}
+                      {/* Photo Area: 301x281 with 12px margins inside 325px body */}
+                      <div className="p-3 pb-0">
+                        <div className="relative w-full aspect-[301/281] overflow-hidden rounded-[6px] bg-muted/20">
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                            {product.badges?.map((badge, index) => (
+                              <Badge key={index} variant="secondary" className="text-[10px] h-5 bg-white/90 backdrop-blur-sm shadow-sm text-foreground/80 border-none">
+                                {badge}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
-                      <CardContent className="p-4 flex flex-col flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] h-5"
-                            style={{
-                              color: colors.text,
-                              backgroundColor: colors.background,
-                              borderColor: colors.stroke + '40'
-                            }}
-                          >
-                            {product.category}
-                          </Badge>
-                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground ml-auto">
-                            <MapPin className="h-3 w-3" />
-                            {product.location}
+                      <CardContent className="p-3 flex flex-col flex-1">
+                        {/* Text Content Area: 301x135 */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] h-4 py-0"
+                              style={{
+                                color: colors.text,
+                                backgroundColor: colors.background,
+                                borderColor: colors.stroke + '40'
+                              }}
+                            >
+                              {product.category}
+                            </Badge>
                           </div>
-                        </div>
 
-                        <div className="flex justify-between items-start mb-2 gap-2">
-                          <h3 className="font-semibold text-sm md:text-base line-clamp-2 leading-tight group-hover:text-primary transition-colors flex-1">
+                          <h3 className="font-medium text-base line-clamp-2 leading-snug group-hover:text-primary transition-colors mb-1 h-[44px]">
                             {product.name}
                           </h3>
+
+                          <div className="flex justify-between items-center mt-auto">
+                            <span className="text-[18px] font-semibold text-primary">{product.price}</span>
+                            <span className="text-[16px] text-muted-foreground font-normal">10 RB terjual</span>
+                          </div>
+                        </div>
+
+                        <div className="mt-3">
                           <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 shrink-0 hover:bg-rose-50 hover:text-rose-500 rounded-full"
+                            className="w-full shadow-sm bg-[#5E72E4] hover:bg-[#5E72E4]/90 text-white transition-all active:scale-[0.98] h-10 rounded-md text-sm font-medium"
+                            size="default"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Toggle like logic could go here
+                              handleCardClick(product.slug);
                             }}
                           >
-                            <Heart className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2 h-8">
-                          {product.description}
-                        </p>
-
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                            <span className="text-xs font-bold">{product.rating}</span>
-                          </div>
-                          <span className="text-[11px] text-muted-foreground">{product.reviews} ulasan</span>
-                          <span className="text-[11px] text-muted-foreground border-l pl-3">oleh {product.seller}</span>
-                        </div>
-
-                        <div className="mt-auto">
-                          <div className="flex items-baseline gap-2 mb-4">
-                            <span className="text-lg font-bold text-primary">{product.price}</span>
-                            {(product as any).originalPrice && (
-                              <span className="text-xs text-muted-foreground line-through opacity-60">
-                                {(product as any).originalPrice}
-                              </span>
-                            )}
-                          </div>
-
-                          <Button
-                            className="w-full shadow-md bg-primary hover:bg-primary/90 transition-all active:scale-[0.98]"
-                            size="default"
-                            onClick={(e) => handleAddToCart(e, product)}
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            Beli Sekarang
+                            Lihat detail produk
                           </Button>
                         </div>
                       </CardContent>
@@ -293,8 +267,8 @@ const Marketplace = () => {
           </section>
 
           {/* Top Sellers */}
-          <section className="py-12 px-4">
-            <div className="max-w-7xl mx-auto">
+          <section className="py-12 px-4 md:px-10">
+            <div className="max-w-[1440px] mx-auto">
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-8">Penjual Terpercaya</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {topSellers?.map((seller, index) => (
