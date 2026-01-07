@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 /**
  * Seed UMKM Profile data for testing Region Mapping and Segmentation
- * Creates 3 UMKM per province (38 provinces = 114 records)
+ * Creates 30 UMKM per province (38 provinces = 1140 records)
  */
 
 // All 38 provinces in Indonesia
@@ -138,17 +138,31 @@ function generateEmail(ownerName: string, index: number): string {
 
 async function seedUMKM() {
     console.log('🌱 Seeding UMKM Profile data...');
-    console.log(`📍 Creating 3 UMKM per ${PROVINCES.length} provinces = ${PROVINCES.length * 3} records`);
+    const UMKM_PER_PROVINCE = 30;
+    console.log(`📍 Creating ${UMKM_PER_PROVINCE} UMKM per ${PROVINCES.length} provinces = ${PROVINCES.length * UMKM_PER_PROVINCE} records`);
+
+    // Ensure 'umkm' role exists
+    let umkmRole = await prisma.role.findUnique({ where: { name: 'umkm' } });
+    if (!umkmRole) {
+        console.log('📝 Creating umkm role...');
+        umkmRole = await prisma.role.create({
+            data: {
+                name: 'umkm',
+                displayName: 'UMKM',
+                description: 'Role for UMKM owners',
+            },
+        });
+    }
 
     let index = 0;
     let created = 0;
     let skipped = 0;
 
     for (const province of PROVINCES) {
-        // Create 3 UMKM per province, one for each segmentation level
-        for (let i = 0; i < 3; i++) {
+        // Create 30 UMKM per province
+        for (let i = 0; i < UMKM_PER_PROVINCE; i++) {
             index++;
-            const segProfile = SEGMENTATION_PROFILES[i];
+            const segProfile = SEGMENTATION_PROFILES[i % SEGMENTATION_PROFILES.length]; // Distribute evenly
             const businessType = getRandomElement(BUSINESS_TYPES);
             const ownerName = generateOwnerName();
             const email = generateEmail(ownerName, index);
@@ -160,17 +174,37 @@ async function seedUMKM() {
 
             try {
                 // Check if user with this email already exists
-                let user = await prisma.user.findUnique({ where: { email } });
+                let user = await prisma.user.findUnique({
+                    where: { email },
+                    include: { userRoles: true }
+                });
 
                 if (!user) {
-                    // Create a dummy user for this UMKM
+                    // Create a dummy user for this UMKM with 'umkm' role
                     user = await prisma.user.create({
                         data: {
                             email,
                             passwordHash: '$2a$10$dummy.hash.for.seed.data.only',
                             fullName: ownerName,
+                            userRoles: {
+                                create: {
+                                    roleId: umkmRole!.id
+                                }
+                            }
                         },
+                        include: { userRoles: true }
                     });
+                } else {
+                    // Ensure existing user has 'umkm' role
+                    const hasRole = user.userRoles.some(ur => ur.roleId === umkmRole!.id);
+                    if (!hasRole) {
+                        await prisma.userRole.create({
+                            data: {
+                                userId: user.id,
+                                roleId: umkmRole!.id
+                            }
+                        });
+                    }
                 }
 
                 // Check if UMKM profile already exists for this user
@@ -189,10 +223,9 @@ async function seedUMKM() {
                         userId: user.id,
                         businessName: generateBusinessName(businessType.name, index),
                         ownerName,
-                        email,
-                        phone: generatePhone(),
+                        // description removed as it's not in schema
                         province,
-                        city: `${businessType.city} ${province.split(' ').pop()}`,
+                        city: `${businessType.city} ${province.split(' ').pop()}`, // Crude but works
                         district: `Kecamatan ${(i + 1)}`,
                         village: `Kelurahan ${(i + 1)}`,
                         postalCode: `${Math.floor(10000 + Math.random() * 90000)}`,
@@ -212,7 +245,7 @@ async function seedUMKM() {
 
                 created++;
 
-                if (created % 20 === 0) {
+                if (created % 50 === 0) {
                     console.log(`   Created ${created} UMKM profiles...`);
                 }
             } catch (error: any) {

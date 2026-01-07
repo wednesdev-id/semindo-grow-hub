@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, useMapEvents } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
+import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 
 // Fix for default marker icons in react-leaflet
 // @ts-ignore
@@ -228,7 +231,7 @@ export default function OpenStreetMap({
     const zoom = selectedProvince ? 8 : INDONESIA_ZOOM;
 
     return (
-        <div className={`rounded-lg overflow-hidden ${className}`} style={{ height }}>
+        <div className={`relative rounded-lg overflow-hidden ${className}`} style={{ height }}>
             <MapContainer
                 center={center}
                 zoom={zoom}
@@ -316,88 +319,99 @@ export default function OpenStreetMap({
                     );
                 })}
 
-                {/* Individual UMKM Markers */}
-                {markers.map((marker) => {
-                    const color = SEGMENTATION_MARKER_COLORS[marker.segmentation] || SEGMENTATION_MARKER_COLORS.default;
-                    const icon = createCustomIcon(color, 20);
+                {/* Individual UMKM Markers - Clustered with Spiderfy */}
+                {selectedProvince && (
+                    <MarkerClusterGroup
+                        chunkedLoading
+                        maxClusterRadius={60}
+                        spiderfyOnMaxZoom={true}
+                        showCoverageOnHover={false}
+                        zoomToBoundsOnClick={true}
+                        spiderLegPolylineOptions={{ weight: 1.5, color: '#222', opacity: 0.5 }}
+                    >
+                        {markers.map((marker) => {
+                            const color = SEGMENTATION_MARKER_COLORS[marker.segmentation] || SEGMENTATION_MARKER_COLORS.default;
+                            const icon = createCustomIcon(color, 20);
 
-                    return (
-                        <Marker
-                            key={marker.id}
-                            position={[marker.lat, marker.lng]}
-                            icon={icon}
-                            eventHandlers={{
-                                click: () => onMarkerClick?.(marker),
-                            }}
-                        >
-                            <Popup>
-                                <div className="min-w-[220px]">
-                                    <div className="font-semibold text-base">{marker.businessName}</div>
-                                    {marker.ownerName && (
-                                        <div className="text-sm text-gray-600">{marker.ownerName}</div>
-                                    )}
-                                    <div className="mt-2 space-y-1">
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-500">Lokasi:</span>
-                                            <span>{marker.city ? `${marker.city}, ` : ''}{marker.province}</span>
-                                        </div>
-                                        <div className="flex justify-between text-sm">
-                                            <span className="text-gray-500">Segmentasi:</span>
-                                            <span
-                                                className="px-2 py-0.5 rounded text-white text-xs"
-                                                style={{ backgroundColor: color }}
-                                            >
-                                                {marker.segmentation}
-                                            </span>
-                                        </div>
-                                        {marker.level && (
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-gray-500">Level:</span>
-                                                <span>{marker.level}</span>
+                            return (
+                                <Marker
+                                    key={marker.id}
+                                    position={[marker.lat, marker.lng]}
+                                    icon={icon}
+                                    eventHandlers={{
+                                        click: () => onMarkerClick?.(marker),
+                                    }}
+                                >
+                                    <Popup>
+                                        <div className="min-w-[220px]">
+                                            <div className="font-semibold text-base">{marker.businessName}</div>
+                                            {marker.ownerName && (
+                                                <div className="text-sm text-gray-600">{marker.ownerName}</div>
+                                            )}
+                                            <div className="mt-2 space-y-1">
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-gray-500">Lokasi:</span>
+                                                    <span>{marker.city ? `${marker.city}, ` : ''}{marker.province}</span>
+                                                </div>
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-gray-500">Segmentasi:</span>
+                                                    <span
+                                                        className="px-2 py-0.5 rounded text-white text-xs"
+                                                        style={{ backgroundColor: color }}
+                                                    >
+                                                        {marker.segmentation}
+                                                    </span>
+                                                </div>
+                                                {marker.level && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-gray-500">Level:</span>
+                                                        <span>{marker.level}</span>
+                                                    </div>
+                                                )}
+                                                {marker.sector && (
+                                                    <div className="flex justify-between text-sm">
+                                                        <span className="text-gray-500">Sektor:</span>
+                                                        <span>{marker.sector}</span>
+                                                    </div>
+                                                )}
+                                                {/* Statistics Section */}
+                                                <div className="border-t pt-2 mt-2">
+                                                    {marker.turnover != null && (
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-500">Omzet/Tahun:</span>
+                                                            <span className="font-medium text-green-600">
+                                                                Rp {marker.turnover.toLocaleString('id-ID')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {marker.employees != null && (
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-500">Karyawan:</span>
+                                                            <span className="font-medium">
+                                                                {marker.employees} orang
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {marker.status && (
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className="text-gray-500">Status:</span>
+                                                            <span className={`px-2 py-0.5 rounded text-xs ${marker.status === 'verified'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-yellow-100 text-yellow-800'
+                                                                }`}>
+                                                                {marker.status === 'verified' ? 'Terverifikasi' : 'Pending'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                        {marker.sector && (
-                                            <div className="flex justify-between text-sm">
-                                                <span className="text-gray-500">Sektor:</span>
-                                                <span>{marker.sector}</span>
-                                            </div>
-                                        )}
-                                        {/* Statistics Section */}
-                                        <div className="border-t pt-2 mt-2">
-                                            {marker.turnover != null && (
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Omzet/Tahun:</span>
-                                                    <span className="font-medium text-green-600">
-                                                        Rp {marker.turnover.toLocaleString('id-ID')}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {marker.employees != null && (
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Karyawan:</span>
-                                                    <span className="font-medium">
-                                                        {marker.employees} orang
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {marker.status && (
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Status:</span>
-                                                    <span className={`px-2 py-0.5 rounded text-xs ${marker.status === 'verified'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : 'bg-yellow-100 text-yellow-800'
-                                                        }`}>
-                                                        {marker.status === 'verified' ? 'Terverifikasi' : 'Pending'}
-                                                    </span>
-                                                </div>
-                                            )}
                                         </div>
-                                    </div>
-                                </div>
-                            </Popup>
-                        </Marker>
-                    );
-                })}
+                                    </Popup>
+                                </Marker>
+                            );
+                        })}
+                    </MarkerClusterGroup>
+                )}
             </MapContainer>
 
             {/* Custom Legend Overlay */}

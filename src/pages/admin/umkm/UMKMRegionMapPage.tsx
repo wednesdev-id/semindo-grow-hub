@@ -121,7 +121,9 @@ function ProvinceStatsCard({ stats, onClose }: { stats: RegionStats; onClose: ()
                     <div>
                         <div className="text-muted-foreground">Rata-rata Omzet</div>
                         <div className="font-medium">
-                            Rp {(stats.avgTurnover / 1_000_000).toFixed(0)} Jt
+                            {stats.avgTurnover >= 1_000_000_000
+                                ? `Rp ${(stats.avgTurnover / 1_000_000_000).toFixed(1)} M`
+                                : `Rp ${(stats.avgTurnover / 1_000_000).toFixed(0)} Jt`}
                         </div>
                     </div>
                     <div>
