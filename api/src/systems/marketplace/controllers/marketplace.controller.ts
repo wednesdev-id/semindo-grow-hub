@@ -217,6 +217,19 @@ class MarketplaceController {
         }
     }
 
+    async cancelOrder(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { reason } = req.body;
+            const userId = (req as any).user.id;
+
+            const order = await marketplaceService.cancelOrder(id, userId, reason);
+            res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async updateShipment(req: Request, res: Response) {
         try {
             const { id } = req.params; // Order ID

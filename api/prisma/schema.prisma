@@ -790,6 +790,11 @@ model Order {
   courier         String?
   trackingNumber  String? @map("tracking_number")
 
+  // Cancellation Information
+  cancellationReason String?   @map("cancellation_reason")
+  cancelledAt        DateTime? @map("cancelled_at")
+  cancelledBy        String?   @map("cancelled_by") // buyer, seller, system
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

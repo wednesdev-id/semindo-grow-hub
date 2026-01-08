@@ -2,62 +2,125 @@ import { db } from '../../utils/db';
 
 export class DashboardService {
     async getOverview(userId: string) {
-        // 1. Get Stats
+        // Get user's store to filter products correctly
+        const store = await db.store.findFirst({ where: { userId } });
+        const storeId = store?.id;
+
+        // Base filter for products (ownership and not deleted)
+        // This matches marketplace.service.ts getMyProducts logic
+        const productWhereInput: any = {
+            OR: [
+                storeId ? { storeId } : {},
+                { sellerId: userId }
+            ],
+            deletedAt: null
+        };
+
+        // Filter for orders that contain this seller's products
+        const orderWhereInput: any = {
+            items: {
+                some: {
+                    product: {
+                        OR: [
+                            storeId ? { storeId } : {},
+                            { sellerId: userId }
+                        ]
+                    }
+                }
+            }
+        };
+
+        // 1. Get Stats (Parallel)
         const [
-            totalSalesAgg,
-            activeOrdersCount,
             totalProductsCount,
+            activeOrdersCount,
             enrollmentsCount,
-            completedEnrollmentsCount,
-            certificatesCount
+            completedEnrollmentsCount
         ] = await Promise.all([
-            db.order.aggregate({
-                _sum: { totalAmount: true },
-                where: { status: 'completed' } // Assuming 'completed' is a valid status
-            }),
-            db.order.count({
-                where: { status: { not: 'completed' } }
-            }),
+            // Fix: Filter products by owner instead of just isPublished
             db.product.count({
-                where: { isPublished: true }
+                where: productWhereInput
+            }),
+            // Fix: Filter orders by seller's items
+            db.order.count({
+                where: {
+                    ...orderWhereInput,
+                    // Active orders are those in progress (not delivered, cancelled, or failed)
+                    status: { notIn: ['delivered', 'cancelled', 'failed'] }
+                }
             }),
             db.enrollment.count({ where: { userId } }),
-            db.enrollment.count({ where: { userId, status: 'completed' } }),
-            Promise.resolve(0) // Certificate model not yet implemented
+            db.enrollment.count({ where: { userId, status: 'completed' } })
         ]);
 
-        // 2. Get Recent Orders
-        const recentOrders = await db.order.findMany({
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            include: { user: true } // To get customer name
+        // Use completed enrollments as proxy for certificates for now
+        const certificatesCount = completedEnrollmentsCount;
+
+        // Calculate Total Sales specifically for this seller
+        // We need to sum (price * quantity) of items in completed orders for this seller
+        const completedOrders = await db.order.findMany({
+            where: {
+                ...orderWhereInput,
+                status: 'delivered' // Use 'delivered' as the success status
+            },
+            include: {
+                items: {
+                    include: { product: true }
+                }
+            }
         });
 
-        // 3. Get Sales Chart (Simplified: Last 6 months)
-        // Note: Grouping by date in Prisma is tricky without raw SQL. 
-        // For MVP, we'll keep the chart data mocked or use a simple raw query if needed.
-        // Let's stick to mock chart data for now to avoid complex SQL issues, 
-        // but use real totals if possible.
-        const salesChart = [
-            { name: 'Jan', total: 0 },
-            { name: 'Feb', total: 0 },
-            { name: 'Mar', total: 0 },
-            { name: 'Apr', total: 0 },
-            { name: 'May', total: 0 },
-            { name: 'Jun', total: totalSalesAgg._sum.totalAmount || 0 }, // Just showing total in last month for now
-        ];
+        let totalSales = 0;
+        for (const order of completedOrders) {
+            for (const item of order.items) {
+                // Check if item belongs to this seller
+                const isSellerProduct = item.product.sellerId === userId || (storeId && item.product.storeId === storeId);
+                if (isSellerProduct) {
+                    totalSales += Number(item.price) * item.quantity;
+                }
+            }
+        }
+
+        // 2. Get Recent Orders (filtered)
+        const recentOrders = await db.order.findMany({
+            take: 5,
+            where: orderWhereInput,
+            orderBy: { createdAt: 'desc' },
+            include: { user: true }
+        });
+
+        // 3. Get Sales Chart (Real Data: Last 6 months)
+        const salesChart = await this.getSalesChartData(userId, storeId);
+
+        // 4. Calculate Average Rating (Real Data)
+        let averageRating = 0;
+        const reviewsAggregate = await db.review.aggregate({
+            where: {
+                OR: [
+                    storeId ? { storeId } : {},
+                    { product: { sellerId: userId } }
+                ]
+            },
+            _avg: {
+                rating: true
+            }
+        });
+
+        if (reviewsAggregate._avg.rating) {
+            averageRating = Number(reviewsAggregate._avg.rating.toFixed(1));
+        }
 
         return {
             stats: {
-                totalSales: totalSalesAgg._sum.totalAmount || 0,
+                totalSales: totalSales,
                 activeOrders: activeOrdersCount,
                 totalProducts: totalProductsCount,
-                averageRating: 4.8 // Placeholder as we don't have ratings table yet
+                averageRating: averageRating
             },
             recentOrders: recentOrders.map(order => ({
                 id: order.id,
                 customer: order.user.fullName,
-                amount: order.totalAmount,
+                amount: order.totalAmount, // Note: showing total order amount, might want seller subtotal in future
                 status: order.status,
                 date: order.createdAt.toISOString().split('T')[0]
             })),
@@ -161,6 +224,92 @@ export class DashboardService {
         } catch (error) {
             console.error('Error in getAdminOverview:', error);
             throw error;
+        }
+    }
+
+    private async getSalesChartData(userId: string, storeId?: string): Promise<{ name: string; total: number }[]> {
+        try {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5); // Go back 5 months to include current month = 6 months total
+            sixMonthsAgo.setDate(1); // Start from beginning of that month
+            sixMonthsAgo.setHours(0, 0, 0, 0);
+
+            // Get all delivered orders from last 6 months involving this seller
+            const orders = await db.order.findMany({
+                where: {
+                    createdAt: { gte: sixMonthsAgo },
+                    status: 'delivered',
+                    items: {
+                        some: {
+                            product: {
+                                OR: [
+                                    storeId ? { storeId } : {},
+                                    { sellerId: userId }
+                                ]
+                            }
+                        }
+                    }
+                },
+                include: {
+                    items: {
+                        include: { product: true }
+                    }
+                }
+            });
+
+            // Initialize monthly data
+            const monthlyData: { [key: string]: number } = {};
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            // Populate all 6 months with 0 first
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthName = monthNames[d.getMonth()];
+                monthlyData[monthName] = 0;
+            }
+
+            // Aggregate sales
+            for (const order of orders) {
+                const monthIndex = order.createdAt.getMonth();
+                const monthName = monthNames[monthIndex];
+
+                let orderTotalForSeller = 0;
+                for (const item of order.items) {
+                    const isSellerProduct = item.product.sellerId === userId || (storeId && item.product.storeId === storeId);
+                    if (isSellerProduct) {
+                        orderTotalForSeller += Number(item.price) * item.quantity;
+                    }
+                }
+
+                if (monthlyData[monthName] !== undefined) {
+                    monthlyData[monthName] += orderTotalForSeller;
+                }
+            }
+
+            // Format result
+            const result: { name: string; total: number }[] = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const monthName = monthNames[d.getMonth()];
+                result.push({
+                    name: monthName,
+                    total: monthlyData[monthName] || 0
+                });
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Error calculating sales chart:', error);
+            // Fallback to empty chart
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const result: { name: string; total: number }[] = [];
+            const now = new Date();
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                result.push({ name: monthNames[d.getMonth()], total: 0 });
+            }
+            return result;
         }
     }
 

@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS product_images (
 );
 
 ALTER TABLE IF EXISTS product_images
-  ADD CONSTRAINT IF NOT EXISTS fk_product_images_product
+  ADD CONSTRAINT fk_product_images_product
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_product_images_product_id ON product_images(product_id);

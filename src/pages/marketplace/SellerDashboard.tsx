@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive, Star, Check, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive, Star, Check, Search, Eye } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth } from '@/core/auth/hooks/useAuth';
@@ -18,6 +18,7 @@ import { MARKETPLACE_CATEGORIES } from '@/config/categories';
 import { ProductFiltersComponent, type ProductFilters } from '@/components/marketplace/ProductFilters';
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
+import { OrderDetailsDialog } from '@/components/marketplace/OrderDetailsDialog';
 
 interface Order {
     id: string;
@@ -50,6 +51,10 @@ export default function SellerDashboard() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('products');
+
+    // Detail Dialog State
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
     // Filters state
     const [filters, setFilters] = useState<ProductFilters>({
@@ -121,6 +126,11 @@ export default function SellerDashboard() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleOpenDetails = (orderId: string) => {
+        setSelectedOrderId(orderId);
+        setIsDetailsOpen(true);
     };
 
     const openProductForm = (product?: Product) => {
@@ -204,10 +214,22 @@ export default function SellerDashboard() {
         try {
             await marketplaceService.updateOrderStatus(orderId, newStatus);
             loadData();
+            toast.success(`Status pesanan berhasil diperbarui ke "${newStatus}"`);
         } catch (error) {
             console.error('Failed to update order status:', error);
-            alert('Failed to update order status');
+            toast.error('Gagal memperbarui status pesanan');
         }
+    };
+
+    const getStatusColor = (status: string) => {
+        const colors: Record<string, string> = {
+            pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400',
+            processing: 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400',
+            shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-950/30 dark:text-purple-400',
+            delivered: 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400',
+            cancelled: 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
+        };
+        return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
     };
 
     return (
@@ -297,11 +319,11 @@ export default function SellerDashboard() {
                                                                     isPublished: true,
                                                                     status: 'active'
                                                                 });
-                                                                alert('Product published successfully!');
+                                                                toast.success('Product published successfully!');
                                                                 loadData();
                                                             } catch (error) {
                                                                 console.error('Failed to publish:', error);
-                                                                alert('Failed to publish product');
+                                                                toast.error('Failed to publish product');
                                                             }
                                                         }}
                                                     >
@@ -319,11 +341,11 @@ export default function SellerDashboard() {
                                                                     isPublished: false,
                                                                     status: 'draft'
                                                                 });
-                                                                alert('Product unpublished successfully!');
+                                                                toast.success('Product unpublished successfully!');
                                                                 loadData();
                                                             } catch (error) {
                                                                 console.error('Failed to unpublish:', error);
-                                                                alert('Failed to unpublish product');
+                                                                toast.error('Failed to unpublish product');
                                                             }
                                                         }}
                                                     >
@@ -340,11 +362,11 @@ export default function SellerDashboard() {
                                                         onClick={async () => {
                                                             try {
                                                                 await marketplaceService.archiveProduct(product.id);
-                                                                alert('Product archived successfully!');
+                                                                toast.success('Product archived successfully!');
                                                                 loadData();
                                                             } catch (error) {
                                                                 console.error('Failed to archive:', error);
-                                                                alert('Failed to archive product');
+                                                                toast.error('Failed to archive product');
                                                             }
                                                         }}
                                                     >
@@ -392,41 +414,51 @@ export default function SellerDashboard() {
                         ) : (
                             <div className="space-y-4">
                                 {orders.map((order) => (
-                                    <Card key={order.id}>
+                                    <Card key={order.id} className="overflow-hidden border-zinc-200 dark:border-zinc-800 hover:shadow-md transition-shadow">
                                         <CardContent className="p-6">
-                                            <div className="flex justify-between items-start mb-4">
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                                                 <div>
-                                                    <h3 className="font-semibold mb-1">Order #{order.id.slice(0, 8)}</h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Customer: {order.user?.fullName || 'Unknown'}
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className="font-bold text-lg">Order #{order.id.slice(0, 8)}</h3>
+                                                        <Badge className={getStatusColor(order.status)}>
+                                                            {order.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground font-medium">
+                                                        Customer: <span className="text-foreground">{order.user?.fullName || 'Unknown'}</span>
                                                     </p>
-                                                    <p className="text-sm text-muted-foreground">
+                                                    <p className="text-xs text-muted-foreground mt-1">
                                                         {format(new Date(order.createdAt), 'dd MMM yyyy, HH:mm')}
                                                     </p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-lg text-primary">
+                                                <div className="flex flex-col items-start md:items-end">
+                                                    <p className="text-2xl font-black text-primary">
                                                         Rp {(order.sellerSubtotal || order.totalAmount).toLocaleString('id-ID')}
                                                     </p>
-                                                    <Badge className="mt-1">
-                                                        {order.status}
-                                                    </Badge>
+                                                    <p className="text-xs text-muted-foreground font-bold">
+                                                        {order.items.length} Items
+                                                    </p>
                                                 </div>
                                             </div>
 
-                                            <div className="mb-4">
-                                                <p className="text-sm font-medium mb-2">Items:</p>
+                                            <div className="space-y-3 mb-6 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
                                                 {order.items.map((item, idx) => (
-                                                    <p key={idx} className="text-sm text-muted-foreground">
-                                                        {item.quantity}x {item.product.title} (Rp {Number(item.product.price).toLocaleString('id-ID')})
-                                                    </p>
+                                                    <div key={idx} className="flex justify-between items-center text-sm">
+                                                        <span className="font-medium text-muted-foreground">
+                                                            {item.quantity}x <span className="text-foreground">{item.product.title}</span>
+                                                        </span>
+                                                        <span className="font-bold">
+                                                            Rp {(Number(item.product.price) * item.quantity).toLocaleString('id-ID')}
+                                                        </span>
+                                                    </div>
                                                 ))}
                                             </div>
 
-                                            <div className="flex gap-2">
+                                            <div className="flex flex-wrap gap-2">
                                                 {order.status === 'pending' && (
                                                     <Button
                                                         size="sm"
+                                                        className="font-bold"
                                                         onClick={() => handleUpdateOrderStatus(order.id, 'processing')}
                                                     >
                                                         Process Order
@@ -435,12 +467,19 @@ export default function SellerDashboard() {
                                                 {order.status === 'processing' && (
                                                     <Button
                                                         size="sm"
+                                                        className="font-bold"
                                                         onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
                                                     >
                                                         Mark as Shipped
                                                     </Button>
                                                 )}
-                                                <Button size="sm" variant="outline">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="font-bold gap-2"
+                                                    onClick={() => handleOpenDetails(order.id)}
+                                                >
+                                                    <Eye className="h-4 w-4" />
                                                     View Details
                                                 </Button>
                                             </div>
@@ -452,6 +491,14 @@ export default function SellerDashboard() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            {/* Order Details Modal */}
+            <OrderDetailsDialog
+                orderId={selectedOrderId}
+                open={isDetailsOpen}
+                onOpenChange={setIsDetailsOpen}
+                onOrderUpdated={loadData}
+            />
 
             {/* Product Form Modal */}
             {showProductForm && (
@@ -707,3 +754,4 @@ export default function SellerDashboard() {
         </div>
     );
 }
+

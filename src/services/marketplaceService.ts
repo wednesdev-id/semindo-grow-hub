@@ -78,12 +78,20 @@ export interface OrderItem {
 
 export interface Order {
     id: string;
+    userId: string;
     totalAmount: string;
     status: string;
     paymentLink?: string;
     paymentStatus: string;
     createdAt: string;
     items: OrderItem[];
+    cancellationReason?: string;
+    cancelledAt?: string;
+    cancelledBy?: string;
+    shippingAddress?: any;
+    courier?: string;
+    trackingNumber?: string;
+    shippingCost?: string | number;
 }
 
 export const marketplaceService = {
@@ -400,6 +408,16 @@ export const marketplaceService = {
 
     getMyOrders: async () => {
         const response = await api.get<{ data: any[] }>('/marketplace/orders');
+        return response.data;
+    },
+
+    getOrderDetails: async (orderId: string): Promise<Order> => {
+        const response = await api.get<{ data: any }>(`/marketplace/orders/${orderId}`);
+        return response.data;
+    },
+
+    cancelOrder: async (orderId: string, reason: string): Promise<Order> => {
+        const response = await api.post<{ data: any }>(`/marketplace/orders/${orderId}/cancel`, { reason });
         return response.data;
     },
 

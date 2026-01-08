@@ -87,9 +87,15 @@ const Navigation = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
+                    <Link to="/marketplace/seller">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/dashboard">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
+                      <span>Unified Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -161,10 +167,16 @@ const Navigation = () => {
                         <span className="text-xs text-muted-foreground">{user.email}</span>
                       </div>
                     </div>
+                    <Link to="/marketplace/seller" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Seller Dashboard
+                      </Button>
+                    </Link>
                     <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Dashboard
+                        Unified Dashboard
                       </Button>
                     </Link>
                     <Link to="/marketplace/my-orders" onClick={() => setIsOpen(false)}>

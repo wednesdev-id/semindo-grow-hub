@@ -171,7 +171,7 @@ const App = () => {
                       <Route path="/marketplace/my-orders" element={<OrderHistory />} />
                       <Route path="/marketplace/wishlist" element={<Wishlist />} />
                       <Route path="/notifications" element={<Notifications />} />
-                      <Route path="/marketplace/seller" element={<Navigate to="/marketplace/dashboard" replace />} />
+                      <Route path="/marketplace/seller" element={<SellerDashboard />} />
                       <Route path="/financing-hub" element={<FinancingHub />} />
                       <Route path="/export-hub" element={<ExportHub />} />
                       <Route path="/community" element={<CommunityLayout />}>
@@ -440,8 +440,7 @@ const App = () => {
                         <Route path="/lms/stats" element={<LMSStats />} />
 
                         {/* Marketplace Manager */}
-                        <Route path="/marketplace/dashboard" element={<SellerDashboard />} />
-                        <Route path="/dashboard/marketplace" element={<Navigate to="/marketplace/products" replace />} />
+                        <Route path="/marketplace/dashboard" element={<Navigate to="/marketplace/seller" replace />} />
                         <Route path="/dashboard/marketplace/products" element={<MarketplaceProductList />} />
                         <Route path="/dashboard/marketplace/products/new" element={<ProductUploadPage />} />
                         <Route path="/marketplace/products" element={<ProductListPage />} />

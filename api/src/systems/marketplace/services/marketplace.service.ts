@@ -772,6 +772,79 @@ export class MarketplaceService {
         });
     }
 
+    async cancelOrder(id: string, userId: string, reason: string): Promise<Order> {
+        const order = await prisma.order.findUnique({
+            where: { id },
+            include: {
+                items: true,
+            }
+        });
+
+        if (!order) throw new Error('Order not found');
+
+        // Verify authorization: Buyer or Seller
+        const isBuyer = order.userId === userId;
+        const isSeller = await this.isOrderSeller(order.id, userId);
+
+        if (!isBuyer && !isSeller) {
+            throw new Error('Unauthorized: Only buyers or sellers can cancel an order');
+        }
+
+        // Check if transition to cancelled is valid
+        const validNextStatuses = VALID_TRANSITIONS[order.status] || [];
+        if (!validNextStatuses.includes('cancelled')) {
+            throw new Error(`Cannot cancel order in "${order.status}" status`);
+        }
+
+        return prisma.$transaction(async (tx) => {
+            // 1. If paid, handle refund (Mock)
+            if (order.paymentStatus === 'paid') {
+                await paymentService.refundOrder(order.id, Number(order.totalAmount));
+            }
+
+            // 2. Restore stock
+            for (const item of order.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { increment: item.quantity } }
+                });
+            }
+
+            // 3. Update order status
+            return tx.order.update({
+                where: { id },
+                data: {
+                    status: 'cancelled',
+                    paymentStatus: order.paymentStatus === 'paid' ? 'refunded' : order.paymentStatus,
+                    cancellationReason: reason,
+                    cancelledAt: new Date(),
+                    cancelledBy: isBuyer ? 'buyer' : 'seller'
+                } as any // Use any because Prisma generate might have failed
+            });
+        });
+    }
+
+    private async isOrderSeller(orderId: string, userId: string): Promise<boolean> {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            include: { store: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!order) return false;
+
+        return order.items.some(
+            item => item.product.store?.userId === userId || item.product.sellerId === userId
+        );
+    }
+
     async syncStock(productId: string): Promise<{ success: boolean; newStock: number }> {
         const product = await prisma.product.findUnique({ where: { id: productId } });
         if (!product) throw new Error('Product not found');

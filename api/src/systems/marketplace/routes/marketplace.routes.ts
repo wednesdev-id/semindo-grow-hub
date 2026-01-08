@@ -5,19 +5,15 @@ import { authenticate } from '../../middlewares/auth.middleware';
 const router = Router();
 const controller = new MarketplaceController();
 
-// Verification
-router.get('/products/pending', authenticate, controller.getPendingProducts);
-router.post('/products/:id/verify', authenticate, controller.verifyProduct);
-
 // Public routes
 router.get('/products', controller.findAllProducts);
-router.get('/search', controller.searchProducts); // New search endpoint
+router.get('/search', controller.searchProducts);
 router.get('/products/categories', controller.getCategories);
 router.get('/products/top-sellers', controller.getTopSellers);
 router.get('/products/:slug', controller.findProductBySlug);
-
 // Protected routes
 router.use(authenticate);
+router.post('/orders/:id/cancel', controller.cancelOrder); // Prioritize specific sub-resource routes
 router.post('/products', controller.createProduct); // Seller only? For now, any auth user
 router.post('/orders', controller.createOrder);
 router.get('/orders', controller.getMyOrders);
@@ -35,9 +31,7 @@ router.delete('/products/:id/images/:imageId', controller.deleteProductImage);
 
 // Analytics
 router.get('/analytics/seller', controller.getSellerAnalytics);
-router.get('/analytics/seller', controller.getSellerAnalytics);
 router.get('/analytics/admin', controller.getAdminAnalytics);
-router.get('/admin/products', controller.getAdminProducts);
 router.get('/admin/products', controller.getAdminProducts);
 router.get('/consultant/clients/products', authenticate, controller.getConsultantClientsProducts);
 router.get('/partner/opportunities', authenticate, controller.getExportReadyProducts);
