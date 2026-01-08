@@ -28,7 +28,7 @@ export default function MarketplaceProductVerification() {
         fetchProducts();
     }, []);
 
-    const handleVerify = async (id: number, approved: boolean) => {
+    const handleVerify = async (id: string, approved: boolean) => {
         try {
             await marketplaceService.verifyProduct(id, approved);
             toast({
@@ -50,12 +50,13 @@ export default function MarketplaceProductVerification() {
     const columns = [
         {
             header: "Product Name",
-            accessorKey: "name" as const,
+            accessorKey: "title" as const,
             className: "font-medium",
         },
         {
             header: "Seller",
             accessorKey: "seller" as const,
+            cell: (item: any) => item.seller?.fullName || item.seller?.businessName || "Unknown",
         },
         {
             header: "Category",
@@ -64,6 +65,7 @@ export default function MarketplaceProductVerification() {
         {
             header: "Price",
             accessorKey: "price" as const,
+            cell: (item: any) => `Rp ${Number(item.price).toLocaleString('id-ID')}`,
         },
         {
             header: "Status",
@@ -72,7 +74,8 @@ export default function MarketplaceProductVerification() {
         },
         {
             header: "Submitted",
-            accessorKey: "submittedAt" as const,
+            accessorKey: "createdAt" as const,
+            cell: (item: any) => new Date(item.createdAt).toLocaleDateString('id-ID'),
         },
         {
             header: "Actions",

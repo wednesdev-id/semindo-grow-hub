@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: semindo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-semindo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-semindo_password}
+      POSTGRES_DB: ${DB_NAME:-semindo_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - semindo-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-semindo}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API - Development
+  backend-dev:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: development
+    container_name: semindo-backend-dev
+    restart: unless-stopped
+    profiles: [ "dev" ]
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${DB_USER:-semindo}:${DB_PASSWORD:-semindo_password}@db:5432/${DB_NAME:-semindo_db}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key}
+      JWT_EXPIRES_IN: 7d
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - semindo-network
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+      - ./api/uploads:/app/uploads
+
+  # Backend API - Production
+  backend:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: production
+    container_name: semindo-backend
+    restart: unless-stopped
+    profiles: [ "prod" ]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER:-semindo}:${DB_PASSWORD:-semindo_password}@db:5432/${DB_NAME:-semindo_db}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - semindo-network
+    volumes:
+      - ./api/uploads:/app/uploads
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx prisma db seed &&
+        node dist/index.js
+      "
+
+  # Frontend - Development
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: semindo-frontend-dev
+    restart: unless-stopped
+    profiles: [ "dev" ]
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api/v1}
+    ports:
+      - "${FRONTEND_PORT:-8080}:8080"
+    depends_on:
+      - backend-dev
+    networks:
+      - semindo-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  # Frontend - Production
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api/v1}
+    container_name: semindo-frontend
+    restart: unless-stopped
+    profiles: [ "prod" ]
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      - backend
+    networks:
+      - semindo-network
+
+  # Adminer - Database UI (available in both modes)
+  adminer:
+    image: adminer:latest
+    container_name: semindo-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      - db
+    networks:
+      - semindo-network
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+
+networks:
+  semindo-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

@@ -1,13 +1,21 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { lmsService } from "@/services/lmsService";
-import VideoPlayer from "@/components/lms/VideoPlayer";
+import { ResourcePlayer } from "../components/ResourcePlayer";
+import { QuizPlayer } from "../components/QuizPlayer";
+import { QuizBuilder } from "../components/QuizBuilder";
+import { AssignmentUpload } from "../components/AssignmentUpload";
+import { GradingInterface } from "../components/GradingInterface";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, UserCog } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function LessonView() {
     const { slug, lessonId } = useParams();
+    const [isInstructor, setIsInstructor] = useState(false); // Mock role for dev
 
     const { data: course, isLoading } = useQuery({
         queryKey: ["course", slug],
@@ -26,8 +34,6 @@ export default function LessonView() {
     if (!course) return <div>Course not found</div>;
 
     // Find current lesson
-    // Note: In a real app, we might fetch just the lesson details or use a flattened list
-    // For now, we find it in the course structure
     let currentLesson = null;
     let nextLessonId = null;
     let prevLessonId = null;
@@ -41,32 +47,62 @@ export default function LessonView() {
         prevLessonId = currentIndex > 0 ? allLessons[currentIndex - 1].id : null;
         nextLessonId = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1].id : null;
     } else if (allLessons.length > 0) {
-        // Default to first lesson if no ID provided or not found
         currentLesson = allLessons[0];
         nextLessonId = allLessons.length > 1 ? allLessons[1].id : null;
     }
 
     if (!currentLesson) return <div>Lesson not found</div>;
 
-    return (
-        <div className="max-w-4xl mx-auto p-6 space-y-8">
-            <div className="space-y-4">
-                <h1 className="text-2xl font-bold">{currentLesson.title}</h1>
-
-                {currentLesson.videoUrl ? (
-                    <VideoPlayer
-                        src={currentLesson.videoUrl}
-                        className="w-full shadow-lg"
-                        onComplete={() => {
-                            console.log("Lesson completed");
-                            // Handle completion logic here
-                        }}
+    const renderContent = () => {
+        switch (currentLesson.type) {
+            case 'quiz':
+                return isInstructor ? (
+                    <QuizBuilder
+                        lessonId={currentLesson.id}
+                        onSave={() => { /* Refresh or toast */ }}
                     />
                 ) : (
-                    <div className="aspect-video bg-slate-100 rounded-lg flex items-center justify-center text-muted-foreground">
-                        No video content available
-                    </div>
-                )}
+                    <QuizPlayer
+                        lessonId={currentLesson.id}
+                        onComplete={(passed) => {
+                            if (passed && nextLessonId) {
+                                // Optional: Auto advance
+                            }
+                        }}
+                    />
+                );
+            case 'assignment':
+                return isInstructor ? (
+                    <GradingInterface assignmentId={currentLesson.id} /> // Assuming lessonId is linked to assignment
+                ) : (
+                    <AssignmentUpload lessonId={currentLesson.id} />
+                );
+            default:
+                return (
+                    <ResourcePlayer
+                        type={currentLesson.type || 'video'}
+                        url={currentLesson.resourceUrl || currentLesson.videoUrl}
+                        content={currentLesson.content}
+                        title={currentLesson.title}
+                    />
+                );
+        }
+    };
+
+    return (
+        <div className="max-w-4xl mx-auto p-6 space-y-8">
+            <div className="flex justify-end items-center gap-2 mb-4">
+                <Label htmlFor="role-mode" className="text-xs text-muted-foreground">Dev Mode: Instructor View</Label>
+                <Switch
+                    id="role-mode"
+                    checked={isInstructor}
+                    onCheckedChange={setIsInstructor}
+                />
+            </div>
+
+            <div className="space-y-4">
+                <h1 className="text-2xl font-bold">{currentLesson.title}</h1>
+                {renderContent()}
             </div>
 
             <div className="flex items-center justify-between pt-6 border-t">
@@ -75,6 +111,7 @@ export default function LessonView() {
                     disabled={!prevLessonId}
                     onClick={() => {
                         // Navigation logic would go here
+                        // navigate(`/lms/courses/${slug}/lessons/${prevLessonId}`)
                     }}
                 >
                     <ChevronLeft className="w-4 h-4 mr-2" />
@@ -85,6 +122,7 @@ export default function LessonView() {
                     disabled={!nextLessonId}
                     onClick={() => {
                         // Navigation logic would go here
+                        // navigate(`/lms/courses/${slug}/lessons/${nextLessonId}`)
                     }}
                 >
                     Selanjutnya
@@ -92,10 +130,12 @@ export default function LessonView() {
                 </Button>
             </div>
 
-            <div className="prose max-w-none">
-                <h3>Deskripsi Materi</h3>
-                <p>{currentLesson.content || "Tidak ada deskripsi tertulis untuk materi ini."}</p>
-            </div>
+            {currentLesson.type !== 'article' && currentLesson.type !== 'quiz' && currentLesson.type !== 'assignment' && (
+                <div className="prose max-w-none">
+                    <h3>Deskripsi Materi</h3>
+                    <p>{currentLesson.content || "Tidak ada deskripsi tertulis untuk materi ini."}</p>
+                </div>
+            )}
         </div>
     );
 }

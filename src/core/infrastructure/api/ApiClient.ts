@@ -79,7 +79,7 @@ export class ApiClient {
     this.defaultHeaders = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'X-API-Version': CORE_CONSTANTS.API_VERSION,
+      // 'X-API-Version': CORE_CONSTANTS.API_VERSION,
       ...config.defaultHeaders
     };
 
@@ -244,10 +244,14 @@ export class ApiClient {
     const headers = { ...this.defaultHeaders, ...options.headers };
 
     // Add authentication token if required
+    // Add Authorization header if token provider is set
     if (options.requiresAuth !== false && this.tokenProvider) {
       const token = await this.tokenProvider();
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        console.log('[ApiClient] Added Authorization header:', `Bearer ${token.substring(0, 10)}...`);
+      } else {
+        console.warn('[ApiClient] No token provided by tokenProvider');
       }
     }
 
@@ -599,7 +603,7 @@ export class ApiClientFactory {
     onUnauthorized?: () => void;
   }): ApiClient {
     const baseURLs = {
-      development: 'http://localhost:3000/api',
+      development: 'http://localhost:8080/api/v1', // Fixed: Match backend port
       staging: 'https://staging.semindo.id/api',
       production: 'https://api.semindo.id'
     };

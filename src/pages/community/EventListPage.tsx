@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Calendar, MapPin, Users, Search, Filter } from 'lucide-react';
+import { Calendar, MapPin, Users, Search, Filter, ArrowLeft } from 'lucide-react';
 import { api } from '../../services/api';
 import { Event } from '../../types/community';
 import { LoadingSpinner } from '../../components/ui/loading-spinner';
@@ -47,6 +47,12 @@ export const EventListPage: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            {/* Back to Learning Hub */}
+            <Link to="/learning-hub" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
+                <ArrowLeft className="h-4 w-4" />
+                Kembali ke Learning Hub
+            </Link>
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Event & Webinar</h1>

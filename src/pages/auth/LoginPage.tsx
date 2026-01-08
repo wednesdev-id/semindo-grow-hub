@@ -13,7 +13,6 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        console.log('LoginPage: handleSubmit called', { email, password })
         setError('')
         setLoading(true)
 
@@ -21,22 +20,58 @@ export default function LoginPage() {
             await login(email, password)
             navigate('/dashboard')
         } catch (err: unknown) {
-            console.error('Login error:', err);
+            console.error('=== LOGIN ERROR DEBUG ===');
+            console.error('Error type:', typeof err);
+            console.error('Error object:', err);
+            console.error('Error stringified:', JSON.stringify(err, null, 2));
+
             let message = 'Login gagal. Silakan periksa email dan password Anda.';
 
+            // Try to extract error message from various possible structures
             if (err instanceof Error) {
-                if (err.message.includes('User not found') || err.message.includes('Invalid password')) {
+                console.error('Error is instance of Error');
+                console.error('Error message:', err.message);
+
+                // Check for specific error messages from backend
+                if (err.message.includes('User not found') ||
+                    err.message.includes('Invalid password') ||
+                    err.message.includes('Invalid credentials') ||
+                    err.message.includes('Invalid email or password')) {
                     message = 'Email atau password salah. Silakan coba lagi.';
                 } else if (err.message.includes('Network Error')) {
                     message = 'Terjadi kesalahan jaringan. Periksa koneksi internet Anda.';
                 } else if (err.message.includes('Too many requests')) {
                     message = 'Terlalu banyak percobaan login. Silakan tunggu beberapa saat.';
-                } else {
+                } else if (err.message && err.message.trim() !== '') {
                     message = err.message;
                 }
-            } else if (typeof err === 'object' && err !== null && 'message' in err) {
-                message = (err as { message: string }).message;
             }
+
+            // Handle API error response structure (axios-like errors)
+            if (typeof err === 'object' && err !== null) {
+                const apiError = err as any;
+                console.error('Checking API error structure...');
+                console.error('Has response?', !!apiError.response);
+                console.error('Has response.data?', !!(apiError.response && apiError.response.data));
+                console.error('Has response.data.message?', !!(apiError.response && apiError.response.data && apiError.response.data.message));
+
+                if (apiError.response?.data?.message) {
+                    message = apiError.response.data.message;
+                    console.error('Using response.data.message:', message);
+                } else if (apiError.response?.data?.error) {
+                    message = apiError.response.data.error;
+                    console.error('Using response.data.error:', message);
+                } else if (apiError.data?.message) {
+                    message = apiError.data.message;
+                    console.error('Using data.message:', message);
+                } else if (apiError.message && typeof apiError.message === 'string' && apiError.message.trim() !== '') {
+                    message = apiError.message;
+                    console.error('Using message:', message);
+                }
+            }
+
+            console.error('Final error message to display:', message);
+            console.error('=== END LOGIN ERROR DEBUG ===');
 
             setError(message)
         } finally {

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { User, Role, Permission, AuthState, LoginResponse } from '@/types/auth'
 import { api } from '@/services/api'
+import { useNavigate } from 'react-router-dom'
 
 interface AuthContextType extends AuthState {
     login: (email: string, password: string) => Promise<User>
@@ -24,15 +25,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const [permissions, setPermissions] = useState<string[]>([])
     const [isAuthenticated, setIsAuthenticated] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const navigate = useNavigate()
 
-    // Load auth state from localStorage on mount
+    // Auto-logout configuration
+    const AUTO_LOGOUT_TIME = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
+    let logoutTimer: NodeJS.Timeout;
+
+    const resetLogoutTimer = () => {
+        if (logoutTimer) clearTimeout(logoutTimer);
+        if (isAuthenticated) {
+            logoutTimer = setTimeout(() => {
+                console.log('[Auth] Auto-logout due to inactivity');
+                logout();
+            }, AUTO_LOGOUT_TIME);
+        }
+    };
+
+    // Setup activity listeners
+    useEffect(() => {
+        const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+
+        const handleActivity = () => {
+            resetLogoutTimer();
+        };
+
+        if (isAuthenticated) {
+            events.forEach(event => {
+                window.addEventListener(event, handleActivity);
+            });
+            resetLogoutTimer(); // Start timer initially
+        }
+
+        return () => {
+            if (logoutTimer) clearTimeout(logoutTimer);
+            events.forEach(event => {
+                window.removeEventListener(event, handleActivity);
+            });
+        };
+    }, [isAuthenticated]);
+
+    // Load auth state from sessionStorage on mount
     useEffect(() => {
         const loadAuthState = () => {
             try {
-                const token = localStorage.getItem('auth_token')
-                const storedUser = localStorage.getItem('auth_user')
-                const storedRoles = localStorage.getItem('auth_roles')
-                const storedPermissions = localStorage.getItem('auth_permissions')
+                const token = sessionStorage.getItem('auth_token')
+                const storedUser = sessionStorage.getItem('auth_user')
+                const storedRoles = sessionStorage.getItem('auth_roles')
+                const storedPermissions = sessionStorage.getItem('auth_permissions')
 
                 if (token && storedUser) {
                     setUser(JSON.parse(storedUser))
@@ -43,10 +82,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             } catch (error) {
                 console.error('Error loading auth state:', error)
                 // Clear invalid data
-                localStorage.removeItem('auth_token')
-                localStorage.removeItem('auth_user')
-                localStorage.removeItem('auth_roles')
-                localStorage.removeItem('auth_permissions')
+                sessionStorage.removeItem('auth_token')
+                sessionStorage.removeItem('auth_user')
+                sessionStorage.removeItem('auth_roles')
+                sessionStorage.removeItem('auth_permissions')
             } finally {
                 setIsLoading(false)
             }
@@ -68,11 +107,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const userRoles = userData.roles || []
             const userPermissions = userData.permissions || []
 
-            // Store in localStorage
-            localStorage.setItem('auth_token', token)
-            localStorage.setItem('auth_user', JSON.stringify(userData))
-            localStorage.setItem('auth_roles', JSON.stringify(userRoles))
-            localStorage.setItem('auth_permissions', JSON.stringify(userPermissions))
+            // Store in sessionStorage
+            sessionStorage.setItem('auth_token', token)
+            sessionStorage.setItem('auth_user', JSON.stringify(userData))
+            sessionStorage.setItem('auth_roles', JSON.stringify(userRoles))
+            sessionStorage.setItem('auth_permissions', JSON.stringify(userPermissions))
 
             // Update state
             setUser(userData)
@@ -103,11 +142,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const userRoles = userData.roles || []
             const userPermissions = userData.permissions || []
 
-            // Store in localStorage
-            localStorage.setItem('auth_token', token)
-            localStorage.setItem('auth_user', JSON.stringify(userData))
-            localStorage.setItem('auth_roles', JSON.stringify(userRoles))
-            localStorage.setItem('auth_permissions', JSON.stringify(userPermissions))
+            // Store in sessionStorage
+            sessionStorage.setItem('auth_token', token)
+            sessionStorage.setItem('auth_user', JSON.stringify(userData))
+            sessionStorage.setItem('auth_roles', JSON.stringify(userRoles))
+            sessionStorage.setItem('auth_permissions', JSON.stringify(userPermissions))
 
             // Update state
             setUser(userData)
@@ -125,17 +164,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     const logout = () => {
-        // Clear local storage
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('auth_user')
-        localStorage.removeItem('auth_roles')
-        localStorage.removeItem('auth_permissions')
+        console.log('[Auth] Logout initiated');
+
+        // Clear sessionStorage (current implementation)
+        sessionStorage.removeItem('auth_token');
+        sessionStorage.removeItem('auth_user');
+        sessionStorage.removeItem('auth_roles');
+        sessionStorage.removeItem('auth_permissions');
+
+        // ⭐ NEW: Also clear localStorage (in case of inconsistency)
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('auth_roles');
+        localStorage.removeItem('auth_permissions');
+
+        console.log('[Auth] All storage cleared');
 
         // Reset state
-        setUser(null)
-        setRoles([])
-        setPermissions([])
-        setIsAuthenticated(false)
+        setUser(null);
+        setRoles([]);
+        setPermissions([]);
+        setIsAuthenticated(false);
+
+        console.log('[Auth] State reset complete, redirecting to login');
+
+        // Redirect to login
+        navigate('/login');
     }
 
     const hasPermission = (permissionName: string): boolean => {

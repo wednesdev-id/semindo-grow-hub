@@ -2,8 +2,11 @@ import { db } from '../../utils/db';
 import { hashPassword } from '../../utils/password';
 import { PrismaClient, User, Prisma } from '@prisma/client';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from '../types/users.types';
+import { AuditService } from '../../audit/services/audit.service';
 
 export class UsersService {
+    private auditService = new AuditService();
+
     async findAll(query: UserQueryDto) {
         const page = Number(query.page) || 1
         const limit = Number(query.limit) || 10
@@ -118,14 +121,32 @@ export class UsersService {
                             }
                         }
                     }
-                }
+                },
+                // Auto-create ConsultantProfile if role is consultant or konsultan
+                ...(data.role.toLowerCase() === 'consultant' || data.role.toLowerCase() === 'konsultan' ? {
+                    consultantProfile: {
+                        create: {
+                            status: 'approved',
+                            title: 'Consultant',
+                            bio: 'Profile under review',
+                            yearsExperience: 0,
+                            hourlyRate: 0,
+                            expertiseAreas: [],
+                            industries: [],
+                            languages: ['Indonesian'],
+                            isAcceptingNewClients: false,
+                            totalSessions: 0,
+                            averageRating: 0
+                        }
+                    }
+                } : {})
             },
             include: {
                 userRoles: {
                     include: { role: true }
                 }
             }
-        })
+        }) as any
 
         return {
             ...user,
@@ -188,5 +209,150 @@ export class UsersService {
             where: { id }
         })
         return { message: 'User deleted successfully' }
+    }
+
+    // Profile Management Methods
+    async getCurrentUser(id: string) {
+        const user = await db.user.findUnique({
+            where: { id },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                },
+                umkmProfile: true,
+                mentorProfile: true
+            }
+        })
+
+        if (!user) throw new Error('User not found')
+
+        return {
+            ...user,
+            roles: user.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        }
+    }
+
+    async updateOwnProfile(id: string, data: { fullName?: string; phone?: string; businessName?: string }) {
+        const user = await db.user.update({
+            where: { id },
+            data: {
+                fullName: data.fullName,
+                phone: data.phone,
+                businessName: data.businessName
+            },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                }
+            }
+        })
+
+        return {
+            ...user,
+            roles: user.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        }
+    }
+
+    async changePassword(id: string, oldPassword: string, newPassword: string) {
+        const user = await db.user.findUnique({
+            where: { id }
+        })
+
+        if (!user) throw new Error('User not found')
+
+        // Verify old password
+        const bcrypt = require('bcryptjs')
+        const isValid = await bcrypt.compare(oldPassword, user.passwordHash)
+
+        if (!isValid) throw new Error('Current password is incorrect')
+
+        // Hash new password
+        const passwordHash = await hashPassword(newPassword)
+
+        await db.user.update({
+            where: { id },
+            data: { passwordHash }
+        })
+
+        return { message: 'Password changed successfully' }
+    }
+
+    async updateProfilePicture(id: string, profilePictureUrl: string) {
+        const user = await db.user.update({
+            where: { id },
+            data: { profilePictureUrl },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                }
+            }
+        })
+
+        return {
+            ...user,
+            roles: user.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        }
+    }
+
+    // User-Role Management Methods
+    async assignRoles(userId: string, roleIds: string[]) {
+        // Check if user exists
+        const user = await db.user.findUnique({ where: { id: userId } })
+        if (!user) throw new Error('User not found')
+
+        // Delete existing roles
+        await db.userRole.deleteMany({
+            where: { userId }
+        })
+
+        // Create new roles
+        await db.userRole.createMany({
+            data: roleIds.map(roleId => ({
+                userId,
+                roleId
+            }))
+        })
+
+        // Return updated user with roles
+        const updatedUser = await db.user.findUnique({
+            where: { id: userId },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                }
+            }
+        })
+
+        return {
+            ...updatedUser,
+            roles: updatedUser!.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        }
+    }
+
+    async removeRole(userId: string, roleId: string) {
+        const deleted = await db.userRole.deleteMany({
+            where: {
+                userId,
+                roleId
+            }
+        })
+
+        if (deleted.count === 0) {
+            throw new Error('Role not found for this user')
+        }
+
+        return { message: 'Role removed from user' }
     }
 }

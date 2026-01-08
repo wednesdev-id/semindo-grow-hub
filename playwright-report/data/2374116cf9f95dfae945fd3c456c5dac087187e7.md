@@ -1,0 +1,652 @@
+# Page snapshot
+
+```yaml
+- generic:
+  - generic:
+    - region "Notifications (F8)":
+      - list
+    - region "Notifications alt+T"
+    - generic:
+      - complementary:
+        - generic:
+          - link:
+            - /url: /
+            - generic:
+              - generic:
+                - generic: S
+              - generic: Semindo
+        - generic:
+          - navigation:
+            - generic:
+              - heading [level=3]: MENU
+              - list:
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Dashboard
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/overview
+                        - text: Overview Sistem
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/activity
+                        - text: Aktivitas Terbaru
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/user-stats
+                        - text: Statistik Pengguna
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/server-status
+                        - text: Status Server & API
+                    - listitem:
+                      - link:
+                        - /url: /dashboard/notifications
+                        - text: Notifikasi Sistem
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: User Management
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /users/all
+                        - text: Semua Pengguna
+                    - listitem:
+                      - link:
+                        - /url: /users/roles
+                        - text: Manajemen Role & Permission
+                    - listitem:
+                      - link:
+                        - /url: /users/umkm
+                        - text: Kelola UMKM
+                    - listitem:
+                      - link:
+                        - /url: /users/mentors
+                        - text: Kelola Mentor
+                    - listitem:
+                      - link:
+                        - /url: /users/trainers
+                        - text: Kelola Trainer
+                    - listitem:
+                      - link:
+                        - /url: /users/staff
+                        - text: Kelola Staf Manajemen
+                    - listitem:
+                      - link:
+                        - /url: /users/admins
+                        - text: Kelola Admin
+                    - listitem:
+                      - link:
+                        - /url: /users/import-export
+                        - text: Import / Export Data User
+                    - listitem:
+                      - link:
+                        - /url: /users/audit
+                        - text: Audit User Activity
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: UMKM Database
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /umkm/list
+                        - text: Daftar UMKM
+                    - listitem:
+                      - link:
+                        - /url: /umkm/segmentation
+                        - text: Segmentasi (Pemula / Madya / Utama)
+                    - listitem:
+                      - link:
+                        - /url: /umkm/region
+                        - text: Region Mapping (Provinsi / Kota)
+                    - listitem:
+                      - link:
+                        - /url: /assessment
+                        - text: Self-Assessment
+                    - listitem:
+                      - link:
+                        - /url: /umkm/program-status
+                        - text: Status Program
+                    - listitem:
+                      - link:
+                        - /url: /umkm/history
+                        - text: Histori Pendampingan UMKM
+                    - listitem:
+                      - link:
+                        - /url: /umkm/documents
+                        - text: Dokumen & Verifikasi UMKM
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Mentor Management
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /mentors/list
+                        - text: Daftar Mentor
+                    - listitem:
+                      - link:
+                        - /url: /mentors/assign
+                        - text: Assign UMKM ke Mentor
+                    - listitem:
+                      - link:
+                        - /url: /mentors/activity
+                        - text: Status & Aktivitas Mentor
+                    - listitem:
+                      - link:
+                        - /url: /mentors/schedule
+                        - text: Jadwal Pendampingan
+                    - listitem:
+                      - link:
+                        - /url: /mentors/reports
+                        - text: Laporan & KPI Mentor
+                    - listitem:
+                      - link:
+                        - /url: /mentors/approval
+                        - text: Approval Laporan Pendampingan
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Program Management
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /programs/list
+                        - text: Daftar Program
+                    - listitem:
+                      - link:
+                        - /url: /programs/create
+                        - text: Buat Program Baru
+                    - listitem:
+                      - link:
+                        - /url: /programs/batches
+                        - text: Batch Management
+                    - listitem:
+                      - link:
+                        - /url: /programs/curriculum
+                        - text: Kurikulum Program
+                    - listitem:
+                      - link:
+                        - /url: /programs/schedule
+                        - text: Jadwal Training & Event
+                    - listitem:
+                      - link:
+                        - /url: /programs/participants
+                        - text: Peserta per Program
+                    - listitem:
+                      - link:
+                        - /url: /programs/evaluation
+                        - text: Outcome & Evaluasi
+                    - listitem:
+                      - link:
+                        - /url: /programs/import-export
+                        - text: Import / Export Data Program
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: LMS Manager
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /lms/catalog
+                        - text: Katalog Kelas
+                    - listitem:
+                      - link:
+                        - /url: /lms/my-courses
+                        - text: Kelas Saya
+                    - listitem:
+                      - link:
+                        - /url: /lms/create
+                        - text: Buat Kelas Baru
+                    - listitem:
+                      - link:
+                        - /url: /lms/modules
+                        - text: Modul & Materi
+                    - listitem:
+                      - link:
+                        - /url: /lms/videos
+                        - text: Video Library
+                    - listitem:
+                      - link:
+                        - /url: /lms/assignments
+                        - text: Assignment & Quiz
+                    - listitem:
+                      - link:
+                        - /url: /lms/certificates
+                        - text: Sertifikasi
+                    - listitem:
+                      - link:
+                        - /url: /lms/trainers
+                        - text: Trainer Management
+                    - listitem:
+                      - link:
+                        - /url: /lms/review
+                        - text: Review & Moderasi Materi
+                    - listitem:
+                      - link:
+                        - /url: /lms/stats
+                        - text: Statistik LMS
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Marketplace Manager
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/products
+                        - text: Produk UMKM
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/verification
+                        - text: Verifikasi Produk
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/stores
+                        - text: Toko UMKM
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/orders
+                        - text: Transaksi & Order
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/complaints
+                        - text: Komplain & Resolusi
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/fees
+                        - text: Fee & Komisi Marketplace
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/integration
+                        - text: Integrasi Marketplace Eksternal
+                    - listitem:
+                      - link:
+                        - /url: /marketplace/reports
+                        - text: Laporan Marketplace
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Financing Manager
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /financing/products
+                        - text: Produk Pembiayaan
+                    - listitem:
+                      - link:
+                        - /url: /financing/applications
+                        - text: Pengajuan UMKM
+                    - listitem:
+                      - link:
+                        - /url: /financing/verification
+                        - text: Tahapan Verifikasi
+                    - listitem:
+                      - link:
+                        - /url: /financing/approval
+                        - text: Approval Pembiayaan
+                    - listitem:
+                      - link:
+                        - /url: /financing/documents
+                        - text: Dokumen Pembiayaan
+                    - listitem:
+                      - link:
+                        - /url: /financing/partners
+                        - text: Kerjasama Bank / Lembaga Keuangan
+                    - listitem:
+                      - link:
+                        - /url: /financing/reports
+                        - text: Reporting Pembiayaan
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Export Hub Manager
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /export/guide
+                        - text: Panduan Ekspor
+                    - listitem:
+                      - link:
+                        - /url: /export/buyers
+                        - text: Buyer Directory
+                    - listitem:
+                      - link:
+                        - /url: /export/checklist
+                        - text: Checklist Ekspor
+                    - listitem:
+                      - link:
+                        - /url: /export/documents
+                        - text: Dokumen Ekspor
+                    - listitem:
+                      - link:
+                        - /url: /export/facilitation
+                        - text: Fasilitasi Ekspor
+                    - listitem:
+                      - link:
+                        - /url: /export/approval
+                        - text: Approval Permintaan Konsultasi Ekspor
+                    - listitem:
+                      - link:
+                        - /url: /export/reports
+                        - text: Laporan Ekspor
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Consultation Management
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /consultation/schedule
+                        - text: Jadwal Konsultasi
+                    - listitem:
+                      - link:
+                        - /url: /consultation/assignment
+                        - text: Mentor Assignment
+                    - listitem:
+                      - link:
+                        - /url: /consultation/history
+                        - text: Riwayat Konsultasi
+                    - listitem:
+                      - link:
+                        - /url: /consultation/chat
+                        - text: Chat Monitoring
+                    - listitem:
+                      - link:
+                        - /url: /consultation/tickets
+                        - text: Case Ticketing System
+                    - listitem:
+                      - link:
+                        - /url: /consultation/specialized
+                        - text: Konsultasi Ekspor / Legal / Digital
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Community Platform Manager
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /community/forum
+                        - text: Forum
+                    - listitem:
+                      - link:
+                        - /url: /community/topics
+                        - text: Manajemen Topik
+                    - listitem:
+                      - link:
+                        - /url: /community/posts
+                        - text: Post & Komentar
+                    - listitem:
+                      - link:
+                        - /url: /community/moderation
+                        - text: Moderasi Konten
+                    - listitem:
+                      - link:
+                        - /url: /community/events
+                        - text: Event Komunitas
+                    - listitem:
+                      - link:
+                        - /url: /community/reports
+                        - text: Report Misconduct
+            - generic:
+              - heading [level=3]: SUPPORT
+              - list:
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Analytics & Reporting
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /analytics/umkm
+                        - text: UMKM Analytics
+                    - listitem:
+                      - link:
+                        - /url: /analytics/programs
+                        - text: Program Analytics
+                    - listitem:
+                      - link:
+                        - /url: /analytics/lms
+                        - text: LMS Insights
+                    - listitem:
+                      - link:
+                        - /url: /analytics/mentoring
+                        - text: Pendampingan Analytics
+                    - listitem:
+                      - link:
+                        - /url: /analytics/financing
+                        - text: Pembiayaan Analytics
+                    - listitem:
+                      - link:
+                        - /url: /analytics/marketplace
+                        - text: Marketplace Analytics
+                    - listitem:
+                      - link:
+                        - /url: /analytics/export
+                        - text: Export Analytics
+                    - listitem:
+                      - link:
+                        - /url: /analytics/kpi
+                        - text: Performance KPI (UMKM / Mentor / Program)
+                    - listitem:
+                      - link:
+                        - /url: /analytics/visualization
+                        - text: Data Visualization & Export
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: System Settings
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /settings/general
+                        - text: General Settings
+                    - listitem:
+                      - link:
+                        - /url: /settings/branding
+                        - text: Branding & Identitas Visual
+                    - listitem:
+                      - link:
+                        - /url: /settings/notifications
+                        - text: Email & Notification Settings
+                    - listitem:
+                      - link:
+                        - /url: /settings/api-keys
+                        - text: API Key Manager
+                    - listitem:
+                      - link:
+                        - /url: /settings/integrations
+                        - text: Integrasi Pihak Ketiga
+                    - listitem:
+                      - link:
+                        - /url: /settings/backup
+                        - text: Backup & Restore
+                    - listitem:
+                      - link:
+                        - /url: /settings/environment
+                        - text: Environment Configuration
+            - generic:
+              - heading [level=3]: OTHERS
+              - list:
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Logs & Security
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /logs/login
+                        - text: Login Log
+                    - listitem:
+                      - link:
+                        - /url: /logs/activity
+                        - text: Activity Log
+                    - listitem:
+                      - link:
+                        - /url: /logs/error
+                        - text: Error Log
+                    - listitem:
+                      - link:
+                        - /url: /logs/security
+                        - text: Security & Permission Audit
+                    - listitem:
+                      - link:
+                        - /url: /logs/firewall
+                        - text: Firewall Rules
+                    - listitem:
+                      - link:
+                        - /url: /logs/api
+                        - text: API Access Logs
+                    - listitem:
+                      - link:
+                        - /url: /logs/backups
+                        - text: Backup Logs
+                - listitem:
+                  - button:
+                    - generic:
+                      - img
+                    - generic: Tools
+                    - img
+                  - list:
+                    - listitem:
+                      - link:
+                        - /url: /tools/import-export
+                        - text: Import / Export
+                    - listitem:
+                      - link:
+                        - /url: /tools/cleaner
+                        - text: Data Cleaner
+                    - listitem:
+                      - link:
+                        - /url: /tools/bulk-editor
+                        - text: Bulk Editor
+                    - listitem:
+                      - link:
+                        - /url: /tools/sandbox
+                        - text: Sandbox Mode
+                    - listitem:
+                      - link:
+                        - /url: /tools/cache
+                        - text: Cache Manager
+      - generic:
+        - banner:
+          - generic:
+            - generic:
+              - button:
+                - img
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - img
+                    - textbox:
+                      - /placeholder: Search or type command...
+                    - button:
+                      - generic: ⌘
+                      - generic: K
+            - generic:
+              - generic:
+                - button:
+                  - img
+                - generic:
+                  - button:
+                    - generic:
+                      - generic: AS
+                    - generic:
+                      - paragraph: Admin Semindo
+                      - paragraph: admin
+                    - img
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=1]: User Management
+              - button [expanded]:
+                - img
+                - text: Add User
+            - generic:
+              - generic:
+                - img
+                - textbox:
+                  - /placeholder: Search users...
+                  - text: testuser1764845918311@example.com
+              - generic:
+                - combobox
+              - generic:
+                - combobox
+            - generic:
+              - generic:
+                - table:
+                  - rowgroup:
+                    - row:
+                      - columnheader: Name
+                      - columnheader: Email
+                      - columnheader: Role
+                      - columnheader: Status
+                      - columnheader: Actions
+                  - rowgroup:
+                    - row:
+                      - cell:
+                        - generic: Test User 1764845918311
+                        - generic: Test Business
+                      - cell: testuser1764845918311@example.com
+                      - cell:
+                        - generic: umkm
+                      - cell:
+                        - generic: Active
+                      - cell:
+                        - button:
+                          - img
+                        - button:
+                          - img
+  - dialog "Edit User" [ref=e2]:
+    - heading "Edit User" [level=2] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: Email
+        - textbox "Email" [disabled] [ref=e8]: testuser1764845918311@example.com
+      - generic [ref=e9]:
+        - generic [ref=e10]: Full Name
+        - textbox "Full Name" [ref=e11]: Test User 1764845918311 Updated
+      - generic [ref=e12]:
+        - generic [ref=e13]: Role
+        - combobox "Role" [ref=e14]:
+          - option "UMKM" [selected]
+          - option "Admin"
+          - option "Mentor"
+      - generic [ref=e15]:
+        - generic [ref=e16]: Business Name (Optional)
+        - textbox "Business Name (Optional)" [ref=e17]: Test Business
+      - button "Save" [active] [ref=e19] [cursor=pointer]
+    - button "Close" [ref=e20] [cursor=pointer]:
+      - img [ref=e21]
+      - generic [ref=e24]: Close
+```

@@ -38,7 +38,7 @@ interface UseAuthReturn {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  
+
   // Methods
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
@@ -47,7 +47,7 @@ interface UseAuthReturn {
   confirmPasswordReset: (token: string, newPassword: string) => Promise<void>;
   oauthLogin: (provider: OAuthProvider) => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
-  
+
   // Utilities
   hasRole: (role: UserRole) => boolean;
   hasPermission: (permission: string) => boolean;
@@ -70,10 +70,10 @@ const AuthContext = React.createContext<UseAuthReturn | undefined>(undefined);
  * Auth Provider Component
  * Wraps the application and provides authentication context
  */
-export const AuthProvider: React.FC<AuthProviderProps> = ({ 
-  children, 
-  authService, 
-  tokenService 
+export const AuthProvider: React.FC<AuthProviderProps> = ({
+  children,
+  authService,
+  tokenService
 }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -84,6 +84,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     queryKey: ['currentUser'],
     queryFn: async () => {
       const response = await authService.getCurrentUser();
+      // Handle potential double-wrapping or inconsistent service return
+      if (response && (response as any).success && (response as any).data) {
+        return (response as any).data;
+      }
       return response;
     },
     staleTime: 5 * 60 * 1000,
@@ -211,15 +215,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   const authState: AuthState = {
     user: user || null,
     isAuthenticated: !!user,
-    isLoading: isLoadingUser || 
-                loginMutation.isPending || 
-                registerMutation.isPending || 
-                logoutMutation.isPending,
+    isLoading: isLoadingUser ||
+      loginMutation.isPending ||
+      registerMutation.isPending ||
+      logoutMutation.isPending,
     error
   };
 
   const hasRole = useCallback((role: UserRole): boolean => {
-    return authState.user?.role === role;
+    // Handle both singular role property (legacy) and roles array (new)
+    if (authState.user?.roles && Array.isArray(authState.user.roles)) {
+      return authState.user.roles.includes(role as any);
+    }
+    // Fallback for legacy user object structure or if types are inconsistent
+    return (authState.user as any)?.role === role;
   }, [authState.user]);
 
   const hasPermission = useCallback((permission: string): boolean => {

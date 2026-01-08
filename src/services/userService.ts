@@ -105,10 +105,77 @@ export const userService = {
         // return response.data;
     },
 
-    verifyDocument: async (docId: string, approved: boolean) => {
+    verifyDocument: async (documentId: string, status: 'approved' | 'rejected', notes?: string) => {
         // Mock implementation
         return { success: true };
-        // const response = await api.post(`/users/documents/${docId}/verify`, { approved });
+        // const response = await api.post(`/documents/${documentId}/verify`, { status, notes });
         // return response.data;
-    }
+    },
+
+    // Bulk Operations
+    bulkDelete: (userIds: string[]) => api.post('/users/bulk-delete', { userIds }),
+
+    bulkActivate: (userIds: string[]) => api.post('/users/bulk-activate', { userIds }),
+
+    bulkDeactivate: (userIds: string[]) => api.post('/users/bulk-deactivate', { userIds }),
+
+    bulkAssignRoles: (userIds: string[], roleIds: string[]) =>
+        api.post('/users/bulk-assign-roles', { userIds, roleIds }),
+
+    // Import/Export
+    exportUsers: async (filters?: UserQueryParams) => {
+        const query = new URLSearchParams();
+        if (filters?.role) query.append('role', filters.role);
+        if (filters?.isActive) query.append('isActive', filters.isActive);
+        if (filters?.search) query.append('search', filters.search);
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/users/export?${query.toString()}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Export failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `users-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    },
+
+    downloadTemplate: async () => {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/users/import/template`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Download failed');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'users-template.csv';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    },
+
+    validateImport: (csvContent: string) =>
+        api.post<ApiResponse<{
+            valid: number;
+            invalid: number;
+            errors?: Array<{ row: number; field: string; message: string }>;
+            preview?: Array<{ email: string; fullName: string; role: string }>;
+        }>>('/users/import/validate', { csvContent }),
+
+    importUsers: (csvContent: string) =>
+        api.post<ApiResponse<{ imported: number }>>('/users/import', { csvContent }),
 };

@@ -12,12 +12,21 @@ import { corsMiddleware } from './systems/middlewares/cors'
 import { lmsRouter } from './systems/lms'
 import { dashboardRouter } from './systems/dashboard'
 import { marketplaceRouter } from './systems/marketplace'
+import { storeRouter } from './systems/marketplace/routes/store.routes';
+import { uploadRouter } from './systems/marketplace/routes/upload.routes';
+import { cartRouter } from './systems/marketplace/routes/cart.routes';
 import { financingRouter } from './systems/financing'
 import { exportRouter } from './systems/export'
 import { communityRouter } from './systems/community'
 import { programRouter } from './systems/program';
 import { umkmRouter } from './systems/umkm';
+import { rolesRouter } from './systems/roles/routes/roles.routes';
+import { permissionsRouter } from './systems/permissions/routes/permissions.routes';
+import { auditRouter } from './systems/audit/routes/audit.routes';
+import consultationRouter from './systems/consultation/routes/consultation.routes';
 ;
+
+
 
 export function createServer(): Application {
   const app = express()
@@ -52,12 +61,20 @@ export function createServer(): Application {
   app.use('/api/v1/lms', lmsRouter)
   app.use('/api/v1/dashboard', dashboardRouter)
   app.use('/api/v1/marketplace', marketplaceRouter)
+  app.use('/api/v1/marketplace', storeRouter);
+  app.use('/api/v1/marketplace', uploadRouter);
+  app.use('/api/v1/marketplace', cartRouter);
   app.use('/api/v1/financing', financingRouter);
   app.use('/api/v1/documents', documentRouter);
   app.use('/api/v1/export', exportRouter);
   app.use('/api/v1/community', communityRouter);
   app.use('/api/v1/programs', programRouter);
   app.use('/api/v1/umkm', umkmRouter);
+  app.use('/api/v1/roles', rolesRouter);
+  app.use('/api/v1/permissions', permissionsRouter);
+  app.use('/api/v1/audit-logs', auditRouter);
+  app.use('/api/v1/consultation', consultationRouter);
+
 
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
