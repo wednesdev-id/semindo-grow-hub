@@ -21,6 +21,9 @@ import { UMKMProfile, UMKMListResponse } from '@/types/umkm';
 
 export default function UMKMListPage() {
     const navigate = useNavigate();
+    const userIdFilter = new URLSearchParams(window.location.search).get('userId');
+
+
     const [profiles, setProfiles] = useState<UMKMProfile[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -31,7 +34,7 @@ export default function UMKMListPage() {
 
     useEffect(() => {
         fetchProfiles();
-    }, [debouncedSearch, page]);
+    }, [debouncedSearch, page, userIdFilter]);
 
     const fetchProfiles = async () => {
         setLoading(true);
@@ -40,9 +43,10 @@ export default function UMKMListPage() {
                 page: page.toString(),
                 limit: '10',
                 ...(debouncedSearch && { search: debouncedSearch }),
+                ...(userIdFilter && { userId: userIdFilter }),
             });
 
-            const response = await api.get<UMKMListResponse>(`/ umkm ? ${params} `);
+            const response = await api.get<UMKMListResponse>(`/umkm?${params}`);
             setProfiles(response.data);
             setTotalPages(response.meta.totalPages);
         } catch (error) {

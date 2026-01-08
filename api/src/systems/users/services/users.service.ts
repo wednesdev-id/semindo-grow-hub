@@ -78,7 +78,7 @@ export class UsersService {
                         role: true
                     }
                 },
-                umkmProfile: true,
+                umkmProfiles: true,
                 mentorProfile: true
             }
         })
@@ -221,7 +221,7 @@ export class UsersService {
                         role: true
                     }
                 },
-                umkmProfile: true,
+                umkmProfiles: true,
                 mentorProfile: true
             }
         })

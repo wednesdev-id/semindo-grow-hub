@@ -207,8 +207,8 @@ async function seedUMKM() {
                     }
                 }
 
-                // Check if UMKM profile already exists for this user
-                const existingProfile = await prisma.uMKMProfile.findUnique({
+                // Check if UMKM profile already exists for this user (use findFirst for 1:N relation)
+                const existingProfile = await prisma.uMKMProfile.findFirst({
                     where: { userId: user.id },
                 });
 

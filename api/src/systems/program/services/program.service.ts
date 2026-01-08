@@ -143,12 +143,13 @@ export class ProgramService {
                         email: true,
                         phone: true,
                         businessName: true,
-                        umkmProfile: {
+                        umkmProfiles: {
                             select: {
                                 businessName: true,
                                 sector: true,
                                 city: true
-                            }
+                            },
+                            take: 1 // Get first/primary profile
                         }
                     },
                 },

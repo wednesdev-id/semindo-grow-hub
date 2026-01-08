@@ -38,6 +38,7 @@ const ThreadListPage = lazy(() => import("./pages/community/ThreadListPage").the
 const ThreadDetailPage = lazy(() => import("./pages/community/ThreadDetailPage").then(module => ({ default: module.ThreadDetailPage })));
 const EventListPage = lazy(() => import("./pages/community/EventListPage").then(module => ({ default: module.EventListPage })));
 const EventDetailPage = lazy(() => import("./pages/community/EventDetailPage").then(module => ({ default: module.EventDetailPage })));
+const BusinessOnboardingPage = lazy(() => import("./pages/onboarding/BusinessOnboardingPage"));
 const ProgramListPage = lazy(() => import("./pages/admin/program/ProgramListPage").then(module => ({ default: module.ProgramListPage })));
 const ProgramDetailPage = lazy(() => import("./pages/admin/program/ProgramDetailPage").then(module => ({ default: module.ProgramDetailPage })));
 const ProgramLandingPage = lazy(() => import("./pages/program/ProgramLandingPage").then(module => ({ default: module.ProgramLandingPage })));
@@ -87,6 +88,7 @@ const UMKMDocumentVerification = lazy(() => import("./pages/admin/UMKMDocumentVe
 const ProgramList = lazy(() => import("./pages/programs/ProgramList"));
 const ProgramCreate = lazy(() => import("./pages/programs/ProgramCreate"));
 const UMKMListPage = lazy(() => import("./pages/admin/umkm/UMKMListPage"));
+const UMKMApprovalPage = lazy(() => import("./pages/admin/umkm/UMKMApprovalPage"));
 const UMKMFormPage = lazy(() => import("./pages/admin/umkm/UMKMFormPage"));
 const UMKMDetailPage = lazy(() => import("./pages/admin/umkm/UMKMDetailPage"));
 const UMKMSegmentationPage = lazy(() => import("./pages/admin/umkm/UMKMSegmentationPage"));
@@ -183,6 +185,11 @@ const App = () => {
                     {/* Auth Routes */}
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/onboarding/business" element={
+                      <ProtectedRoute>
+                        <BusinessOnboardingPage />
+                      </ProtectedRoute>
+                    } />
 
                     {/* Program Routes */}
                     <Route path="programs" element={<ProgramLandingPage />} />
@@ -202,6 +209,7 @@ const App = () => {
                       <Route path="dashboard" element={<AdminDashboard />} />
                       <Route path="users" element={<UserManagement />} />
                       <Route path="umkm" element={<UMKMListPage />} />
+                      <Route path="umkm/approval" element={<UMKMApprovalPage />} />
                       <Route path="umkm/:id" element={<UMKMDetailPage />} />
                       <Route path="programs" element={<ProgramListPage />} />
                       <Route path="programs/:id" element={<ProgramDetailPage />} />

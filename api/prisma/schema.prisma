@@ -30,7 +30,7 @@ model User {
   // Relations
   userRoles        UserRole[]
   assessments      Assessment[]
-  umkmProfile      UMKMProfile?
+  umkmProfiles     UMKMProfile[] // Changed from UMKMProfile? to allow 1:N
   mentorProfile    MentorProfile?
   auditLogs        AuditLog[]
   authoredCourses  Course[]
@@ -264,7 +264,7 @@ model AssessmentRecommendation {
 
 model UMKMProfile {
   id     String @id @default(uuid())
-  userId String @unique @map("user_id")
+  userId String @map("user_id") // Removed @unique to allow 1 user -> many UMKM
 
   // Business Details
   businessName String  @map("business_name")

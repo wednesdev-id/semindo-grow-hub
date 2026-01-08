@@ -46,6 +46,7 @@ export interface UMKMProfile {
     // Status & Metadata
     status: UMKMStatus;
     level?: string;
+    location?: { lat: number; lng: number; address?: string };
     tags: UMKMTag[];
     createdAt: string;
     updatedAt: string;

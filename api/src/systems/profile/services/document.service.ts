@@ -8,8 +8,8 @@ export class DocumentService {
         type: string,
         number?: string
     ) {
-        // Find UMKM Profile
-        const umkmProfile = await db.uMKMProfile.findUnique({
+        // Find UMKM Profile (get first/primary profile since user can have multiple)
+        const umkmProfile = await db.uMKMProfile.findFirst({
             where: { userId }
         });
 
@@ -37,7 +37,7 @@ export class DocumentService {
     }
 
     async getDocuments(userId: string) {
-        const umkmProfile = await db.uMKMProfile.findUnique({
+        const umkmProfile = await db.uMKMProfile.findFirst({
             where: { userId }
         });
 

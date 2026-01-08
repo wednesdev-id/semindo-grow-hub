@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { User } from '@/types/auth'
 import { userService } from '@/services/userService'
 import { roleService } from '@/services/roleService'
+import { api } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -33,7 +34,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Search, Pencil, Trash2, Upload, Download } from 'lucide-react'
+import { Loader2, Plus, Search, Pencil, Trash2, Upload, Download, ExternalLink } from 'lucide-react'
 import { ImportUsersDialog } from '@/components/admin/ImportUsersDialog'
 
 // Type-safe API response interfaces
@@ -72,6 +73,8 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
     const [roleFilter, setRoleFilter] = useState(defaultRole || 'all')
     const [statusFilter, setStatusFilter] = useState('all')
     const [availableRoles, setAvailableRoles] = useState<any[]>([])
+    const [userUmkmProfiles, setUserUmkmProfiles] = useState<any[]>([])
+    const [selectedUmkmId, setSelectedUmkmId] = useState<string>('')
 
     // Fetch roles on mount
     useEffect(() => {
@@ -104,6 +107,26 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
         phone: '',
         businessName: ''
     })
+
+    // Fetch UMKM profiles when editing user with UMKM role
+    useEffect(() => {
+        const fetchUmkmProfiles = async () => {
+            if (selectedUser && selectedUser.roles?.includes('umkm')) {
+                try {
+                    const response = await api.get<{ data: any[] }>(`/umkm?userId=${selectedUser.id}`)
+                    setUserUmkmProfiles(response.data || [])
+                    setSelectedUmkmId('')
+                } catch (error) {
+                    console.error('Failed to fetch UMKM profiles', error)
+                    setUserUmkmProfiles([])
+                }
+            } else {
+                setUserUmkmProfiles([])
+                setSelectedUmkmId('')
+            }
+        }
+        fetchUmkmProfiles()
+    }, [selectedUser])
 
     const fetchUsers = async () => {
         setLoading(true)
@@ -375,14 +398,43 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                                         )}
                                     </select>
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="businessName">Business Name (Optional)</Label>
-                                    <Input
-                                        id="businessName"
-                                        value={formData.businessName}
-                                        onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                                    />
-                                </div>
+                                {(formData.role === 'umkm' || selectedUser?.roles?.includes('umkm')) && selectedUser && (
+                                    <div className="grid gap-2">
+                                        <Label>Usaha UMKM</Label>
+                                        {userUmkmProfiles.length > 0 ? (
+                                            <div className="flex gap-2">
+                                                <select
+                                                    className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                                    value={selectedUmkmId}
+                                                    onChange={(e) => setSelectedUmkmId(e.target.value)}
+                                                >
+                                                    <option value="">-- Pilih Usaha --</option>
+                                                    {userUmkmProfiles.map((umkm: any) => (
+                                                        <option key={umkm.id} value={umkm.id}>
+                                                            {umkm.businessName} ({umkm.sector || 'N/A'})
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="icon"
+                                                    disabled={!selectedUmkmId}
+                                                    onClick={() => {
+                                                        if (selectedUmkmId) {
+                                                            setIsDialogOpen(false)
+                                                            window.open(`/admin/umkm/${selectedUmkmId}`, '_blank')
+                                                        }
+                                                    }}
+                                                >
+                                                    <ExternalLink className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">User ini belum memiliki usaha UMKM</p>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="grid gap-2">
                                     <Label htmlFor="phone">Phone (Optional)</Label>
                                     <Input

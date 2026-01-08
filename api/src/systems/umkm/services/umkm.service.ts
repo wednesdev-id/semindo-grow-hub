@@ -27,12 +27,18 @@ export class UMKMService {
         city?: string;
         province?: string;
         sector?: string;
+        userId?: string; // Filter by user
     }) {
         const page = params.page || 1;
         const limit = params.limit || 10;
         const skip = (page - 1) * limit;
 
         const where: Prisma.UMKMProfileWhereInput = {};
+
+        // Filter by userId
+        if (params.userId) {
+            where.userId = params.userId;
+        }
 
         if (params.search) {
             where.OR = [

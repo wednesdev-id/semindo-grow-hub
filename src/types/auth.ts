@@ -100,6 +100,7 @@ export interface UMKMProfile {
   nib?: string
   level?: string
   isVerified: boolean
+  location?: { lat: number; lng: number; address?: string }
 }
 
 export interface MentorProfile {
