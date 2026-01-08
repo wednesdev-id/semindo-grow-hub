@@ -11,6 +11,8 @@ import { useAuth } from '@/core/auth/hooks/useAuth';
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ShoppingBag } from 'lucide-react';
 
 interface Order {
     id: string;
@@ -104,16 +106,18 @@ export default function OrderHistory() {
                 </div>
 
                 {orders.length === 0 ? (
-                    <Card>
-                        <CardContent className="p-12 text-center">
-                            <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                            <h2 className="text-xl font-semibold mb-2">Belum ada pesanan</h2>
-                            <p className="text-muted-foreground mb-6">Mulai belanja untuk melihat pesanan Anda di sini</p>
-                            <Button asChild>
-                                <Link to="/marketplace">Lihat Produk</Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div className="py-12">
+                        <EmptyState
+                            title="Belum ada pesanan"
+                            description="Semua pesananmu akan muncul di sini setelah kamu berbelanja."
+                            icon={Package}
+                            action={{
+                                label: "Mulai Belanja",
+                                to: "/marketplace"
+                            }}
+                            className="bg-card border-2 border-dashed rounded-xl"
+                        />
+                    </div>
                 ) : (
                     <div className="space-y-4">
                         {orders.map((order) => (
@@ -122,12 +126,18 @@ export default function OrderHistory() {
                                     <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
                                         <div>
                                             <div className="flex items-center flex-wrap gap-2 mb-2">
-                                                <h3 className="font-semibold text-lg">Order #{order.id.slice(0, 8)}</h3>
+                                                <h3 className="font-semibold text-lg">Pesanan #{order.id.slice(0, 8)}</h3>
                                                 <Badge className={getStatusColor(order.status)}>
-                                                    {order.status}
+                                                    {order.status === 'pending' ? 'Menunggu' :
+                                                        order.status === 'processing' ? 'Diproses' :
+                                                            order.status === 'shipped' ? 'Dikirim' :
+                                                                order.status === 'delivered' ? 'Selesai' :
+                                                                    order.status === 'cancelled' ? 'Dibatalkan' : order.status}
                                                 </Badge>
                                                 <Badge className={getPaymentStatusColor(order.paymentStatus)}>
-                                                    {order.paymentStatus}
+                                                    {order.paymentStatus === 'unpaid' ? 'Belum Bayar' :
+                                                        order.paymentStatus === 'paid' ? 'Sudah Bayar' :
+                                                            order.paymentStatus === 'failed' ? 'Gagal' : order.paymentStatus}
                                                 </Badge>
                                             </div>
                                             <p className="text-sm text-muted-foreground">

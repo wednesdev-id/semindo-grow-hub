@@ -8,8 +8,14 @@ import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ShoppingBag, Package } f
 import SEOHead from '@/components/ui/seo-head';
 import { useToast } from '@/components/ui/use-toast';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/core/auth/hooks/useAuth';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export default function Cart() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { user, isLoading: authLoading } = useAuth();
     const { toast } = useToast();
     const { items, itemCount, total, updateQuantity, removeFromCart, clearCart } = useCart();
 
@@ -53,6 +59,24 @@ export default function Cart() {
         });
     };
 
+    const handleCheckout = (e: React.MouseEvent) => {
+        e.preventDefault();
+
+        if (authLoading) return;
+
+        if (!user) {
+            toast({
+                title: "Login Diperlukan",
+                description: "Silakan login terlebih dahulu untuk melanjutkan ke pembayaran",
+                variant: "destructive",
+            });
+            navigate('/login', { state: { from: '/marketplace/checkout' } });
+            return;
+        }
+
+        navigate('/marketplace/checkout');
+    };
+
     const isEmpty = items.length === 0;
 
     return (
@@ -75,24 +99,18 @@ export default function Cart() {
                 </div>
 
                 {isEmpty ? (
-                    /* Empty State */
-                    <Card className="border-2 border-dashed">
-                        <CardContent className="p-12 text-center">
-                            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <ShoppingCart className="h-12 w-12 text-primary" />
-                            </div>
-                            <h2 className="text-2xl font-bold mb-2">Keranjang Anda Kosong</h2>
-                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                Belum ada produk di keranjang. Yuk, mulai belanja produk UMKM unggulan!
-                            </p>
-                            <Button size="lg" asChild>
-                                <Link to="/marketplace">
-                                    <ShoppingBag className="mr-2 h-5 w-5" />
-                                    Mulai Belanja
-                                </Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div className="py-12">
+                        <EmptyState
+                            title="Keranjangmu masih kosong"
+                            description="Yuk, temukan produk menarik dan mulai belanja sekarang."
+                            icon={ShoppingCart}
+                            action={{
+                                label: "Mulai Belanja",
+                                to: "/marketplace"
+                            }}
+                            className="bg-card border-2 border-dashed rounded-xl"
+                        />
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Cart Items */}
@@ -258,11 +276,9 @@ export default function Cart() {
                                     </div>
 
                                     {/* Checkout Button */}
-                                    <Button className="w-full" size="lg" asChild>
-                                        <Link to="/marketplace/checkout">
-                                            Lanjut ke Pembayaran
-                                            <ArrowRight className="h-5 w-5 ml-2" />
-                                        </Link>
+                                    <Button className="w-full" size="lg" onClick={handleCheckout}>
+                                        Lanjut ke Pembayaran
+                                        <ArrowRight className="h-5 w-5 ml-2" />
                                     </Button>
 
                                     {/* Info */}

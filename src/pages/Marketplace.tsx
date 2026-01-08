@@ -17,10 +17,11 @@ import { useState } from "react";
 import { ProductFiltersComponent } from "@/components/marketplace/ProductFilters";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const Marketplace = () => {
   const navigate = useNavigate();
-  const { addToCart, itemCount } = useCart();
+  const { itemCount } = useCart();
 
   // Filters state
   const [filters, setFilters] = useState({
@@ -54,12 +55,6 @@ const Marketplace = () => {
 
   const handleSearch = () => {
     // Search is handled via state change
-  };
-
-  const handleAddToCart = (e: React.MouseEvent, product: any) => {
-    e.stopPropagation(); // Prevent card click
-    addToCart(product);
-    toast.success(`${product.name} ditambahkan ke keranjang!`);
   };
 
   const handleCardClick = (slug: string) => {
@@ -126,7 +121,7 @@ const Marketplace = () => {
       ) : (
         <>
           {/* Categories */}
-          <section className="py-12 px-4 shadow-sm bg-white border-b overflow-x-auto">
+          <section id="categories-section" className="py-12 px-4 shadow-sm bg-white border-b overflow-x-auto">
             <div className="max-w-7xl mx-auto">
               <h2 className="text-xl md:text-2xl font-bold text-center mb-10 text-foreground/80">Kategori Produk</h2>
               <div className="flex md:grid md:grid-cols-6 lg:grid-cols-11 gap-x-2 gap-y-8 pb-4 min-w-max md:min-w-0">
@@ -185,75 +180,96 @@ const Marketplace = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                {searchResults?.products?.map((product) => {
-                  const colors = getCategoryColor(product.category);
-                  return (
-                    <Card
-                      key={product.id}
-                      className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-100 flex flex-col w-full max-w-[325px] h-[452px] mx-auto bg-white rounded-xl"
-                      onClick={() => handleCardClick(product.slug)}
-                    >
-                      {/* Photo Area: 301x281 with 12px margins inside 325px body */}
-                      <div className="p-3 pb-0">
-                        <div className="relative w-full aspect-[301/281] overflow-hidden rounded-[6px] bg-muted/20">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                          <div className="absolute top-2 left-2 flex flex-wrap gap-1">
-                            {product.badges?.map((badge, index) => (
-                              <Badge key={index} variant="secondary" className="text-[10px] h-5 bg-white/90 backdrop-blur-sm shadow-sm text-foreground/80 border-none">
-                                {badge}
-                              </Badge>
-                            ))}
+                {searchResults?.products?.length > 0 ? (
+                  searchResults.products.map((product) => {
+                    const colors = getCategoryColor(product.category);
+                    return (
+                      <Card
+                        key={product.id}
+                        className="group overflow-hidden hover:shadow-xl transition-all duration-300 border-gray-100 flex flex-col w-full max-w-[325px] h-[452px] mx-auto bg-white rounded-xl"
+                        onClick={() => handleCardClick(product.slug)}
+                      >
+                        {/* Photo Area: 301x281 with 12px margins inside 325px body */}
+                        <div className="p-3 pb-0">
+                          <div className="relative w-full aspect-[301/281] overflow-hidden rounded-[6px] bg-muted/20">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                            <div className="absolute top-2 left-2 flex flex-wrap gap-1">
+                              {product.badges?.map((badge, index) => (
+                                <Badge key={index} variant="secondary" className="text-[10px] h-5 bg-white/90 backdrop-blur-sm shadow-sm text-foreground/80 border-none">
+                                  {badge}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <CardContent className="p-3 flex flex-col flex-1">
-                        {/* Text Content Area: 301x135 */}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <Badge
-                              variant="outline"
-                              className="text-[9px] h-4 py-0"
-                              style={{
-                                color: colors.text,
-                                backgroundColor: colors.background,
-                                borderColor: colors.stroke + '40'
+                        <CardContent className="p-3 flex flex-col flex-1">
+                          {/* Text Content Area: 301x135 */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <Badge
+                                variant="outline"
+                                className="text-[9px] h-4 py-0"
+                                style={{
+                                  color: colors.text,
+                                  backgroundColor: colors.background,
+                                  borderColor: colors.stroke + '40'
+                                }}
+                              >
+                                {product.category}
+                              </Badge>
+                            </div>
+
+                            <h3 className="font-medium text-base line-clamp-2 leading-snug group-hover:text-primary transition-colors mb-1 h-[44px]">
+                              {product.name}
+                            </h3>
+
+                            <div className="flex justify-between items-center mt-auto">
+                              <span className="text-[18px] font-semibold text-primary">{product.price}</span>
+                              <span className="text-[16px] text-muted-foreground font-normal">10 RB terjual</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3">
+                            <Button
+                              className="w-full shadow-sm bg-[#5E72E4] hover:bg-[#5E72E4]/90 text-white transition-all active:scale-[0.98] h-10 rounded-md text-sm font-medium"
+                              size="default"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardClick(product.slug);
                               }}
                             >
-                              {product.category}
-                            </Badge>
+                              Lihat detail produk
+                            </Button>
                           </div>
-
-                          <h3 className="font-medium text-base line-clamp-2 leading-snug group-hover:text-primary transition-colors mb-1 h-[44px]">
-                            {product.name}
-                          </h3>
-
-                          <div className="flex justify-between items-center mt-auto">
-                            <span className="text-[18px] font-semibold text-primary">{product.price}</span>
-                            <span className="text-[16px] text-muted-foreground font-normal">10 RB terjual</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-3">
-                          <Button
-                            className="w-full shadow-sm bg-[#5E72E4] hover:bg-[#5E72E4]/90 text-white transition-all active:scale-[0.98] h-10 rounded-md text-sm font-medium"
-                            size="default"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleCardClick(product.slug);
-                            }}
-                          >
-                            Lihat detail produk
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        </CardContent>
+                      </Card>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full py-12">
+                    <EmptyState
+                      title="Produk tidak ditemukan"
+                      description="Coba gunakan kata kunci lain atau jelajahi kategori yang tersedia."
+                      icon={Search}
+                      action={{
+                        label: "Jelajahi Kategori",
+                        onClick: () => {
+                          const catSection = document.getElementById('categories-section');
+                          catSection?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
+                      secondaryAction={{
+                        label: "Kembali ke Beranda",
+                        to: "/"
+                      }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="text-center mt-8">

@@ -30,12 +30,14 @@ const ProductDetail = lazy(() => import("./pages/marketplace/ProductDetail"));
 const Cart = lazy(() => import("./pages/marketplace/Cart"));
 const Checkout = lazy(() => import("./pages/marketplace/Checkout"));
 const OrderHistory = lazy(() => import("./pages/marketplace/OrderHistory"));
-const MarketplaceSellerDashboard = lazy(() => import("./pages/marketplace/SellerDashboard"));
+// Consolidated with SellerDashboard
 const FinancingHub = lazy(() => import("./pages/FinancingHub"));
 const ExportHub = lazy(() => import("./pages/ExportHub"));
 const CommunityLayout = lazy(() => import("./components/layouts/CommunityLayout").then(module => ({ default: module.CommunityLayout })));
 const ForumLandingPage = lazy(() => import("./pages/community/ForumLandingPage").then(module => ({ default: module.ForumLandingPage })));
 const ThreadListPage = lazy(() => import("./pages/community/ThreadListPage").then(module => ({ default: module.ThreadListPage })));
+const Wishlist = lazy(() => import("./pages/marketplace/Wishlist"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 const ThreadDetailPage = lazy(() => import("./pages/community/ThreadDetailPage").then(module => ({ default: module.ThreadDetailPage })));
 const EventListPage = lazy(() => import("./pages/community/EventListPage").then(module => ({ default: module.EventListPage })));
 const EventDetailPage = lazy(() => import("./pages/community/EventDetailPage").then(module => ({ default: module.EventDetailPage })));
@@ -68,7 +70,6 @@ const CourseCatalogPage = lazy(() => import("./features/lms/pages/CourseCatalogP
 const MyCoursesPage = lazy(() => import("./features/lms/pages/MyCoursesPage"));
 const CourseDetailPage = lazy(() => import("./features/lms/pages/CourseDetailPage"));
 const LessonView = lazy(() => import("./features/lms/pages/LessonView"));
-const ProductDetailPage = lazy(() => import("./features/marketplace/pages/ProductDetailPage"));
 const ProductListPage = lazy(() => import("./features/marketplace/pages/ProductListPage"));
 const LoanApplicationForm = lazy(() => import("./pages/financing/LoanApplicationForm"));
 
@@ -90,7 +91,8 @@ const ProgramCreate = lazy(() => import("./pages/programs/ProgramCreate"));
 const UMKMListPage = lazy(() => import("./pages/admin/umkm/UMKMListPage"));
 const UMKMFormPage = lazy(() => import("./pages/admin/umkm/UMKMFormPage"));
 const UMKMDetailPage = lazy(() => import("./pages/admin/umkm/UMKMDetailPage"));
-const SellerDashboard = lazy(() => import("./features/marketplace/pages/admin/SellerDashboard").then(module => ({ default: module.SellerDashboard })));
+const SellerDashboard = lazy(() => import("./pages/marketplace/SellerDashboard"));
+// Redundant admin seller dashboard removed
 const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
 const MarketplaceProductList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductList"));
 const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/ProductUploadPage"));
@@ -166,8 +168,10 @@ const App = () => {
                       <Route path="/marketplace/product/:slug" element={<ProductDetail />} />
                       <Route path="/marketplace/cart" element={<Cart />} />
                       <Route path="/marketplace/checkout" element={<Checkout />} />
-                      <Route path="/marketplace/orders" element={<OrderHistory />} />
-                      <Route path="/marketplace/seller" element={<MarketplaceSellerDashboard />} />
+                      <Route path="/marketplace/my-orders" element={<OrderHistory />} />
+                      <Route path="/marketplace/wishlist" element={<Wishlist />} />
+                      <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/marketplace/seller" element={<Navigate to="/marketplace/dashboard" replace />} />
                       <Route path="/financing-hub" element={<FinancingHub />} />
                       <Route path="/export-hub" element={<ExportHub />} />
                       <Route path="/community" element={<CommunityLayout />}>
@@ -358,11 +362,7 @@ const App = () => {
                           description="Manajemen semua permintaan konsultasi dalam sistem."
                           features={["Request filtering", "Status tracking", "Bulk actions", "Export data"]}
                         />} />
-                        <Route path="/dashboard/consultation/chat-monitoring" element={<FeaturePreviewPage
-                          title="Chat Monitoring"
-                          description="Oversight dan monitoring chat konsultasi untuk quality assurance."
-                          features={["Live chat monitoring", "Keyword alerts", "Quality scoring", "Intervention tools"]}
-                        />} />
+                        <Route path="/dashboard/consultation/chat-monitoring" element={<ChatMonitoringPage />} />
                         <Route path="/dashboard/consultation/reports" element={<FeaturePreviewPage
                           title="Reports & Analytics"
                           description="Laporan komprehensif dan analytics untuk consultation hub."
@@ -446,7 +446,6 @@ const App = () => {
                         <Route path="/dashboard/marketplace/products/new" element={<ProductUploadPage />} />
                         <Route path="/marketplace/products" element={<ProductListPage />} />
                         <Route path="/marketplace/products/:slug" element={<AdminProductDetailPage />} />
-                        <Route path="/marketplace/product/:slug" element={<ProductDetailPage />} />
                         <Route path="/marketplace/verification" element={<MarketplaceProductVerification />} />
                         <Route path="/marketplace/stores" element={<FeaturePreviewPage
                           title="Toko UMKM"

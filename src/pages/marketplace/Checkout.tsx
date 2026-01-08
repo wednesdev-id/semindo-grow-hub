@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '@/contexts/CartContext';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
@@ -13,10 +13,12 @@ import { useAuth } from '@/core/auth/hooks/useAuth';
 import SEOHead from '@/components/ui/seo-head';
 import { toast } from 'sonner';
 import { marketplaceService } from '@/services/marketplaceService';
+import { EmptyState } from '@/components/ui/empty-state';
 
 export default function Checkout() {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const location = useLocation();
+    const { user, loading: authLoading } = useAuth();
     const { items, total, clearCart } = useCart();
     const [processing, setProcessing] = useState(false);
 
@@ -37,26 +39,73 @@ export default function Checkout() {
     const [discount, setDiscount] = useState(0);
     const [applyingVoucher, setApplyingVoucher] = useState(false);
 
-    // Mock shipping calculation
+    // Sync user data when it becomes available
     useEffect(() => {
-        const calculateShipping = async () => {
-            if (!shippingAddress.city || !shippingAddress.courier) return;
+        if (user) {
+            setShippingAddress(prev => ({
+                ...prev,
+                fullName: prev.fullName || user.fullName || '',
+                phone: prev.phone || user.phone || user.umkmProfile?.phone || '',
+                address: prev.address || user.umkmProfile?.address || '',
+                city: prev.city || user.umkmProfile?.city || '',
+                province: prev.province || user.umkmProfile?.province || '',
+                postalCode: prev.postalCode || user.umkmProfile?.postalCode || '',
+            }));
+        }
+    }, [user]);
+
+    // Strict Auth Redirect
+    useEffect(() => {
+        if (!authLoading && !user) {
+            toast.error('Login diperlukan untuk mengakses halaman checkout');
+            navigate('/login', {
+                state: { from: location.pathname },
+                replace: true
+            });
+        }
+    }, [user, authLoading, navigate, location.pathname]);
+
+    // Group items by seller
+    const groupedItems = items.reduce((acc, item) => {
+        const seller = item.seller || 'Unknown Seller';
+        if (!acc[seller]) acc[seller] = [];
+        acc[seller].push(item);
+        return acc;
+    }, {} as Record<string, typeof items>);
+
+    const sellerList = Object.keys(groupedItems);
+
+    // Mock shipping calculation per seller
+    useEffect(() => {
+        const calculateTotalShipping = async () => {
+            if (!shippingAddress.city || !shippingAddress.courier || sellerList.length === 0) {
+                setShippingCost(0);
+                return;
+            }
 
             setCalculatingShipping(true);
             // Simulate API delay
             await new Promise(resolve => setTimeout(resolve, 800));
 
-            // Simple mock logic
-            const baseCost = 15000;
-            const courierMultiplier = { JNE: 1, Sicepat: 0.9, 'J&T': 1.1, Anteraja: 0.8 }[shippingAddress.courier] || 1;
-            const cityComplexity = (shippingAddress.city.length % 5) * 2000;
+            let totalShipping = 0;
+            // In a real scenario, we might call an API that takes [ origin_cities, destination_city, weight_per_origin ]
+            // Here we mock per seller
+            sellerList.forEach((seller, index) => {
+                const baseCost = 15000;
+                const courierMultiplier = { JNE: 1, Sicepat: 0.9, 'J&T': 1.1, Anteraja: 0.8 }[shippingAddress.courier] || 1;
+                // Add some variance per seller to make it look realistic
+                const sellerOffset = (index * 2000);
+                const cityComplexity = (shippingAddress.city.length % 5) * 1000;
 
-            setShippingCost(baseCost * courierMultiplier + cityComplexity);
+                totalShipping += (baseCost * courierMultiplier + cityComplexity + sellerOffset);
+            });
+
+            setShippingCost(totalShipping);
             setCalculatingShipping(false);
         };
 
-        calculateShipping();
-    }, [shippingAddress.city, shippingAddress.courier]);
+        calculateTotalShipping();
+    }, [shippingAddress.city, shippingAddress.courier, sellerList.length]);
 
     // Redirect if cart is empty
     if (items.length === 0) {
@@ -66,20 +115,18 @@ export default function Checkout() {
                 <Navigation />
 
                 <div className="max-w-6xl mx-auto px-4 pt-24 pb-12">
-                    <Card className="border-2 border-dashed">
-                        <CardContent className="p-12 text-center">
-                            <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <ShoppingCart className="h-12 w-12 text-primary" />
-                            </div>
-                            <h2 className="text-2xl font-bold mb-2">Keranjang Anda Kosong</h2>
-                            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                Silakan tambahkan produk ke keranjang terlebih dahulu sebelum checkout.
-                            </p>
-                            <Button size="lg" onClick={() => navigate('/marketplace')}>
-                                Mulai Belanja
-                            </Button>
-                        </CardContent>
-                    </Card>
+                    <div className="py-12">
+                        <EmptyState
+                            title="Keranjang Anda Kosong"
+                            description="Silakan tambahkan produk ke keranjang terlebih dahulu sebelum checkout."
+                            icon={ShoppingCart}
+                            action={{
+                                label: "Mulai Belanja",
+                                to: "/marketplace"
+                            }}
+                            className="bg-card border-2 border-dashed rounded-xl"
+                        />
+                    </div>
                 </div>
 
                 <Footer />
@@ -105,6 +152,7 @@ export default function Checkout() {
 
         try {
             setProcessing(true);
+            console.log('[ANALYTICS] Checkout Started', { itemsCount: items.length, total });
 
             // Prepare order items
             const orderItems = items.map(item => ({
@@ -116,6 +164,8 @@ export default function Checkout() {
             const response = await marketplaceService.createOrder(orderItems, { ...shippingAddress, paymentMethod }, shippingCost) as any;
             const { paymentLink } = response.data;
 
+            console.log('[ANALYTICS] Checkout Completed', { orderId: response.data.id });
+
             // Clear cart after successful order
             clearCart();
 
@@ -125,7 +175,7 @@ export default function Checkout() {
             // Redirect based on payment method
             setTimeout(() => {
                 if (paymentMethod === 'manual' || !paymentLink) {
-                    navigate('/marketplace/orders');
+                    navigate('/marketplace/my-orders');
                 } else {
                     // Open payment link in new tab or same window
                     window.location.href = paymentLink;
@@ -314,21 +364,37 @@ export default function Checkout() {
                             <Card>
                                 <CardContent className="p-6">
                                     <h2 className="text-xl font-bold mb-6">Ringkasan Pesanan</h2>
-                                    <div className="space-y-4 mb-6">
-                                        {items.map((item) => (
-                                            <div key={item.id} className="flex gap-3">
-                                                <img
-                                                    src={item.image || '/api/placeholder/60/60'}
-                                                    alt={item.name}
-                                                    className="w-16 h-16 object-cover rounded"
-                                                />
-                                                <div className="flex-1">
-                                                    <p className="font-medium text-sm line-clamp-2">{item.name}</p>
-                                                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                    <div className="space-y-6 mb-6">
+                                        {sellerList.map((seller) => (
+                                            <div key={seller} className="space-y-3">
+                                                <div className="flex items-center gap-2 pb-2 border-b border-dashed">
+                                                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                                                        <ShoppingCart className="h-3 w-3 text-primary" />
+                                                    </div>
+                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                                        Pesanan dari {seller}
+                                                    </h3>
                                                 </div>
-                                                <p className="font-semibold text-sm">
-                                                    Rp {(Number(item.price) * item.quantity).toLocaleString('id-ID')}
-                                                </p>
+                                                <div className="space-y-4 pt-1">
+                                                    {groupedItems[seller].map((item) => (
+                                                        <div key={item.id} className="flex gap-3">
+                                                            <img
+                                                                src={item.image || '/api/placeholder/60/60'}
+                                                                alt={item.name}
+                                                                className="w-14 h-14 object-cover rounded-lg border shadow-sm"
+                                                            />
+                                                            <div className="flex-1">
+                                                                <p className="font-semibold text-xs line-clamp-2 leading-tight">{item.name}</p>
+                                                                <p className="text-[10px] text-muted-foreground mt-1">
+                                                                    Jumlah: <span className="font-bold text-foreground">{item.quantity}</span>
+                                                                </p>
+                                                            </div>
+                                                            <p className="font-bold text-xs">
+                                                                Rp {(Number(item.price.toString().replace(/[^0-9]/g, '')) * item.quantity).toLocaleString('id-ID')}
+                                                            </p>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

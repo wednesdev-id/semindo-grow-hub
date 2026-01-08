@@ -93,7 +93,7 @@ const Navigation = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/marketplace/orders">
+                    <Link to="/marketplace/my-orders">
                       <Package className="mr-2 h-4 w-4" />
                       <span>Pesanan Saya</span>
                     </Link>
@@ -167,7 +167,7 @@ const Navigation = () => {
                         Dashboard
                       </Button>
                     </Link>
-                    <Link to="/marketplace/orders" onClick={() => setIsOpen(false)}>
+                    <Link to="/marketplace/my-orders" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
                         <Package className="mr-2 h-4 w-4" />
                         Pesanan Saya
