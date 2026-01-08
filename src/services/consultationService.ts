@@ -192,25 +192,23 @@ export const consultationService = {
     },
 
     // Chat
-    async getChannel(requestId: string) {
-        const response = await api.get<{ success: boolean; data: ChatChannel }>(
+    async getChatDetails(requestId: string) {
+        const response = await api.get<{ success: boolean; data: { channel: ChatChannel; requestStatus: string; canChat: boolean } }>(
             `${BASE_URL}/requests/${requestId}/chat`
         );
         return response.data;
     },
 
-    async getChatHistory(channelId: string, limit = 50) {
-        const response = await api.get<{ success: boolean; data: ChatMessage[] }>(
-            `${BASE_URL}/chat/${channelId}/messages?limit=${limit}`
+    async sendMessage(requestId: string, content?: string, fileUrl?: string) {
+        const response = await api.post<{ success: boolean; data: ChatMessage }>(
+            `${BASE_URL}/requests/${requestId}/chat/messages`,
+            { content, fileUrl }
         );
         return response.data;
     },
 
-    async getUnreadCount(channelId: string) {
-        const response = await api.get<{ success: boolean; data: { count: number } }>(
-            `${BASE_URL}/chat/${channelId}/unread`
-        );
-        return response.data.count;
+    async markMessagesAsRead(requestId: string) {
+        await api.put(`${BASE_URL}/requests/${requestId}/chat/read`);
     },
 
     // Admin Chat Monitoring

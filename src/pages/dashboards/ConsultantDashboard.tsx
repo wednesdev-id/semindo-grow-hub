@@ -41,15 +41,9 @@ export default function ConsultantDashboard() {
   const [completeModalOpen, setCompleteModalOpen] = useState(false);
 
   useEffect(() => {
-    // Mock loading stats
-    // In real app, fetch from API
-    setStats({
-      earnings: 12500000,
-      sessions: 42,
-      rating: 4.8,
-      students: 156,
-      courses: 3
-    });
+    // Initialize stats with defaults
+    // Stats will be calculated from request data below
+    // setStats({ ... }); // Removed mock data
 
     // Fetch pending requests
     loadPendingRequests();
@@ -74,16 +68,22 @@ export default function ConsultantDashboard() {
 
       setUpcomingRequests(upcoming.slice(0, 5)); // Show next 5 in sidebar/main
 
-      // Calculate Stats
+      // Calculate Stats (Real-time)
       const completedSessions = requests.filter(r => r.status === 'completed');
-      const totalEarnings = completedSessions.reduce((sum, r) => sum + (r.quotedPrice || 0), 0);
 
-      setStats(prev => ({
-        ...prev,
+      // Calculate Total Earnings
+      const totalEarnings = completedSessions.reduce((sum, r) => sum + Number(r.quotedPrice || 0), 0);
+
+      // Calculate Unique Students
+      const uniqueStudentIds = new Set(completedSessions.map(r => r.clientId));
+
+      setStats({
         earnings: totalEarnings,
         sessions: completedSessions.length,
-        rating: profile?.averageRating || prev.rating || 0
-      }));
+        rating: profile?.averageRating || 0,
+        students: uniqueStudentIds.size,
+        courses: profile?.totalCoursesCreated || 0 // Assuming this field exists or defaults to 0
+      });
 
     } catch (error) {
       console.error('Failed to load requests:', error);
@@ -253,6 +253,8 @@ export default function ConsultantDashboard() {
                 upcomingRequests.slice(0, 3).map(req => (
                   <ScheduledItem
                     key={req.id}
+                    id={req.id}
+                    date={new Date(req.requestedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
                     time={formatTime(req.requestedStartTime)}
                     title={`Consultation with ${req.client?.fullName || 'Client'}`}
                     type={req.type?.name || 'Consultation'}
@@ -341,15 +343,20 @@ function StatsCard({ label, value, icon, color }: any) {
   );
 }
 
-function ScheduledItem({ time, title, type }: any) {
+function ScheduledItem({ id, time, title, type, date }: any) {
   return (
-    <div className="flex gap-4 items-start pb-4 border-b last:border-0 border-gray-50">
-      <div className="text-sm font-medium text-gray-900 w-16">{time}</div>
-      <div>
-        <p className="text-sm font-medium text-gray-800">{title}</p>
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{type}</span>
+    <Link to={`/consultation/requests/${id}`} className="block hover:bg-gray-50 transition-colors rounded-lg p-2 -mx-2">
+      <div className="flex gap-4 items-start border-b last:border-0 border-gray-50 pb-2 mb-2 last:pb-0 last:mb-0">
+        <div className="w-16 flex flex-col text-right">
+          <span className="text-xs text-gray-500">{date}</span>
+          <span className="text-sm font-medium text-gray-900">{time}</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-800">{title}</p>
+          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{type}</span>
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

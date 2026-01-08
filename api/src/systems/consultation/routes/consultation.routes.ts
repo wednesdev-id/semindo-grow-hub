@@ -178,26 +178,23 @@ router.post('/requests/:id/unarchive',
 
 import * as chatController from '../controllers/chat.controller';
 
-// Get chat channel for a request
+// Get chat details (Channel + Messages + Status)
 router.get('/requests/:requestId/chat',
     authenticate,
-    chatController.getOrCreateChannel
+    chatController.getChatDetails
 );
 
-// Get chat history
-router.get('/chat/:channelId/messages',
+// Send message
+router.post('/requests/:requestId/chat/messages',
     authenticate,
-    chatController.getChatHistory
+    chatController.sendMessage
 );
 
-// Get unread count
-router.get('/chat/:channelId/unread',
+// Mark as read
+router.put('/requests/:requestId/chat/read',
     authenticate,
-    chatController.getUnreadCount
+    chatController.markAsRead
 );
-
-// Upload file (requires multer middleware)
-// router.post('/chat/:channelId/upload', 
 //   authenticate,
 //   upload.single('file'),
 //   chatController.uploadFile
@@ -249,6 +246,94 @@ router.delete('/files/:fileId',
 // ADMIN ROUTES
 // ============================================
 
+// Admin Statistics & Analytics
+import * as adminController from '../controllers/admin.controller';
+
+router.get('/admin/stats/overview',
+    authenticate,
+    requirePermission('consultation.admin.view_dashboard'),
+    adminController.getStatsOverview
+);
+
+router.get('/admin/analytics/trends',
+    authenticate,
+    requirePermission('consultation.admin.view_dashboard'),
+    adminController.getAnalyticsTrends
+);
+
+router.get('/admin/analytics/top-consultants',
+    authenticate,
+    requirePermission('consultation.admin.view_dashboard'),
+    adminController.getTopConsultants
+);
+
+router.get('/admin/analytics/expertise-distribution',
+    authenticate,
+    requirePermission('consultation.admin.view_dashboard'),
+    adminController.getExpertiseDistribution
+);
+
+router.get('/admin/activities/recent',
+    authenticate,
+    requirePermission('consultation.admin.view_dashboard'),
+    adminController.getRecentActivities
+);
+
+router.get('/admin/requests',
+    authenticate,
+    requirePermission('consultation.admin.view_requests'),
+    adminController.getAllRequests
+);
+
+// Active Consultant Management
+import * as consultantAdminController from '../controllers/consultant-admin.controller';
+
+router.get('/admin/consultants/active',
+    authenticate,
+    requirePermission('consultation.admin.view_consultants'),
+    consultantAdminController.getActiveConsultants
+);
+
+router.get('/admin/consultants/:id/performance',
+    authenticate,
+    requirePermission('consultation.admin.view_consultants'),
+    consultantAdminController.getConsultantPerformance
+);
+
+router.patch('/admin/consultants/:id/status',
+    authenticate,
+    requirePermission('consultation.admin.manage_consultants'),
+    consultantAdminController.updateConsultantStatus
+);
+
+// Reports & Analytics
+import * as reportsController from '../controllers/reports.controller';
+
+router.get('/admin/revenue/summary',
+    authenticate,
+    requirePermission('consultation.admin.view_reports'),
+    reportsController.getRevenueSummary
+);
+
+router.get('/admin/revenue/trends',
+    authenticate,
+    requirePermission('consultation.admin.view_reports'),
+    reportsController.getRevenueTrends
+);
+
+router.get('/admin/kpi',
+    authenticate,
+    requirePermission('consultation.admin.view_reports'),
+    reportsController.getKPIMetrics
+);
+
+router.post('/admin/reports/export',
+    authenticate,
+    requirePermission('consultation.admin.export_reports'),
+    reportsController.exportReport
+);
+
+// Consultant Approval
 router.patch('/admin/consultants/:id/approve',
     authenticate,
     requirePermission('consultation.admin.approve'),
@@ -261,18 +346,18 @@ router.patch('/admin/consultants/:id/reject',
     consultantController.rejectConsultant
 );
 
-// Admin Chat Monitoring
-router.get('/admin/chat/channels',
-    authenticate,
-    requirePermission('consultation.admin.view_chats'),
-    chatController.getAdminChannels
-);
+// Admin Chat Monitoring (Temporarily disabled)
+// router.get('/admin/chat/channels',
+//     authenticate,
+//     requirePermission('consultation.admin.view_chats'),
+//     chatController.getAdminChannels
+// );
 
-router.get('/admin/chat/:channelId/messages',
-    authenticate,
-    requirePermission('consultation.admin.view_chats'),
-    chatController.getAdminChatHistory
-);
+// router.get('/admin/chat/:channelId/messages',
+//     authenticate,
+//     requirePermission('consultation.admin.view_chats'),
+//     chatController.getAdminChatHistory
+// );
 
 // ============================================
 // REVIEWS

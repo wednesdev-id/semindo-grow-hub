@@ -194,8 +194,8 @@ const getMenuItems = (): {
         { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
         { name: "Browse Consultants", path: "/consultation/consultants", roles: ["admin", "management", "umkm"] },
         { name: "My Consultations", path: "/consultation/dashboard", roles: ["consultant", "konsultan"] },
-        { name: "Schedule Consultation", path: "/consultation/schedule", roles: ["admin", "management", "umkm"] }, // Preview
-        { name: "Consultation History", path: "/consultation/history" }, // Preview
+        { name: "Schedule Consultation", path: "/consultation/schedule", roles: ["umkm"] },
+        { name: "Consultation History", path: "/consultation/history", roles: ["umkm", "consultant", "konsultan"] },
 
         // Admin Features
         { name: "Dashboard Overview", path: "/dashboard/consultation/dashboard", roles: ["admin", "management"] },

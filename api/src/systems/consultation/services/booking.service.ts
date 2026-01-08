@@ -86,7 +86,7 @@ export const getUserRequests = async (userId: string, role?: string) => {
             return [];
         }
 
-        return await prisma.consultationRequest.findMany({
+        const requests = await prisma.consultationRequest.findMany({
             where: {
                 consultantId: profile.id
             },
@@ -109,16 +109,32 @@ export const getUserRequests = async (userId: string, role?: string) => {
                         }
                     }
                 },
-                type: true
+                type: true,
+                chatChannel: {
+                    include: {
+                        messages: {
+                            where: {
+                                isRead: false,
+                                senderId: { not: userId }
+                            },
+                            select: { id: true }
+                        }
+                    }
+                }
             },
             orderBy: {
                 createdAt: 'desc'
             }
         });
+
+        return requests.map(req => ({
+            ...req,
+            unreadCount: req.chatChannel?.messages?.length || 0
+        }));
     }
 
     // Default: Get as client
-    return await prisma.consultationRequest.findMany({
+    const requests = await prisma.consultationRequest.findMany({
         where: {
             clientId: userId
         },
@@ -142,12 +158,28 @@ export const getUserRequests = async (userId: string, role?: string) => {
                     }
                 }
             },
-            type: true
+            type: true,
+            chatChannel: {
+                include: {
+                    messages: {
+                        where: {
+                            isRead: false,
+                            senderId: { not: userId }
+                        },
+                        select: { id: true }
+                    }
+                }
+            }
         },
         orderBy: {
             createdAt: 'desc'
         }
     });
+
+    return requests.map(req => ({
+        ...req,
+        unreadCount: req.chatChannel?.messages?.length || 0
+    }));
 };
 
 /**

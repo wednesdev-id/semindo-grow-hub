@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
 import type { ConsultantProfile } from '../../types/consultation';
 import { Star, Clock, Calendar, ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
 import { BookingForm } from '@/components/consultation/BookingForm';
+import ReviewList from '@/components/consultation/ReviewList';
+import ReviewForm from '@/components/consultation/ReviewForm';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function ConsultantProfile() {
     const { id } = useParams<{ id: string }>();
@@ -164,23 +167,77 @@ export default function ConsultantProfile() {
                 </div>
             </div>
 
+            {/* Reviews Section */}
+            <div className="max-w-5xl mx-auto px-4 mb-8">
+                <ReviewList consultantId={id!} />
+            </div>
+
             {/* Footer */}
             <div className="mt-auto">
                 <Footer />
             </div>
 
             {/* Booking Modal */}
-            {showBookingModal && (
+            {showBookingModal && consultant && (
                 <BookingModal
                     consultant={consultant}
                     onClose={() => setShowBookingModal(false)}
                 />
             )}
+
+            {/* Review Modal */}
+            {/* Logic for showing review modal from URL param or button */}
+            {/* For now, we rely on deep linking or a future button. 
+                If we want to support ?action=review, we need useEffect logic. 
+                Adding basic support for it. */}
+            <ReviewModalController consultant={consultant} />
         </div>
     );
 }
 
-// Booking Modal Component
+// Review Modal Controller to handle URL params
+function ReviewModalController({ consultant }: { consultant: ConsultantProfile | null }) {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [isOpen, setIsOpen] = useState(false);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (searchParams.get('action') === 'review') {
+            setIsOpen(true);
+        }
+    }, [searchParams]);
+
+    const handleClose = () => {
+        setIsOpen(false);
+        // Remove param
+        searchParams.delete('action');
+        setSearchParams(searchParams);
+    };
+
+    if (!isOpen || !consultant) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold">Write a Review</h3>
+                    <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <ReviewForm
+                    consultantId={consultant.id}
+                    consultantName={consultant.user.fullName}
+                    onSuccess={() => {
+                        handleClose();
+                        // Ideally refresh list
+                        window.location.reload();
+                    }}
+                    onCancel={handleClose}
+                />
+            </div>
+        </div>
+    )
+}
+
 // Booking Modal Component
 function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }): JSX.Element {
     const navigate = useNavigate();

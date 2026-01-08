@@ -13,7 +13,15 @@ interface UpcomingSessionCardProps {
     onComplete?: (requestId: string) => void;
 }
 
+import { useNavigate } from 'react-router-dom';
+
 export function UpcomingSessionCard({ request, onUpdateLink, onAddNotes, onComplete }: UpcomingSessionCardProps) {
+    const navigate = useNavigate();
+
+    const handleCardClick = () => {
+        navigate(`/consultation/requests/${request.id}`);
+    };
+
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString('id-ID', {
@@ -74,11 +82,19 @@ export function UpcomingSessionCard({ request, onUpdateLink, onAddNotes, onCompl
 
 
     return (
-        <Card className={`border-l-4 ${isToday ? 'border-l-green-500 bg-green-50/50' : 'border-l-blue-500'}`}>
+        <Card
+            className={`border-l-4 ${isToday ? 'border-l-green-500 bg-green-50/50' : 'border-l-blue-500'} cursor-pointer transition-all hover:shadow-md`}
+            onClick={handleCardClick}
+        >
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Video className="h-4 w-4 text-blue-600" />
+                        {request.unreadCount && request.unreadCount > 0 && (
+                            <Badge variant="destructive" className="animate-pulse shadow-sm">
+                                {request.unreadCount} Unread
+                            </Badge>
+                        )}
                         <div className="text-sm font-semibold">Upcoming Session</div>
                         {timeUntil && (
                             <Badge variant={isToday ? "default" : "secondary"} className="text-xs">
@@ -131,10 +147,10 @@ export function UpcomingSessionCard({ request, onUpdateLink, onAddNotes, onCompl
                         <div className="bg-blue-50 p-2 rounded-lg">
                             <span className="text-xs text-muted-foreground block mb-1">Meeting Link:</span>
                             <a
-                                href={request.meetingUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-blue-600 hover:underline break-all flex items-center gap-1"
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 {request.meetingPlatform || 'Video Call'}
                                 <ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -152,7 +168,6 @@ export function UpcomingSessionCard({ request, onUpdateLink, onAddNotes, onCompl
                             asChild
                         >
                             <a href={request.meetingUrl} target="_blank" rel="noopener noreferrer">
-                                <Video className="h-3 w-3 mr-1" />
                                 Join Meeting
                             </a>
                         </Button>
@@ -163,7 +178,10 @@ export function UpcomingSessionCard({ request, onUpdateLink, onAddNotes, onCompl
                             size="sm"
                             variant="default"
                             className="flex-1 bg-green-600 hover:bg-green-700"
-                            onClick={() => onComplete(request.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onComplete(request.id);
+                            }}
                         >
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Complete Session
@@ -174,7 +192,10 @@ export function UpcomingSessionCard({ request, onUpdateLink, onAddNotes, onCompl
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onUpdateLink(request.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onUpdateLink(request.id);
+                            }}
                         >
                             <Edit className="h-3 w-3 mr-1" />
                             Update
@@ -184,7 +205,10 @@ export function UpcomingSessionCard({ request, onUpdateLink, onAddNotes, onCompl
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => onAddNotes(request.id)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onAddNotes(request.id);
+                            }}
                         >
                             <FileText className="h-3 w-3 mr-1" />
                             Notes

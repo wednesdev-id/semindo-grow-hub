@@ -81,6 +81,7 @@ export interface ConsultationRequest {
         name: string;
         slug?: string;
     };
+    unreadCount?: number;
 }
 
 export interface ChatChannel {
@@ -88,6 +89,7 @@ export interface ChatChannel {
     requestId: string;
     isActive: boolean;
     createdAt: string;
+    messages?: ChatMessage[];
 }
 
 export interface ChatMessage {

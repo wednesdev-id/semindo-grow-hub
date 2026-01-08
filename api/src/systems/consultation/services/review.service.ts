@@ -147,9 +147,17 @@ export const updateConsultantRating = async (consultantId: string) => {
         }
     });
 
-    // Note: ConsultantProfile may not have averageRating field in DB yet
-    // For now, we store it but the actual schema update may be needed
-    // The frontend currently expects averageRating from the profile
+    // Update ConsultantProfile with new average rating
+    // Note: consultantId is the ConsultantProfile.id (UUID)
+    await prisma.consultantProfile.update({
+        where: { id: consultantId },
+        data: {
+            averageRating: result._avg.rating || 0,
+            // totalSessions is handled separately by completed sessions count, 
+            // but we could add a totalReviews field if schema supported it.
+            // For now, we update averageRating which is critical for display.
+        }
+    });
 
     return {
         averageRating: result._avg.rating || 0,

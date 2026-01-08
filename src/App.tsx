@@ -98,6 +98,7 @@ const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/
 const ConsultantList = lazy(() => import("./pages/consultation/ConsultantList"));
 const ConsultantProfile = lazy(() => import("./pages/consultation/ConsultantProfile"));
 const ConsultationDashboard = lazy(() => import("./pages/consultation/ConsultationDashboard"));
+const SessionDetail = lazy(() => import("./pages/consultation/SessionDetail"));
 const ConsultationChat = lazy(() => import("./pages/consultation/ConsultationChat"));
 const ConsultantOnboarding = lazy(() => import("./pages/consultation/ConsultantOnboarding"));
 const ConsultantProfileEdit = lazy(() => import("./pages/consultation/ConsultantProfileEdit"));
@@ -116,6 +117,10 @@ const ChatMonitoringPage = lazy(() => import("./pages/admin/consultation/ChatMon
 const ChatTranscriptPage = lazy(() => import("./pages/admin/consultation/ChatTranscriptPage"));
 const PendingConsultants = lazy(() => import("./pages/admin/consultation/PendingConsultants"));
 const ExpertiseManagement = lazy(() => import("./pages/admin/consultation/ExpertiseManagement"));
+const PendingApprovals = lazy(() => import("./pages/admin/consultation/PendingApprovals"));
+const ActiveConsultants = lazy(() => import("./pages/admin/consultation/ActiveConsultants"));
+const AllRequests = lazy(() => import("./pages/admin/consultation/AllRequests"));
+const ReportsAnalytics = lazy(() => import("./pages/admin/consultation/ReportsAnalytics"));
 
 // Public Browse Pages
 const PublicConsultantBrowse = lazy(() => import("./pages/public/ConsultantBrowsePage"));
@@ -354,30 +359,21 @@ const App = () => {
 
                       {/* Consultation Manager */}
                       <Route path="/consultation/consultants" element={<ConsultantList />} />
+                      <Route path="/consultation/consultants/:id" element={<ConsultantProfile />} />
+                      <Route path="/consultation/dashboard" element={<ConsultantDashboard />} />
+                      <Route path="/consultation/requests/:id" element={<SessionDetail />} />
                       <Route path="/consultation/schedule" element={<ScheduleConsultationPage />} />
                       <Route path="/consultation/history" element={<MyConsultations />} />
                       <Route path="/dashboard/consultation/dashboard" element={<ConsultationManagement />} />
                       <Route path="/dashboard/consultation/consultants/pending" element={<PendingConsultants />} />
-                      <Route path="/dashboard/consultation/consultants/active" element={<FeaturePreviewPage
-                        title="Active Consultants"
-                        description="Daftar lengkap konsultan aktif dengan metrik performa."
-                        features={["Performance metrics", "Client reviews", "Session statistics", "Revenue tracking"]}
-                      />} />
-                      <Route path="/dashboard/consultation/requests/all" element={<FeaturePreviewPage
-                        title="All Consultation Requests"
-                        description="Manajemen semua permintaan konsultasi dalam sistem."
-                        features={["Request filtering", "Status tracking", "Bulk actions", "Export data"]}
-                      />} />
+                      <Route path="/dashboard/consultation/consultants/active" element={<ActiveConsultants />} />
+                      <Route path="/dashboard/consultation/requests/all" element={<AllRequests />} />
                       <Route path="/dashboard/consultation/chat-monitoring" element={<FeaturePreviewPage
                         title="Chat Monitoring"
                         description="Oversight dan monitoring chat konsultasi untuk quality assurance."
                         features={["Live chat monitoring", "Keyword alerts", "Quality scoring", "Intervention tools"]}
                       />} />
-                      <Route path="/dashboard/consultation/reports" element={<FeaturePreviewPage
-                        title="Reports & Analytics"
-                        description="Laporan komprehensif dan analytics untuk consultation hub."
-                        features={["Revenue analytics", "Consultant performance", "Client satisfaction", "Custom reports"]}
-                      />} />
+                      <Route path="/dashboard/consultation/reports" element={<ReportsAnalytics />} />
 
                       {/* Program Management */}
                       <Route path="/programs/list" element={<ProgramList />} />
@@ -543,21 +539,13 @@ const App = () => {
                       />} />
 
                       {/* Consultation Management */}
-                      <Route path="/consultation/schedule" element={<FeaturePreviewPage
-                        title="Jadwal Konsultasi"
-                        description="Manajemen jadwal konsultasi."
-                        features={["Calendar view", "Booking system", "Availability settings"]}
-                      />} />
+
                       <Route path="/consultation/assignment" element={<FeaturePreviewPage
                         title="Mentor Assignment"
                         description="Penugasan mentor untuk konsultasi."
                         features={["Expert matching", "Workload management", "Assignment history"]}
                       />} />
-                      <Route path="/consultation/history" element={<FeaturePreviewPage
-                        title="Riwayat Konsultasi"
-                        description="Arsip sesi konsultasi."
-                        features={["Session logs", "Recording access", "Outcome notes"]}
-                      />} />
+
                       {/* UMKM Management */}
                       <Route path="/umkm" element={<UMKMListPage />} />
                       <Route path="/umkm/new" element={<UMKMFormPage />} />
@@ -789,7 +777,7 @@ const App = () => {
                       />
                       <Route path="/consultation/consultant/:id" element={<ConsultantDetailPage />} />
                       <Route path="/consultation/book" element={<BookingConfirmationPage />} />
-                      <Route path="/consultation/history" element={<MyConsultations />} /> {/* Client History Page */}
+
                       <Route path="/consultation/dashboard" element={<ConsultationDashboard />} />
                       <Route path="/consultation/requests/:requestId/chat" element={<ConsultationChat />} />
                       <Route path="/consultation/requests" element={<ConsultationRequests />} />
