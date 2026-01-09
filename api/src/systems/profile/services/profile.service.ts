@@ -7,7 +7,7 @@ export class ProfileService {
         const user = await db.user.findUnique({
             where: { id: userId },
             include: {
-                umkmProfile: true,
+                umkmProfiles: true,
                 mentorProfile: true,
                 userRoles: {
                     include: { role: true }
@@ -24,7 +24,7 @@ export class ProfileService {
                 fullName: user.fullName,
                 roles: user.userRoles.map(ur => ur.role.name)
             },
-            umkm: user.umkmProfile,
+            umkm: user.umkmProfiles,
             mentor: user.mentorProfile
         }
     }
@@ -34,19 +34,23 @@ export class ProfileService {
         const user = await db.user.findUnique({ where: { id: userId } })
         if (!user) throw new Error('User not found')
 
-        // Upsert UMKM Profile
-        const profile = await db.uMKMProfile.upsert({
-            where: { userId },
-            update: {
-                ...data
-            },
-            create: {
-                userId,
-                ...data
-            }
+        // Find existing profile (1:N - get first one for this user)
+        const existingProfile = await db.uMKMProfile.findFirst({
+            where: { userId }
         })
 
-        return profile
+        if (existingProfile) {
+            // Update existing profile
+            return db.uMKMProfile.update({
+                where: { id: existingProfile.id },
+                data: { ...data }
+            })
+        } else {
+            // Create new profile
+            return db.uMKMProfile.create({
+                data: { userId, ...data }
+            })
+        }
     }
 
     async updateMentorProfile(userId: string, data: MentorProfileDto) {

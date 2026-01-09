@@ -1,3 +1,4 @@
+import { prisma } from '../../../lib/prisma';
 
 // ==========================================
 // GATEWAY COMPATIBILITY METHODS

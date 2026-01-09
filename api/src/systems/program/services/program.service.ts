@@ -143,7 +143,7 @@ export class ProgramService {
                         email: true,
                         phone: true,
                         businessName: true,
-                        umkmProfile: {
+                        umkmProfiles: {
                             select: {
                                 businessName: true,
                                 sector: true,

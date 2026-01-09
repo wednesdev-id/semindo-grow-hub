@@ -8,12 +8,12 @@ export class DocumentService {
         type: string,
         number?: string
     ) {
-        // Find UMKM Profile
-        const umkmProfile = await db.uMKMProfile.findUnique({
+        // Find first UMKM Profile for user (1:N relation)
+        const umkmProfiles = await db.uMKMProfile.findFirst({
             where: { userId }
         });
 
-        if (!umkmProfile) {
+        if (!umkmProfiles) {
             throw new Error('UMKM Profile not found');
         }
 
@@ -24,7 +24,7 @@ export class DocumentService {
 
         return db.document.create({
             data: {
-                umkmProfileId: umkmProfile.id,
+                umkmProfileId: umkmProfiles.id,
                 type,
                 number,
                 fileUrl,
@@ -37,16 +37,16 @@ export class DocumentService {
     }
 
     async getDocuments(userId: string) {
-        const umkmProfile = await db.uMKMProfile.findUnique({
+        const umkmProfiles = await db.uMKMProfile.findFirst({
             where: { userId }
         });
 
-        if (!umkmProfile) {
+        if (!umkmProfiles) {
             throw new Error('UMKM Profile not found');
         }
 
         return db.document.findMany({
-            where: { umkmProfileId: umkmProfile.id },
+            where: { umkmProfileId: umkmProfiles.id },
             orderBy: { createdAt: 'desc' }
         });
     }
