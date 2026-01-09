@@ -33,7 +33,7 @@ show_help() {
     echo "  docker-clean     Hapus semua Docker containers dan volumes"
     echo "  docker-logs      Lihat logs dari Docker containers"
     echo "  deploy           Build dan deploy production via Docker Compose"
-    echo "  destroy          Stop dan hapus containers (tanpa hapus volume)"
+    echo "  destroy          Stop, hapus containers, images & build cache (tanpa hapus volume)"
     echo ""
     echo -e "${GREEN}💻 LOCAL DEVELOPMENT:${NC}"
     echo "  dev              Menjalankan frontend & backend (local, tanpa Docker)"
@@ -256,12 +256,23 @@ deploy() {
     echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
 }
 
-# Destroy containers without removing volumes
+# Destroy containers, images, and build cache without removing volumes
 destroy() {
-    echo -e "${BLUE}🛑 Stopping and removing containers (volumes preserved)...${NC}"
-    docker-compose --profile dev down --remove-orphans
-    docker-compose --profile prod down --remove-orphans
-    echo -e "${GREEN}✅ Containers stopped and removed!${NC}"
+    echo -e "${BLUE}🛑 Stopping and removing containers, images, and build cache (volumes preserved)...${NC}"
+    
+    # Stop and remove containers
+    docker-compose --profile dev down --remove-orphans --rmi local
+    docker-compose --profile prod down --remove-orphans --rmi local
+    
+    # Remove build cache
+    echo -e "${BLUE}🧹 Cleaning Docker build cache...${NC}"
+    docker builder prune -f
+    
+    # Remove dangling images
+    echo -e "${BLUE}🗑️ Removing dangling images...${NC}"
+    docker image prune -f
+    
+    echo -e "${GREEN}✅ Containers, images, and build cache removed!${NC}"
     echo -e "${YELLOW}Note: Volumes are preserved. Use 'docker-clean' to remove volumes.${NC}"
 }
 
