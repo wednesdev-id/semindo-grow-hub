@@ -24,7 +24,7 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
-RUN npm run build
+RUN npm run build:docker
 
 # Production stage
 FROM base AS production

@@ -31,7 +31,7 @@ export const cartController = {
             res.status(201).json({ data: item });
         } catch (error: any) {
             if (error instanceof z.ZodError) {
-                return res.status(400).json({ error: error.errors });
+                return res.status(400).json({ error: error.issues });
             }
             res.status(400).json({ error: error.message });
         }

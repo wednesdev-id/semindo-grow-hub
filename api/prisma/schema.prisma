@@ -44,7 +44,7 @@ model User {
   reviews               Review[]
   sessionFiles          SessionFile[]
   store                 Store?
-  umkmProfile           UMKMProfile?
+  umkmProfiles          UMKMProfile[]  // 1:N relation - one user can have many UMKM
   userRoles             UserRole[]
   createdExpertise      ExpertiseCategory[]
   expertiseAuditLogs    ExpertiseAuditLog[]
@@ -609,9 +609,6 @@ model Product {
   cartItems       CartItem[]
   channelProducts MarketplaceChannelProduct[]
   orderItems      OrderItem[]
-  variants        ProductVariant[]
-  seller          User?                       @relation(fields: [sellerId], references: [id])
-  store           Store?                      @relation(fields: [storeId], references: [id])
   reviews         Review[]
 
   @@map("products")
