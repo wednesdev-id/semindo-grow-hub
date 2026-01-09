@@ -440,8 +440,9 @@ export const permissions = [
     },
 
     // ============================================
-    // CONSULTATION (6 permissions)
+    // CONSULTATION (18 permissions)
     // ============================================
+    // User permissions
     {
         name: 'consultation:schedule',
         displayName: 'Manage Schedule',
@@ -471,6 +472,68 @@ export const permissions = [
         name: 'consultation:specialized',
         displayName: 'Specialized Consultation',
         description: 'Can access specialized consultation services'
+    },
+    // Consultant permissions
+    {
+        name: 'consultation:consultant.profile',
+        displayName: 'Manage Consultant Profile',
+        description: 'Can manage own consultant profile'
+    },
+    {
+        name: 'consultation:consultant.availability',
+        displayName: 'Manage Availability',
+        description: 'Can manage availability slots'
+    },
+    {
+        name: 'consultation:consultant.requests',
+        displayName: 'View Requests',
+        description: 'Can view and respond to consultation requests'
+    },
+    // Admin permissions
+    {
+        name: 'consultation.admin.view_dashboard',
+        displayName: 'View Admin Dashboard',
+        description: 'Can view consultation admin dashboard'
+    },
+    {
+        name: 'consultation.admin.view_requests',
+        displayName: 'View All Requests',
+        description: 'Can view all consultation requests'
+    },
+    {
+        name: 'consultation.admin.approve',
+        displayName: 'Approve Consultants',
+        description: 'Can approve or reject consultant applications'
+    },
+    {
+        name: 'consultation.admin.manage_consultants',
+        displayName: 'Manage Consultants',
+        description: 'Can manage active consultants (suspend/activate)'
+    },
+    {
+        name: 'consultation.admin.view_analytics',
+        displayName: 'View Analytics',
+        description: 'Can view consultation analytics and trends'
+    },
+    {
+        name: 'consultation.admin.view_reports',
+        displayName: 'View Reports',
+        description: 'Can view revenue reports and KPIs'
+    },
+    {
+        name: 'consultation.admin.export_reports',
+        displayName: 'Export Reports',
+        description: 'Can export consultation reports'
+    },
+    {
+        name: 'consultation.expertise.read',
+        displayName: 'View Expertise Categories',
+        description: 'Can view expertise categories'
+    },
+    {
+        name: 'consultation.expertise.manage',
+        displayName: 'Manage Expertise Categories',
+        description: 'Can create, edit, delete expertise categories'
     },
 
     // ============================================

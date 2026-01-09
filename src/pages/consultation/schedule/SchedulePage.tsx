@@ -58,7 +58,7 @@ export default function SchedulePage() {
 
             // Map AvailabilitySlot[] to Slot[]
             const mappedSlots: Slot[] = slots.map(s => ({
-                date: s.specificDate || s.date || format(new Date(), 'yyyy-MM-dd'), // Fallback or correct mapping
+                date: s.specificDate || format(new Date(), 'yyyy-MM-dd'), // Use specificDate from AvailabilitySlot
                 startTime: s.startTime,
                 endTime: s.endTime,
                 status: s.isAvailable ? 'available' : 'booked'
@@ -124,7 +124,13 @@ export default function SchedulePage() {
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">Price</span>
-                                        <span className="font-medium">Rp {consultant?.hourlyRate?.toLocaleString()}</span>
+                                        <span className="font-medium">
+                                            {consultant?.packages?.length ? (
+                                                <>Mulai Rp {Math.min(...consultant.packages.map((p: any) => p.price)).toLocaleString()}</>
+                                            ) : consultant?.hourlyRate ? (
+                                                <>Rp {consultant.hourlyRate.toLocaleString()}</>
+                                            ) : '-'}
+                                        </span>
                                     </div>
                                 </div>
                             </CardHeader>

@@ -9,6 +9,7 @@ export const rolePermissions = {
     // ============================================
     admin: 'ALL', // Will get all permissions
     super_admin: 'ALL', // Will get all permissions
+    administrator: 'ALL', // Alias for admin
 
     // ============================================
     // UMKM ROLE - Limited Access
@@ -43,9 +44,49 @@ export const rolePermissions = {
         'community:posts',
         'community:events',
 
-        // Consultation - Request
+        // Consultation - Request (Client role)
         'consultation:schedule',
         'consultation:history',
+    ],
+
+    // ============================================
+    // KONSULTAN / CONSULTANT ROLE - Consultation Provider
+    // ============================================
+    konsultan: [
+        // Consultant profile management
+        'consultation:consultant.profile',
+        'consultation:consultant.availability',
+        'consultation:consultant.requests',
+
+        // View expertise categories
+        'consultation.expertise.read',
+
+        // View own consultation history
+        'consultation:history',
+        'consultation:schedule',
+        'consultation:chat',
+
+        // Community participation
+        'community:forum',
+        'community:posts',
+    ],
+    consultant: [
+        // Consultant profile management
+        'consultation:consultant.profile',
+        'consultation:consultant.availability',
+        'consultation:consultant.requests',
+
+        // View expertise categories
+        'consultation.expertise.read',
+
+        // View own consultation history
+        'consultation:history',
+        'consultation:schedule',
+        'consultation:chat',
+
+        // Community participation
+        'community:forum',
+        'community:posts',
     ],
 
     // ============================================
@@ -112,6 +153,61 @@ export const rolePermissions = {
         // Analytics - LMS focus
         'analytics:lms',
         'analytics:programs',
+    ],
+
+    // ============================================
+    // MANAGEMENT ROLE - Partial Admin Access
+    // ============================================
+    management: [
+        // User management
+        'users:view',
+        'users:create',
+        'users:edit',
+
+        // UMKM management
+        'umkm:view',
+        'umkm:create',
+        'umkm:edit',
+        'umkm:documents',
+        'umkm:segmentation',
+        'umkm:regional',
+
+        // Programs
+        'programs:view',
+        'programs:create',
+        'programs:edit',
+        'programs:batches',
+        'programs:participants',
+        'programs:evaluation',
+
+        // LMS
+        'lms:view_courses',
+        'lms:create_course',
+        'lms:edit_course',
+        'lms:stats',
+
+        // Marketplace
+        'marketplace:view_products',
+        'marketplace:verification',
+        'marketplace:stores',
+        'marketplace:orders',
+
+        // Consultation Admin
+        'consultation.admin.view_dashboard',
+        'consultation.admin.view_requests',
+        'consultation.admin.approve',
+        'consultation.admin.manage_consultants',
+        'consultation.admin.view_analytics',
+        'consultation.admin.view_reports',
+        'consultation.expertise.read',
+        'consultation.expertise.manage',
+
+        // Analytics
+        'analytics:umkm',
+        'analytics:programs',
+        'analytics:lms',
+        'analytics:marketplace',
+        'analytics:kpi',
     ],
 };
 
