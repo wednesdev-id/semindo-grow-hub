@@ -64,3 +64,9 @@ umkmRouter.patch('/documents/:docId/verify', authenticate, authorize(['admin', '
 umkmRouter.get('/:id/mentoring', authenticate, UMKMController.getMentoringSessions);
 umkmRouter.post('/mentoring', authenticate, authorize(['admin', 'mentor', 'internal_ops']), UMKMController.addMentoringSession);
 
+// ============================================
+// MENTOR EVENTS ROUTES
+// ============================================
+
+import mentorEventRoutes from './routes/mentor-event.routes';
+umkmRouter.use('/mentor-events', mentorEventRoutes);

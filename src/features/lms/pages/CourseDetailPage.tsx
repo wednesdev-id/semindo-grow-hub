@@ -14,7 +14,7 @@ export default function CourseDetailPage() {
     const { slug } = useParams();
     const navigate = useNavigate();
     const { toast } = useToast();
-    const { hasRole } = useAuth();
+    const { hasRole, user } = useAuth();
     const queryClient = useQueryClient();
 
     const { data: course, isLoading } = useQuery({
@@ -57,6 +57,22 @@ export default function CourseDetailPage() {
                 return;
             }
 
+            if (error?.response?.status === 403) {
+                const data = error.response.data;
+                if (data.code === 'UMKM_REQUIRED' || data.code === 'UMKM_UNVERIFIED') {
+                    toast({
+                        title: "Akses Terbatas",
+                        description: data.error || "Kelas ini khusus untuk UMKM terverifikasi.",
+                        variant: "destructive",
+                        // action: <Button variant="outline" size="sm" onClick={() => navigate('/onboarding/business')}>Verifikasi Bisnis</Button>
+                    });
+                    if (data.redirect) {
+                        setTimeout(() => navigate(data.redirect), 1500);
+                    }
+                    return;
+                }
+            }
+
             toast({
                 title: "Gagal Mendaftar",
                 description: "Terjadi kesalahan saat mendaftar kelas. Silakan coba lagi.",
@@ -81,7 +97,49 @@ export default function CourseDetailPage() {
             return;
         }
 
-        // Otherwise, enroll
+        // Check for UMKM Only restrictions client-side for better UX
+        if (course.isUMKMOnly) {
+            if (!user) {
+                toast({
+                    title: "Login Diperlukan",
+                    description: "Silakan login untuk mengakses kelas khusus UMKM ini.",
+                });
+                navigate('/login', { state: { from: `/lms/courses/${slug}` } });
+                return;
+            }
+
+            // Allow admins, mentors, consultants always
+            const isStaff = hasRole('admin') || hasRole('mentor') || hasRole('konsultan') || hasRole('trainer');
+            const isUMKM = hasRole('umkm');
+
+            // Note: user.umkmProfile might be partial or based on login response.
+            // The precise check is status='verified'.
+            // If we don't have detailed profile status in user object, rely on backend.
+            // But if we do:
+            const isVerified = user.umkmProfile?.isVerified; // Boolean from User type
+
+            if (!isStaff && !isUMKM) {
+                toast({
+                    title: "Akses Ditolak",
+                    description: "Kelas ini hanya tersedia untuk pengguna UMKM.",
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            if (!isStaff && isUMKM && !isVerified) {
+                toast({
+                    title: "Verifikasi Diperlukan",
+                    description: "Profil UMKM Anda harus terverifikasi untuk mengakses kelas ini.",
+                    variant: "destructive",
+                });
+                // Optional: Redirect to verification
+                navigate('/onboarding/business');
+                return;
+            }
+        }
+
+        // otherwise, enroll
         enrollMutation.mutate(course.id);
     };
 
@@ -118,6 +176,11 @@ export default function CourseDetailPage() {
                             <div className="flex gap-2">
                                 <Badge variant="secondary">{course.category}</Badge>
                                 <Badge variant="outline" className="text-white border-white/20">{course.level}</Badge>
+                                {course.isUMKMOnly && (
+                                    <Badge className="bg-amber-500 hover:bg-amber-600 text-white border-0">
+                                        Khusus UMKM
+                                    </Badge>
+                                )}
                             </div>
                             <h1 className="text-4xl font-bold">{course.title}</h1>
                             <p className="text-lg text-slate-300">{course.description}</p>

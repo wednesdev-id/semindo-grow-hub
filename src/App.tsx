@@ -117,6 +117,20 @@ const ChatMonitoringPage = lazy(() => import("./pages/admin/consultation/ChatMon
 const ChatTranscriptPage = lazy(() => import("./pages/admin/consultation/ChatTranscriptPage"));
 const PendingConsultants = lazy(() => import("./pages/admin/consultation/PendingConsultants"));
 
+// Mentor Pages
+const MentorDashboard = lazy(() => import("./pages/dashboards/MentorDashboard"));
+const EventManagementPage = lazy(() => import("./pages/mentor/EventManagementPage"));
+const EventFormPage = lazy(() => import("./pages/mentor/EventFormPage"));
+const MentorEventDetailPage = lazy(() => import("./pages/mentor/EventDetailPage"));
+const MyUMKMPage = lazy(() => import("./pages/mentor/MyUMKMPage"));
+const MentorCourseListPage = lazy(() => import("./pages/mentor/MentorCourseListPage"));
+const MentorCourseFormPage = lazy(() => import("./pages/mentor/MentorCourseFormPage"));
+const MentorUMKMDetailPage = lazy(() => import("./pages/mentor/MentorUMKMDetailPage"));
+
+// UMKM Pages
+const UpcomingEventsPage = lazy(() => import("./pages/umkm/UpcomingEventsPage"));
+const UMKMEventDetailPage = lazy(() => import("./pages/umkm/EventDetailPage"));
+
 const queryClient = new QueryClient();
 
 // Component untuk tracking analytics
@@ -306,7 +320,22 @@ const App = () => {
                       />} />
                       <Route path="/umkm/documents" element={<UMKMDocumentVerification />} />
 
-                      {/* Mentor Management */}
+                      {/* Mentor Workspace */}
+                      <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+                      <Route path="/mentor/events" element={<EventManagementPage />} />
+                      <Route path="/mentor/events/new" element={<EventFormPage />} />
+                      <Route path="/mentor/events/:id" element={<MentorEventDetailPage />} />
+                      <Route path="/mentor/events/:id/edit" element={<EventFormPage />} />
+                      <Route path="/mentor/my-umkm" element={<MyUMKMPage />} />
+
+                      {/* Mentor Course Routes */}
+                      <Route path="/mentor/courses" element={<MentorCourseListPage />} />
+                      <Route path="/mentor/courses/new" element={<MentorCourseFormPage />} />
+                      <Route path="/mentor/courses/:id/edit" element={<MentorCourseFormPage />} />
+
+                      <Route path="/mentor/umkm/:id" element={<MentorUMKMDetailPage />} />
+
+                      {/* Mentor Management (Admin) */}
                       <Route path="/mentors/list" element={<UserManagement defaultRole="mentor" />} />
                       <Route path="/mentors/assign" element={<FeaturePreviewPage
                         title="Assign UMKM ke Mentor"
@@ -549,6 +578,8 @@ const App = () => {
                       />} />
                       {/* UMKM Management */}
                       <Route path="/umkm" element={<UMKMListPage />} />
+                      <Route path="/umkm/events" element={<UpcomingEventsPage />} />
+                      <Route path="/umkm/events/:slug" element={<UMKMEventDetailPage />} />
                       <Route path="/umkm/new" element={<UMKMFormPage />} />
                       <Route path="/umkm/:id" element={<UMKMDetailPage />} />
                       <Route path="/umkm/:id/edit" element={<UMKMFormPage />} />

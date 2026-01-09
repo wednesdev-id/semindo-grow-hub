@@ -130,7 +130,18 @@ export const umkmService = {
     // Profiles
     getAllProfiles: async (params?: any) => {
         await new Promise(resolve => setTimeout(resolve, 800));
-        return { data: mockProfiles, total: mockProfiles.length };
+
+        let filteredProfiles = [...mockProfiles];
+
+        // Mock filter implementations
+        if (params?.mentorId) {
+            // In a real app, this would be filtered on the backend
+            // simulating strictly for demonstration if we had relation data in mockProfiles
+            // Since mockProfiles doesn't have mentorId, we'll just return all for now or mock it
+            console.log("Filtering by mentorId:", params.mentorId);
+        }
+
+        return { data: filteredProfiles, total: filteredProfiles.length };
     },
 
     getProfileById: async (id: string) => {

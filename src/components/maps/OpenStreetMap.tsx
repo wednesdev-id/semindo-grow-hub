@@ -211,6 +211,7 @@ interface OpenStreetMapProps {
     className?: string;
     showLegend?: boolean;
     height?: string;
+    getDetailUrl?: (id: string) => string;
 }
 
 export default function OpenStreetMap({
@@ -223,6 +224,7 @@ export default function OpenStreetMap({
     className = '',
     showLegend = true,
     height = '500px',
+    getDetailUrl,
 }: OpenStreetMapProps) {
     // Determine map center based on selected province
     const center: [number, number] = selectedProvince && PROVINCE_COORDINATES[selectedProvince]
@@ -408,7 +410,7 @@ export default function OpenStreetMap({
                                                 {/* Detail Button */}
                                                 <div className="mt-3 pt-2 border-t">
                                                     <Link
-                                                        to={`/admin/umkm/${marker.id}`}
+                                                        to={getDetailUrl ? getDetailUrl(marker.id) : `/admin/umkm/${marker.id}`}
                                                         className="block w-full text-center py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded transition-colors"
                                                     >
                                                         Lihat Detail

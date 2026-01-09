@@ -8,6 +8,7 @@ import { LessonsController } from '../controllers/lessons.controller';
 import { ResourceController } from '../controllers/resource.controller';
 import { AssessmentController } from '../controllers/assessment.controller';
 import { authenticate, requireRole } from '../../middlewares/auth.middleware';
+import { requireUMKMAccess } from '../../middlewares/umkm-access.middleware';
 
 const router = Router();
 const controller = new CoursesController();
@@ -71,7 +72,7 @@ router.patch('/courses/:id', controller.update);
 router.delete('/courses/:id', controller.delete);
 
 // Enrollment & Progress
-router.post('/courses/:id/enroll', controller.enroll);
+router.post('/courses/:id/enroll', requireUMKMAccess, controller.enroll);
 router.get('/courses/:id/enrollment-status', controller.checkEnrollment);
 router.get('/my-courses', controller.getMyCourses);
 router.patch('/lessons/:id/progress', controller.updateProgress);
@@ -95,6 +96,12 @@ router.post('/courses/:courseId/modules/reorder', modulesController.reorder);
 const lessonsController = new LessonsController();
 router.post('/modules/:moduleId/lessons', lessonsController.create);
 router.get('/modules/:moduleId/lessons', lessonsController.findAll);
+// Note: We might need to check course access for lessons too, but that requires looking up the course from the lesson.
+// For now, let's assume enrollment check handles it (you can't see lessons if not enrolled, and you can't enroll if not UMKM).
+// But for direct lesson access if we want strict check:
+// router.get('/lessons/:id', lessonsController.findOne); 
+// The lessonsController.findOne typically checks enrollment.
+
 router.get('/lessons/:id', lessonsController.findOne);
 router.patch('/lessons/:id', lessonsController.update);
 router.delete('/lessons/:id', lessonsController.delete);

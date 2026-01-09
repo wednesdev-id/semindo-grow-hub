@@ -95,6 +95,7 @@ const getMenuItems = (): {
         { name: "Status Program", path: "/umkm/program-status" }, // All can view
         { name: "Histori Pendampingan UMKM", path: "/umkm/history", roles: ["admin", "management", "mentor", "umkm"] },
         { name: "Dokumen & Verifikasi UMKM", path: "/umkm/documents", roles: ["admin", "management", "umkm"] },
+        { name: "Event & Pelatihan", path: "/umkm/events", roles: ["umkm", "admin"], badge: "New", badgeColor: "bg-blue-500" },
       ],
     },
     // 4. Mentor Management
@@ -104,6 +105,7 @@ const getMenuItems = (): {
       subItems: [
         { name: "Daftar Mentor", path: "/mentors/list", roles: ["admin", "management"] },
         { name: "Assign UMKM ke Mentor", path: "/mentors/assign", roles: ["admin", "management"] },
+        { name: "Manajemen Event", path: "/mentor/events", roles: ["admin", "mentor"], badge: "New", badgeColor: "bg-green-500" },
         { name: "Status & Aktivitas Mentor", path: "/mentors/activity", roles: ["admin", "management", "mentor"] },
         { name: "Jadwal Pendampingan", path: "/mentors/schedule" }, // All can view schedule
         { name: "Laporan & KPI Mentor", path: "/mentors/reports", roles: ["admin", "management"] },
