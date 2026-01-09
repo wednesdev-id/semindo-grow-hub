@@ -25,7 +25,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { marketplaceService } from '@/services/marketplaceService';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash } from 'lucide-react';
+import { ProductImage } from '@/services/marketplaceService';
+import { Check, Loader2, Plus, Star, Trash } from 'lucide-react';
 
 const formSchema = z.object({
     title: z.string().min(3, 'Nama produk minimal 3 karakter'),
@@ -33,7 +34,7 @@ const formSchema = z.object({
     price: z.string().min(1, 'Harga harus diisi'),
     stock: z.string().min(1, 'Stok harus diisi'),
     category: z.string().min(1, 'Kategori harus dipilih'),
-    images: z.array(z.string().url('URL gambar tidak valid')).min(1, 'Minimal 1 gambar'),
+    images: z.array(z.any()).min(1, 'Minimal 1 gambar'),
     shopeeLink: z.string().url('Link Shopee tidak valid').optional().or(z.literal('')),
     tokopediaLink: z.string().url('Link Tokopedia tidak valid').optional().or(z.literal('')),
 });
@@ -41,7 +42,7 @@ const formSchema = z.object({
 export default function ProductUploadPage() {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-    const [imageUrls, setImageUrls] = useState<string[]>(['']);
+    const [images, setImages] = useState<ProductImage[]>([]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -51,7 +52,7 @@ export default function ProductUploadPage() {
             price: '',
             stock: '',
             category: '',
-            images: [''],
+            images: [],
             shopeeLink: '',
             tokopediaLink: '',
         },
@@ -62,15 +63,19 @@ export default function ProductUploadPage() {
             setIsLoading(true);
             try {
                 const files = Array.from(e.target.files);
-                const urls = await marketplaceService.uploadMultipleImages(files);
+                const uploadedImages = await marketplaceService.uploadMultipleImages(files);
 
-                // Filter out empty strings from initial state if any
-                const currentUrls = form.getValues('images').filter(url => url !== '');
-                const newUrls = [...currentUrls, ...urls];
+                // If this is the first upload, set the first image as main
+                const currentImages = form.getValues('images') || [];
+                const updatedImages = [...currentImages, ...uploadedImages];
 
-                form.setValue('images', newUrls);
-                setImageUrls(newUrls);
-                toast.success(`${urls.length} gambar berhasil diupload`);
+                if (updatedImages.length > 0 && !updatedImages.some(img => img.isMain)) {
+                    updatedImages[0].isMain = true;
+                }
+
+                form.setValue('images', updatedImages);
+                setImages(updatedImages);
+                toast.success(`${uploadedImages.length} gambar berhasil diupload`);
             } catch (error) {
                 console.error(error);
                 toast.error('Gagal mengupload gambar');
@@ -81,10 +86,29 @@ export default function ProductUploadPage() {
     };
 
     const handleRemoveImage = (index: number) => {
-        const newUrls = imageUrls.filter((_, i) => i !== index);
-        setImageUrls(newUrls);
-        form.setValue('images', newUrls);
+        const newImages = [...images];
+        const removedWasMain = newImages[index].isMain;
+        newImages.splice(index, 1);
+
+        // If we removed the main image, make the first remaining one main
+        if (removedWasMain && newImages.length > 0) {
+            newImages[0].isMain = true;
+        }
+
+        setImages(newImages);
+        form.setValue('images', newImages);
     };
+
+    const handleSetMainImage = (index: number) => {
+        const newImages = images.map((img, i) => ({
+            ...img,
+            isMain: i === index
+        }));
+        setImages(newImages);
+        form.setValue('images', newImages);
+        toast.info("Gambar utama diperbarui");
+    };
+
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setIsLoading(true);
@@ -97,10 +121,7 @@ export default function ProductUploadPage() {
                     shopee: values.shopeeLink,
                     tokopedia: values.tokopediaLink,
                 },
-                // For MVP, we pass images array directly. 
-                // The service might need adjustment if it expects File objects, 
-                // but we updated it to handle JSON data primarily.
-                images: values.images.filter(url => url !== ''),
+                images: values.images,
             };
 
             await marketplaceService.createProduct(productData);
@@ -116,11 +137,14 @@ export default function ProductUploadPage() {
 
     return (
         <div className="container py-10">
-            <Card className="max-w-2xl mx-auto">
-                <CardHeader>
-                    <CardTitle>Upload Produk Baru</CardTitle>
+            <Card className="max-w-2xl mx-auto shadow-lg border-primary/10">
+                <CardHeader className="bg-primary/5 rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2">
+                        <Plus className="h-5 w-5" />
+                        Upload Produk Baru
+                    </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             <FormField
@@ -130,7 +154,7 @@ export default function ProductUploadPage() {
                                     <FormItem>
                                         <FormLabel>Nama Produk</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Contoh: Kopi Gayo Premium" {...field} />
+                                            <Input placeholder="Contoh: Kopi Gayo Premium" className="focus-visible:ring-primary" {...field} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -145,7 +169,7 @@ export default function ProductUploadPage() {
                                         <FormLabel>Kategori</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <SelectTrigger>
+                                                <SelectTrigger className="focus:ring-primary">
                                                     <SelectValue placeholder="Pilih kategori" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -169,7 +193,7 @@ export default function ProductUploadPage() {
                                         <FormItem>
                                             <FormLabel>Harga (Rp)</FormLabel>
                                             <FormControl>
-                                                <Input type="number" placeholder="0" {...field} />
+                                                <Input type="number" placeholder="0" className="focus-visible:ring-primary" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -183,7 +207,7 @@ export default function ProductUploadPage() {
                                         <FormItem>
                                             <FormLabel>Stok</FormLabel>
                                             <FormControl>
-                                                <Input type="number" placeholder="0" {...field} />
+                                                <Input type="number" placeholder="0" className="focus-visible:ring-primary" {...field} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -200,7 +224,7 @@ export default function ProductUploadPage() {
                                         <FormControl>
                                             <Textarea
                                                 placeholder="Jelaskan detail produk anda..."
-                                                className="min-h-[100px]"
+                                                className="min-h-[100px] focus-visible:ring-primary"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -210,41 +234,80 @@ export default function ProductUploadPage() {
                             />
 
                             <div className="space-y-4">
-                                <FormLabel>Foto Produk</FormLabel>
-                                <div className="grid grid-cols-3 gap-4 mb-4">
-                                    {imageUrls.filter(url => url).map((url, index) => (
-                                        <div key={index} className="relative aspect-square rounded-md overflow-hidden border">
-                                            <img src={url} alt={`Product ${index + 1}`} className="object-cover w-full h-full" />
-                                            <Button
-                                                type="button"
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute top-1 right-1 h-6 w-6"
-                                                onClick={() => handleRemoveImage(index)}
-                                            >
-                                                <Trash className="h-3 w-3" />
-                                            </Button>
+                                <div className="flex items-center justify-between">
+                                    <FormLabel className="text-base">Foto Produk</FormLabel>
+                                    <span className="text-xs text-muted-foreground">{images.length} / 10 Gambar</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                    {images.map((img, index) => (
+                                        <div key={index} className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${img.isMain ? 'border-primary ring-2 ring-primary/20' : 'border-muted hover:border-primary/50'}`}>
+                                            <img src={img.url} alt={`Product ${index + 1}`} className="object-cover w-full h-full" />
+
+                                            {/* Badge Main */}
+                                            {img.isMain && (
+                                                <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                                                    <Check className="h-3 w-3" /> Utama
+                                                </div>
+                                            )}
+
+                                            {/* Actions Overlay */}
+                                            <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                {!img.isMain && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="secondary"
+                                                        size="icon"
+                                                        className="h-8 w-8 rounded-full"
+                                                        onClick={() => handleSetMainImage(index)}
+                                                        title="Set sebagai utama"
+                                                    >
+                                                        <Star className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="h-8 w-8 rounded-full"
+                                                    onClick={() => handleRemoveImage(index)}
+                                                    title="Hapus gambar"
+                                                >
+                                                    <Trash className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+
+                                            {/* Size Badge */}
+                                            {img.metadata && (
+                                                <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[8px] px-1 rounded">
+                                                    {(img.metadata.size / 1024).toFixed(0)} KB
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
-                                    <div className="flex items-center justify-center border-2 border-dashed rounded-md aspect-square cursor-pointer hover:bg-accent/50 transition-colors relative">
-                                        <Input
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
-                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                            onChange={handleFileChange}
-                                            disabled={isLoading}
-                                        />
-                                        <div className="text-center">
-                                            <Plus className="h-8 w-8 mx-auto text-muted-foreground" />
-                                            <span className="text-xs text-muted-foreground mt-2 block">Upload Foto</span>
+
+                                    {images.length < 10 && (
+                                        <div className="flex items-center justify-center border-2 border-dashed rounded-lg aspect-square cursor-pointer hover:bg-accent/50 hover:border-primary transition-all relative group">
+                                            <Input
+                                                type="file"
+                                                multiple
+                                                accept="image/*"
+                                                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                onChange={handleFileChange}
+                                                disabled={isLoading}
+                                            />
+                                            <div className="text-center group-hover:scale-110 transition-transform">
+                                                <Plus className="h-8 w-8 mx-auto text-muted-foreground group-hover:text-primary" />
+                                                <span className="text-xs text-muted-foreground mt-2 block font-medium group-hover:text-primary">Tambah Foto</span>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
-                                <FormDescription>
-                                    Format: JPG, PNG. Maks 5MB per file. Minimal 1 gambar.
+                                <FormDescription className="bg-muted/50 p-3 rounded-md text-xs italic">
+                                    💡 <b>Tips:</b> Klik ikon ⭐ pada gambar untuk menjadikannya sebagai foto profil utama produk. Semua gambar otomatis dikompresi untuk performa optimal.
                                 </FormDescription>
                             </div>
+
 
                             <div className="space-y-4 pt-4 border-t">
                                 <h3 className="font-medium">Integrasi Marketplace Eksternal</h3>

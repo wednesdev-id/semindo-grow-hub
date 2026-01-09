@@ -576,27 +576,36 @@ model Store {
 }
 
 model Product {
-  id              String                      @id @default(uuid())
-  title           String
-  slug            String                      @unique
-  description     String?
-  price           Decimal                     @default(0) @db.Decimal(15, 2)
-  stock           Int                         @default(0)
-  category        String?
-  images          Json?
-  sellerId        String?                     @map("seller_id")
-  isPublished     Boolean                     @default(false) @map("is_published")
-  createdAt       DateTime                    @default(now()) @map("created_at")
-  updatedAt       DateTime                    @updatedAt @map("updated_at")
-  externalLinks   Json?                       @map("external_links")
-  categoryId      String?                     @map("category_id")
-  deletedAt       DateTime?                   @map("deleted_at")
-  rating          Decimal                     @default(0) @db.Decimal(3, 2)
-  soldCount       Int                         @default(0) @map("sold_count")
-  status          String                      @default("draft")
-  storeId         String?                     @map("store_id")
-  viewCount       Int                         @default(0) @map("view_count")
-  weight          Int                         @default(0)
+  id          String  @id @default(uuid())
+  storeId     String? @map("store_id") // Optional for migration, make required later
+  title       String
+  slug        String  @unique
+  description String? @db.Text
+  price       Decimal @default(0) @db.Decimal(15, 2)
+  stock       Int     @default(0)
+  weight      Int     @default(0) // in grams
+  category    String? // Deprecated in favor of categoryId? Or keep for simple string
+  categoryId  String? @map("category_id")
+
+  status        String @default("draft") // draft, active, suspended, rejected
+  images        Json? // Array of strings
+  externalLinks Json?  @map("external_links") // { shopee: "url", tokopedia: "url" }
+
+  // Legacy field to be migrated
+  sellerId String? @map("seller_id")
+
+  // Analytics
+  viewCount Int     @default(0) @map("view_count")
+  soldCount Int     @default(0) @map("sold_count")
+  rating    Decimal @default(0) @db.Decimal(3, 2)
+
+  isPublished Boolean   @default(false) @map("is_published")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at") // Soft delete
+
+  store           Store?                      @relation(fields: [storeId], references: [id])
+  seller          User?                       @relation(fields: [sellerId], references: [id]) // Keep for backward compat during migration
   cartItems       CartItem[]
   channelProducts MarketplaceChannelProduct[]
   orderItems      OrderItem[]
@@ -606,22 +615,6 @@ model Product {
   reviews         Review[]
 
   @@map("products")
-}
-
-model ProductVariant {
-  id         String      @id @default(uuid())
-  productId  String      @map("product_id")
-  name       String
-  sku        String?
-  price      Decimal     @db.Decimal(15, 2)
-  stock      Int         @default(0)
-  image      String?
-  options    Json?
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@map("product_variants")
 }
 
 model Cart {
@@ -636,14 +629,13 @@ model Cart {
 }
 
 model CartItem {
-  id        String          @id @default(uuid())
-  cartId    String          @map("cart_id")
-  productId String          @map("product_id")
-  variantId String?         @map("variant_id")
-  quantity  Int             @default(1)
-  cart      Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  product   Product         @relation(fields: [productId], references: [id])
-  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  id        String  @id @default(uuid())
+  cartId    String  @map("cart_id")
+  productId String  @map("product_id")
+  quantity  Int     @default(1)
+
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
 
   @@map("cart_items")
 }
@@ -675,16 +667,16 @@ model Order {
 }
 
 model OrderItem {
-  id        String          @id @default(uuid())
-  orderId   String          @map("order_id")
-  productId String          @map("product_id")
-  quantity  Int             @default(1)
-  price     Decimal         @db.Decimal(15, 2)
-  name      String?
-  variantId String?         @map("variant_id")
-  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product         @relation(fields: [productId], references: [id])
-  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  id        String  @id @default(uuid())
+  orderId   String  @map("order_id")
+  productId String  @map("product_id")
+
+  quantity Int     @default(1)
+  price    Decimal @db.Decimal(15, 2) // Price at purchase time
+  name     String? // Product name snapshot
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }

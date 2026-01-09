@@ -5,7 +5,6 @@ import { z } from 'zod';
 const addToCartSchema = z.object({
     productId: z.string().uuid(),
     quantity: z.number().min(1),
-    variantId: z.string().uuid().optional(),
 });
 
 const updateCartItemSchema = z.object({
@@ -15,7 +14,7 @@ const updateCartItemSchema = z.object({
 export const cartController = {
     getCart: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id; // Corrected from .userId if needed, verify in middleware
             const cart = await cartService.getCart(userId);
             res.json({ data: cart });
         } catch (error: any) {
@@ -25,10 +24,10 @@ export const cartController = {
 
     addToCart: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
-            const { productId, quantity, variantId } = addToCartSchema.parse(req.body);
+            const userId = (req as any).user.id;
+            const { productId, quantity } = addToCartSchema.parse(req.body);
 
-            const item = await cartService.addToCart(userId, productId, quantity, variantId);
+            const item = await cartService.addToCart(userId, productId, quantity);
             res.status(201).json({ data: item });
         } catch (error: any) {
             if (error instanceof z.ZodError) {

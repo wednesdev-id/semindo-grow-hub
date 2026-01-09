@@ -42,6 +42,12 @@ export default function UMKMDashboard() {
         <div className="space-y-6">
             <div className="flex items-center justify-between space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
+                <Button asChild>
+                    <Link to="/marketplace/seller">
+                        <Package className="mr-2 h-4 w-4" />
+                        Kelola Produk
+                    </Link>
+                </Button>
             </div>
 
             {/* Stats Cards */}
@@ -72,18 +78,20 @@ export default function UMKMDashboard() {
                         </p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Produk</CardTitle>
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{data.stats.totalProducts}</div>
-                        <p className="text-xs text-muted-foreground">
-                            5 produk perlu restock
-                        </p>
-                    </CardContent>
-                </Card>
+                <Link to="/marketplace/seller">
+                    <Card className="cursor-pointer transition-all hover:shadow-lg hover:border-primary">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Total Produk</CardTitle>
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{data.stats.totalProducts}</div>
+                            <p className="text-xs text-primary font-medium mt-1">
+                                Klik untuk kelola produk →
+                            </p>
+                        </CardContent>
+                    </Card>
+                </Link>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Rating Toko</CardTitle>

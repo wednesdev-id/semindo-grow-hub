@@ -1,13 +1,13 @@
-import { Request, Response } from 'express';
+import { Request, Response } from 'express'
 import { MarketplaceService } from '../services/marketplace.service';
 import { Prisma } from '@prisma/client';
 
 const marketplaceService = new MarketplaceService();
 
-export class MarketplaceController {
+class MarketplaceController {
     async createProduct(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const product = await marketplaceService.createProduct(userId, req.body);
             res.status(201).json({ data: product });
         } catch (error: any) {
@@ -49,6 +49,45 @@ export class MarketplaceController {
         }
     }
 
+    /**
+     * Search and filter products with pagination
+     * GET /api/v1/marketplace/search
+     */
+    async searchProducts(req: Request, res: Response) {
+        try {
+            const {
+                search,
+                category,
+                minPrice,
+                maxPrice,
+                stockStatus,
+                sortBy,
+                page,
+                limit,
+            } = req.query;
+
+            // Build params with defaults
+            const params = {
+                search: search ? String(search) : undefined,
+                category: category ? String(category) : undefined,
+                minPrice: minPrice ? Number(minPrice) : undefined,
+                maxPrice: maxPrice ? Number(maxPrice) : undefined,
+                stockStatus: (stockStatus as any) || 'all',
+                sortBy: (sortBy as any) || 'newest',
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+            };
+
+            // Call service
+            const result = await marketplaceService.searchProducts(params);
+
+            res.json(result);
+        } catch (error: any) {
+            console.error('[MarketplaceController] searchProducts error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async findProductBySlug(req: Request, res: Response) {
         try {
             const { slug } = req.params;
@@ -62,9 +101,10 @@ export class MarketplaceController {
 
     async createOrder(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
-            const { items } = req.body; // items: [{ productId, quantity }]
-            const order = await marketplaceService.createOrder(userId, items);
+            const userId = (req as any).user.id;
+            const { items, shippingAddress, shippingCost } = req.body;
+            const courier = shippingAddress?.courier;
+            const order = await marketplaceService.createOrder(userId, items, shippingAddress, courier, shippingCost);
             res.status(201).json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -73,7 +113,7 @@ export class MarketplaceController {
 
     async getMyOrders(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const orders = await marketplaceService.getMyOrders(userId);
             res.json({ data: orders });
         } catch (error: any) {
@@ -83,7 +123,7 @@ export class MarketplaceController {
 
     async getSellerOrders(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const orders = await marketplaceService.getSellerOrders(userId);
             res.json({ data: orders });
         } catch (error: any) {
@@ -91,9 +131,20 @@ export class MarketplaceController {
         }
     }
 
+    async archiveProduct(req: Request, res: Response) {
+        try {
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.archiveProduct(req.params.id, userId);
+            res.json(product);
+        } catch (error: any) {
+            console.error('Failed to archive product:', error);
+            res.status(500).json({ error: error.message });
+        }
+    }
+
     async updateProduct(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const { id } = req.params;
             const product = await marketplaceService.updateProduct(id, userId, req.body);
             res.json({ data: product });
@@ -104,7 +155,7 @@ export class MarketplaceController {
 
     async deleteProduct(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const { id } = req.params;
             await marketplaceService.deleteProduct(id, userId);
             res.status(204).send();
@@ -115,8 +166,26 @@ export class MarketplaceController {
 
     async getMyProducts(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
-            const products = await marketplaceService.getMyProducts(userId);
+            const userId = (req as any).user.id;
+            const {
+                search,
+                category,
+                stockStatus,
+                sortBy,
+                minPrice,
+                maxPrice
+            } = req.query;
+
+            const params = {
+                search: search ? String(search) : undefined,
+                category: category ? String(category) : undefined,
+                stockStatus: stockStatus ? String(stockStatus) : undefined,
+                sortBy: sortBy ? String(sortBy) : undefined,
+                minPrice: minPrice ? Number(minPrice) : undefined,
+                maxPrice: maxPrice ? Number(maxPrice) : undefined,
+            };
+
+            const products = await marketplaceService.getMyProducts(userId, params);
             res.json({ data: products });
         } catch (error: any) {
             console.error('[MarketplaceController] getMyProducts error:', error);
@@ -126,7 +195,7 @@ export class MarketplaceController {
 
     async getOrder(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const { id } = req.params;
             const order = await marketplaceService.getOrder(id, userId);
             res.json({ data: order });
@@ -139,9 +208,22 @@ export class MarketplaceController {
         try {
             const { id } = req.params;
             const { status } = req.body;
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
 
             const order = await marketplaceService.updateOrderStatus(id, status, userId);
+            res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async cancelOrder(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { reason } = req.body;
+            const userId = (req as any).user.id;
+
+            const order = await marketplaceService.cancelOrder(id, userId, reason);
             res.json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -169,9 +251,10 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
+
     async getSellerAnalytics(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.id;
             const data = await marketplaceService.getSellerAnalytics(userId);
             res.json({ data });
         } catch (error: any) {
@@ -188,6 +271,70 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async getConsultantClientsProducts(req: Request, res: Response) {
+        try {
+            const consultantId = (req as any).user.id;
+            const {
+                search,
+                clientId,
+                status,
+                page,
+                limit
+            } = req.query;
+
+            const params = {
+                search: search ? String(search) : undefined,
+                clientId: clientId ? String(clientId) : undefined,
+                status: status ? String(status) : undefined,
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+            };
+
+            const result = await marketplaceService.getConsultantClientsProducts(consultantId, params);
+            res.json(result);
+        } catch (error: any) {
+            console.error('[MarketplaceController] getConsultantClientsProducts error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
+    async getAdminProducts(req: Request, res: Response) {
+        try {
+            const {
+                search,
+                category,
+                status,
+                sellerId,
+                sortBy,
+                page,
+                limit,
+                startDate,
+                endDate
+            } = req.query;
+
+            const params = {
+                search: search ? String(search) : undefined,
+                category: category ? String(category) : undefined,
+                status: status ? String(status) : undefined,
+                sellerId: sellerId ? String(sellerId) : undefined,
+                sortBy: sortBy ? String(sortBy) : 'newest',
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+                startDate: startDate ? new Date(String(startDate)) : undefined,
+                endDate: endDate ? new Date(String(endDate)) : undefined,
+            };
+
+            const result = await marketplaceService.getAdminProducts(params);
+            res.json(result);
+        } catch (error: any) {
+            console.error('[MarketplaceController] getAdminProducts error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
     async getPendingProducts(req: Request, res: Response) {
         try {
             // In real app, check for admin role
@@ -208,4 +355,115 @@ export class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
+
+    async getCategories(req: Request, res: Response) {
+        try {
+            const categories = await marketplaceService.getCategories();
+            res.json({ data: categories });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getTopSellers(req: Request, res: Response) {
+        try {
+            const sellers = await marketplaceService.getTopSellers();
+            res.json({ data: sellers });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async updateProductStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.updateProductStatus(id, status, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async attachImagesToProduct(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { images } = req.body;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.attachImagesToProduct(id, images, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async reorderProductImages(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { images } = req.body;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.reorderProductImages(id, images, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async setProductImageThumbnail(req: Request, res: Response) {
+        try {
+            const { id, imageId } = req.params;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.setProductImageThumbnail(id, imageId, userId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async deleteProductImage(req: Request, res: Response) {
+        try {
+            const { id, imageId } = req.params;
+            const userId = (req as any).user.id;
+            const product = await marketplaceService.deleteProductImage(id, userId, imageId);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+    async getExportReadyProducts(req: Request, res: Response) {
+        try {
+            const { page, limit, category, region } = req.query;
+            const params = {
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+                category: category ? String(category) : undefined,
+                region: region ? String(region) : undefined,
+            };
+
+            const result = await marketplaceService.getExportReadyProducts(params);
+            res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async getFinancingCandidates(req: Request, res: Response) {
+        try {
+            const { page, limit, minRevenue, location } = req.query;
+            const params = {
+                page: page ? Number(page) : 1,
+                limit: limit ? Number(limit) : 20,
+                minRevenue: minRevenue ? Number(minRevenue) : undefined,
+                location: location ? String(location) : undefined,
+            };
+
+            const result = await marketplaceService.getFinancingCandidates(params);
+            res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
 }
+
+export { MarketplaceController };

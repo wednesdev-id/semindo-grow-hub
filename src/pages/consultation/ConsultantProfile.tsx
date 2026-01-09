@@ -216,6 +216,10 @@ function ReviewModalController({ consultant }: { consultant: ConsultantProfile |
 
     if (!isOpen || !consultant) return null;
 
+            // Calculate duration in minutes
+            const start = new Date(`${selectedSlot.date}T${selectedSlot.startTime}`);
+            const end = new Date(`${selectedSlot.date}T${selectedSlot.endTime}`);
+            const durationMinutes = (end.getTime() - start.getTime()) / 60000;
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-lg p-6 max-w-lg w-full">

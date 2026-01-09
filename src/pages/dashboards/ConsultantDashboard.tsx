@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/core/auth/hooks/useAuth';
+import { marketplaceService } from '@/services/marketplaceService';
 import { consultationService } from '@/services/consultationService';
 import { BookOpen, DollarSign, Plus, Video, Layout, BarChart2, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -209,7 +210,30 @@ export default function ConsultantDashboard() {
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-bold">Consultant Dashboard</h1>
-          <p className="text-gray-600">Welcome back, {user?.profile?.fullName}</p>
+          <p className="text-gray-600">Welcome back, {user?.fullName}</p>
+        </div>
+
+        <div className="bg-gray-100 p-1 rounded-lg flex">
+          <button
+            onClick={() => setActiveMode('marketplace')}
+            className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${activeMode === 'marketplace'
+              ? 'bg-white shadow text-blue-600 font-medium'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            <DollarSign size={18} />
+            Marketplace
+          </button>
+          <button
+            onClick={() => setActiveMode('lms')}
+            className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${activeMode === 'lms'
+              ? 'bg-white shadow text-purple-600 font-medium'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            <BookOpen size={18} />
+            LMS Instructor
+          </button>
         </div>
 
 

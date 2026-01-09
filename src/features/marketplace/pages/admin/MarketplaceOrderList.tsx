@@ -101,6 +101,16 @@ export default function MarketplaceOrderList() {
         {
             header: "Items",
             accessorKey: "items" as const,
+            cell: (order: any) => (
+                <div className="text-xs max-w-[200px]">
+                    {order.items?.map((item: any, idx: number) => (
+                        <div key={idx} className="mb-1 last:mb-0 border-b last:border-0 pb-1 last:pb-0 border-gray-100">
+                            <span className="font-medium text-gray-800">{item.name || item.product?.title}</span>
+                            <span className="text-gray-500 ml-1">x{item.quantity}</span>
+                        </div>
+                    ))}
+                </div>
+            )
         },
         {
             header: "Status",

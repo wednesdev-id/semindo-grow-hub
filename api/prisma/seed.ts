@@ -524,7 +524,9 @@ async function main() {
         }
     ];
 
+    console.log(`Creating courses with authorId: ${mentorUser.id} and courses count: ${courses.length}`);
     for (const course of courses) {
+
         await prisma.course.upsert({
             where: { slug: course.slug },
             update: {},
