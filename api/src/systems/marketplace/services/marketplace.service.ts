@@ -486,11 +486,16 @@ export class MarketplaceService {
             const user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user) throw new Error('User not found');
 
-            const { paymentLink } = await paymentService.createPaymentLink(order, order.paymentMethod || 'bca_va');
+            const { paymentLink, paymentToken, paymentGateway, paymentData } = await paymentService.createPaymentLink(order, order.paymentMethod || 'bca_va');
 
             const updatedOrder = await tx.order.update({
                 where: { id: order.id },
-                data: { paymentLink }
+                data: {
+                    paymentLink,
+                    paymentToken,
+                    paymentGateway,
+                    paymentData
+                }
             });
 
             // Clear cart items

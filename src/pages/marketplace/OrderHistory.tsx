@@ -162,18 +162,43 @@ export default function OrderHistory() {
                                                         <div>
                                                             <div className="flex items-center flex-wrap gap-2 mb-2">
                                                                 <h3 className="font-bold text-lg">Pesanan #{order.id.slice(0, 8)}</h3>
-                                                                <Badge className={getStatusColor(order.status)}>
-                                                                    {order.status === 'pending' ? 'Menunggu' :
-                                                                        order.status === 'processing' ? 'Diproses' :
-                                                                            order.status === 'shipped' ? 'Dikirim' :
-                                                                                order.status === 'delivered' ? 'Selesai' :
-                                                                                    order.status === 'cancelled' ? 'Dibatalkan' : order.status}
-                                                                </Badge>
-                                                                <Badge className={getPaymentStatusColor(order.paymentStatus)}>
-                                                                    {order.paymentStatus === 'unpaid' ? 'Belum Bayar' :
-                                                                        order.paymentStatus === 'paid' ? 'Sudah Bayar' :
-                                                                            order.paymentStatus === 'failed' ? 'Gagal' : order.paymentStatus}
-                                                                </Badge>
+                                                                {/* Consolidated Status Badge */}
+                                                                {(() => {
+                                                                    const status = order.status?.toLowerCase();
+                                                                    const paymentStatus = order.paymentStatus?.toLowerCase();
+
+                                                                    let label = status;
+                                                                    let colorClass = 'bg-gray-100 text-gray-800';
+
+                                                                    if (status === 'cancelled') {
+                                                                        label = 'Dibatalkan';
+                                                                        colorClass = 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400';
+                                                                    } else if (paymentStatus === 'failed') {
+                                                                        label = 'Pembayaran Gagal';
+                                                                        colorClass = 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400';
+                                                                    } else if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+                                                                        label = 'Menunggu Pembayaran';
+                                                                        colorClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400';
+                                                                    } else if (status === 'pending' || status === 'paid') {
+                                                                        label = 'Sudah Dibayar';
+                                                                        colorClass = 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400';
+                                                                    } else if (status === 'processing') {
+                                                                        label = 'Diproses';
+                                                                        colorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400';
+                                                                    } else if (status === 'shipped') {
+                                                                        label = 'Dikirim';
+                                                                        colorClass = 'bg-purple-100 text-purple-800 dark:bg-purple-950/30 dark:text-purple-400';
+                                                                    } else if (status === 'delivered' || status === 'completed') {
+                                                                        label = 'Selesai';
+                                                                        colorClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400';
+                                                                    }
+
+                                                                    return (
+                                                                        <Badge className={colorClass}>
+                                                                            {label}
+                                                                        </Badge>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                             <p className="text-sm text-muted-foreground">
                                                                 Dipesan pada {format(new Date(order.createdAt), 'dd MMMM yyyy, HH:mm')}

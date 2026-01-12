@@ -1,574 +1,278 @@
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { marketplaceService, Order } from '@/services/marketplaceService';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { toast } from 'sonner';
-import {
-    Loader2, CheckCircle2, AlertCircle, Copy, Smartphone,
-    Clock, RefreshCw, AlertTriangle, HelpCircle, Lock, ChevronRight, Ban
-} from 'lucide-react';
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion";
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { formatCurrency, cn } from '@/lib/utils';
-import { parseISO, differenceInSeconds } from 'date-fns';
-
-// --- Types & Constants ---
-type PaymentState = 'pending' | 'verifying' | 'paid' | 'failed' | 'expired' | 'refunded';
-
-const BANKS = [
-    { id: 'bca_va', name: 'Bank BCA', icon: 'BCA', color: 'text-blue-600' },
-    { id: 'mandiri_va', name: 'Bank Mandiri', icon: 'Mandiri', color: 'text-yellow-600' },
-    { id: 'bni_va', name: 'Bank BNI', icon: 'BNI', color: 'text-orange-600' },
-    { id: 'bri_va', name: 'Bank BRI', icon: 'BRI', color: 'text-blue-700' },
-    { id: 'bsi_va', name: 'Bank Syariah Indonesia', icon: 'BSI', color: 'text-emerald-600' },
-    // { id: 'qris', name: 'QRIS / E-Wallet', icon: 'QRIS', color: 'text-gray-800' }, 
-]; // Focused on VA for now as per "Transfer harus sesuai nominal" warning which implies VA focus.
+import { Loader2, ShieldCheck, Lock } from 'lucide-react';
+import { formatCurrency, cn } from '@/lib/utils'; // Keep utilities
 
 export default function PaymentSimulationPage() {
     const { paymentId } = useParams();
-    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
 
     // Data State
     const [order, setOrder] = useState<Order | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState(searchParams.get('method') || 'bca_va');
-
-    // UI State
     const [loading, setLoading] = useState(true);
-    const [isPolling, setIsPolling] = useState(false); // "Verifying" action state
-    const [timeLeftSeconds, setTimeLeftSeconds] = useState<number | null>(null);
-    const [isMethodDialogOpen, setIsMethodDialogOpen] = useState(false);
 
-    // Derived Status
-    const status: PaymentState = (order?.paymentStatus as PaymentState) || 'pending';
-    const isPaid = status === 'paid';
-    const isFailed = status === 'failed';
-    const isExpired = status === 'expired' || (timeLeftSeconds !== null && timeLeftSeconds <= 0 && !isPaid);
+    // Auth State
+    const [otp, setOtp] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [timeLeft, setTimeLeft] = useState(326); // 5m 26s as requested default
+    const [isResendDisabled, setIsResendDisabled] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // --- Helpers ---
-    const getPaymentDetails = (method: string) => {
-        // Mock fallback logic if order.paymentData is empty
-        const normalized = method.toLowerCase();
-
-        // 1. Try Real Data
-        if (order?.paymentData && (order.paymentData as any).va_numbers?.[0]) {
-            const va = (order.paymentData as any).va_numbers[0];
-            return {
-                name: `Virtual Account ${va.bank.toUpperCase()}`,
-                number: va.va_number,
-                icon: <InitialIcon letter={va.bank[0].toUpperCase()} />,
-                color: 'text-zinc-900'
-            };
-        }
-
-        // 2. Mock Fallback
-        if (normalized.includes('bca')) return { name: 'Virtual Account BCA', number: '880123456789', icon: <InitialIcon letter="B" color="bg-blue-600" />, color: 'text-blue-600' };
-        if (normalized.includes('mandiri')) return { name: 'Virtual Account Mandiri', number: '8870123456789', icon: <InitialIcon letter="M" color="bg-yellow-600" />, color: 'text-yellow-600' };
-        if (normalized.includes('bni')) return { name: 'Virtual Account BNI', number: '8241123456789', icon: <InitialIcon letter="B" color="bg-orange-600" />, color: 'text-orange-600' };
-        if (normalized.includes('bri')) return { name: 'Virtual Account BRI', number: '7823123456789', icon: <InitialIcon letter="R" color="bg-blue-700" />, color: 'text-blue-700' };
-
-        return { name: 'Virtual Account Bank', number: '1234567890', icon: <InitialIcon letter="Bank" />, color: 'text-zinc-600' };
-    };
-
-    const paymentInfo = getPaymentDetails(paymentMethod);
-
-    // --- Actions ---
-    const fetchData = async (background = false) => {
-        if (!paymentId) return;
-        if (!background) setLoading(true);
-        try {
-            // Active verification if background (polling) or explicitly requested
-            let data;
-            if (background) {
-                data = await marketplaceService.checkPaymentStatus(paymentId);
-            } else {
-                data = await marketplaceService.getOrderDetails(paymentId);
-            }
-            setOrder(data);
-            if (data.paymentMethod) setPaymentMethod(data.paymentMethod);
-
-            // Calculate expiry
-            if (data.expiryTime && data.paymentStatus === 'pending') {
-                const end = new Date(data.expiryTime);
-                const diff = differenceInSeconds(end, new Date());
-                setTimeLeftSeconds(diff > 0 ? diff : 0);
-            }
-        } catch (e) {
-            console.error("Failed to load order", e);
-            if (!background) toast.error("Gagal memuat data pesanan");
-        } finally {
-            if (!background) setLoading(false);
-        }
-    };
-
-    const handleVerifyParams = async () => {
-        if (!paymentId) return;
-        setIsPolling(true);
-        try {
-            // Trigger Manual Check
-            // In a real app, this might hit an endpoint that forces a gateway status check
-            // For now, allow simple refresh
-            await fetchData(true);
-
-            // In Mock, we can simulate a random success if user wants (optional)
-            // But per requirement "System determines success", we just check.
-            toast.info("Mengecek status pembayaran...");
-        } catch (e) {
-            toast.error("Gagal mengecek status");
-        } finally {
-            // Min loading time for UX
-            setTimeout(() => setIsPolling(false), 2000);
-        }
-    };
-
-    // --- Effects ---
+    // Fetch Order Data
     useEffect(() => {
-        fetchData();
-        // Auto-poll every 30s
-        const poll = setInterval(() => fetchData(true), 30000);
-        return () => clearInterval(poll);
-    }, [paymentId]);
+        const fetchOrder = async () => {
+            if (!paymentId) return;
+            try {
+                const data = await marketplaceService.getOrderDetails(paymentId);
+                setOrder(data);
 
-    // Countdown Timer
-    useEffect(() => {
-        if (timeLeftSeconds === null || isPaid || isFailed) return;
-        if (timeLeftSeconds <= 0) return;
-
-        const timer = setInterval(() => {
-            setTimeLeftSeconds(prev => {
-                if (prev === null || prev <= 0) {
-                    clearInterval(timer);
-                    return 0;
+                // If already paid, redirect
+                if (data.paymentStatus === 'paid') {
+                    navigate('/marketplace/my-orders');
+                    toast.success("Pembayaran berhasil dikonfirmasi");
                 }
-                return prev - 1;
-            });
+            } catch (e) {
+                console.error("Failed to load order", e);
+                toast.error("Gagal memuat data transaksi");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchOrder();
+    }, [paymentId, navigate]);
+
+    // Timer Logic
+    useEffect(() => {
+        if (timeLeft <= 0) return;
+        const timer = setInterval(() => {
+            setTimeLeft(prev => prev - 1);
         }, 1000);
         return () => clearInterval(timer);
-    }, [timeLeftSeconds, isPaid, isFailed]);
+    }, [timeLeft]);
 
-    // --- Renders ---
-    if (loading && !order) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
-    if (!order) return <div className="p-10 text-center">Order not found</div>;
+    // Resend Cooldown
+    useEffect(() => {
+        if (isResendDisabled) {
+            const timer = setTimeout(() => setIsResendDisabled(false), 30000); // 30s cooldown
+            return () => clearTimeout(timer);
+        }
+    }, [isResendDisabled]);
 
-    // 1. Header Logic
-    let headerTitle = "Selesaikan Pembayaran";
-    let headerBg = "bg-primary";
-    let headerIcon = <Clock className="w-5 h-5 text-white/90" />;
-
-    if (isPaid) {
-        headerTitle = "Pembayaran Berhasil";
-        headerBg = "bg-green-600";
-        headerIcon = <CheckCircle2 className="w-5 h-5 text-white" />;
-    } else if (isFailed) {
-        headerTitle = "Pembayaran Gagal";
-        headerBg = "bg-red-600";
-        headerIcon = <Ban className="w-5 h-5 text-white" />;
-    } else if (isExpired) {
-        headerTitle = "Pembayaran Kedaluwarsa";
-        headerBg = "bg-zinc-600";
-        headerIcon = <AlertCircle className="w-5 h-5 text-white" />;
-    } else if (isPolling) {
-        headerTitle = "Mengecek Pembayaran...";
-        headerBg = "bg-blue-600";
-        headerIcon = <Loader2 className="w-5 h-5 text-white animate-spin" />;
-    }
-
-    const formatTime = (s: number) => {
-        const hrs = Math.floor(s / 3600);
-        const mins = Math.floor((s % 3600) / 60);
-        const secs = s % 60;
-        return `${hrs > 0 ? `${hrs}:` : ''}${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}m ${s.toString().padStart(2, '0')}s`;
     };
 
-    return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col font-sans">
-            {/* 1. Header / App Bar */}
-            <div className={cn("transition-colors duration-300 shadow-sm sticky top-0 z-20", headerBg)}>
-                <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between text-white">
-                    <div className="flex items-center gap-3">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="bg-white/10 hover:bg-white/20 text-white rounded-full h-8 w-8 disabled:opacity-50"
-                            onClick={() => navigate(-1)}
-                            disabled={isPolling || isPaid}
-                        >
-                            <ChevronRight className="h-5 w-5 rotate-180" />
-                        </Button>
-                        <div className="flex items-center gap-2 font-medium text-sm md:text-base">
-                            {headerIcon}
-                            <span>{headerTitle}</span>
-                        </div>
-                    </div>
+    const handleOtpSubmit = async () => {
+        if (!paymentId || !order) return;
 
-                    {/* Help Icon -> Support Sheet */}
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-8 w-8">
-                                <HelpCircle className="h-5 w-5" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="bottom" className="rounded-t-2xl px-6 pb-8">
-                            <SheetHeader className="mb-4 text-left">
-                                <SheetTitle>Bantuan Pembayaran</SheetTitle>
-                            </SheetHeader>
-                            <div className="space-y-4">
-                                <HelpItem
-                                    title="Pembayaran belum terverifikasi?"
-                                    desc="Sistem mengecek transaksi secara otomatis. Jika status tidak berubah dalam 10 menit, mohon hubungi CS."
-                                />
-                                <HelpItem
-                                    title="Salah nominal transfer?"
-                                    desc="Pembayaran mungkin ditolak sistem. Silakan hubungi CS untuk bantuan pengembalian dana (jika terdebet)."
-                                />
-                                <HelpItem
-                                    title="Waktu pembayaran habis?"
-                                    desc="Silakan buat pesanan baru. Pembayaran ke VA yang kedaluwarsa akan otomatis ditolak oleh bank."
-                                />
-                                <Button className="w-full mt-4" variant="default">Hubungi Customer Support</Button>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+        setError(null);
+        setIsSubmitting(true);
+
+        try {
+            // Simulate Network Delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            if (otp === "123456" || otp.length === 6) {
+                // Success Flow
+                await marketplaceService.simulatePayment(paymentId, 'success');
+                toast.success("Autentikasi Berhasil");
+                navigate('/marketplace/my-orders');
+            } else {
+                // Failure Flow (Mock)
+                setError("Kode OTP tidak valid");
+                setOtp("");
+            }
+        } catch (e) {
+            setError("Terjadi kesalahan sistem");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        if (!paymentId) return;
+        try {
+            await marketplaceService.simulatePayment(paymentId, 'failed');
+            toast.info("Transaksi dibatalkan");
+            navigate('/marketplace/cart');
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    if (!order) return null;
+
+    return (
+        <div className="min-h-screen bg-white font-sans text-slate-800 flex flex-col">
+            {/* 1. Header / Brand Authority Section */}
+            <div className="h-16 border-b flex items-center justify-between px-6 lg:px-12 bg-white">
+                {/* Bank Logo (Mock BCA Style) */}
+                <div className="flex items-center gap-2">
+                    <div className="h-8 w-auto aspect-[3/1] bg-blue-700 text-white flex items-center justify-center px-2 font-bold italic tracking-tighter text-lg rounded-sm">
+                        BCA
+                    </div>
+                </div>
+                {/* Network Logo */}
+                <div className="flex items-col text-right">
+                    <div className="text-[10px] font-bold text-slate-500 italic leading-none">Mastercard</div>
+                    <div className="text-sm font-bold text-slate-700 italic leading-none">SecureCode</div>
                 </div>
             </div>
 
-            <main className="flex-1 w-full max-w-md mx-auto p-4 flex flex-col gap-4 pb-24">
+            <div className="flex-1 max-w-lg mx-auto w-full px-6 py-8 flex flex-col gap-8">
 
-                {/* 2. Payment Summary */}
-                <Card className="border shadow-sm overflow-hidden">
-                    <CardContent className="p-5 text-center space-y-2">
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">Total Pembayaran</p>
-                        <div className="flex items-center justify-center gap-2">
-                            <h2 className="text-3xl font-bold text-primary tracking-tight">
-                                {formatCurrency(Number(order.totalAmount))}
-                            </h2>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-zinc-400" onClick={() => {
-                                navigator.clipboard.writeText(order.totalAmount.toString());
-                                toast.success("Nominal disalin");
-                            }}>
-                                <Copy className="h-3.5 w-3.5" />
+                {/* 2. Authorization Title & Timer */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h1 className="text-xl font-bold text-slate-900">Authentication Required</h1>
+                    </div>
+
+                    {/* Time Sensitivity Indicator */}
+                    {timeLeft > 0 ? (
+                        <div className="flex items-center gap-2 text-red-600 font-bold text-sm bg-red-50 p-3 rounded border border-red-100">
+                            <span className="uppercase text-[10px] tracking-wider font-extrabold">Remaining:</span>
+                            <span className="font-mono text-base">{formatTime(timeLeft)}</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-red-600 font-bold text-sm bg-red-50 p-3 rounded border border-red-100">
+                            <span className="uppercase text-[10px] tracking-wider font-extrabold">Expired</span>
+                            <span className="font-mono text-base">Session Timed Out</span>
+                        </div>
+                    )}
+                </div>
+
+                {/* 3. Authentication Explanation */}
+                <div className="text-sm text-slate-600 leading-relaxed border-l-4 border-blue-600 pl-4 py-1">
+                    <p>
+                        To authenticate this transaction, we have sent a <span className="font-semibold">One Time Password (OTP)</span> to <span className="font-mono font-semibold">+6282••••••099</span>.
+                    </p>
+                    <div className="mt-2 flex justify-between items-center text-xs text-slate-500">
+                        <span>Card: •••• •••• •••• 0063</span>
+                        <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                </div>
+
+                {/* 4. Transaction Summary Box */}
+                <div className="bg-slate-50 border border-slate-200 rounded p-4 text-sm">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Transaction Amount</p>
+                            <p className="font-bold text-slate-900 text-lg font-mono">{formatCurrency(Number(order.totalAmount))}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Merchant</p>
+                            <p className="font-bold text-slate-900 text-lg">Semindo Market</p>
+                        </div>
+                        <div className="col-span-2 pt-2 border-t border-slate-200 mt-2">
+                            <p className="text-xs text-slate-500 uppercase tracking-wide font-semibold mb-1">Reference ID</p>
+                            <p className="font-mono text-slate-700">{order.id}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 5. OTP Input Area (Primary) */}
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700">One Time Password</label>
+                        <div className="flex gap-3">
+                            <Input
+                                disabled={timeLeft <= 0}
+                                type="text"
+                                maxLength={6}
+                                placeholder="Enter 6-digit OTP"
+                                className="font-mono text-lg tracking-widest h-12 border-slate-300 focus:border-blue-600 focus:ring-blue-600"
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                            />
+                            <Button
+                                className="h-12 w-24 bg-blue-700 hover:bg-blue-800 font-bold text-base"
+                                onClick={handleOtpSubmit}
+                                disabled={otp.length !== 6 || isSubmitting || timeLeft <= 0}
+                            >
+                                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "OK"}
                             </Button>
                         </div>
-                        <p className="text-xs text-zinc-400">Termasuk pajak & biaya admin</p>
-                    </CardContent>
-                </Card>
+                        {error && (
+                            <p className="text-red-600 text-sm font-medium flex items-center gap-1">
+                                <ShieldCheck className="h-4 w-4" />
+                                {error}
+                            </p>
+                        )}
+                    </div>
+                </div>
 
-                {/* 3. Countdown & Expiry */}
-                {!isPaid && !isFailed && (
-                    <div className={cn(
-                        "rounded-xl px-4 py-3 flex items-center justify-between border",
-                        isExpired
-                            ? "bg-zinc-100 border-zinc-200 text-zinc-500"
-                            : "bg-orange-50 border-orange-100 text-orange-700"
-                    )}>
-                        <span className="text-sm font-medium">
-                            {isExpired ? "Waktu pembayaran telah habis" : "Bayar dalam waktu"}
+                {/* 6. Secondary Actions */}
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                    <Button
+                        variant="ghost"
+                        className="flex-1 text-slate-600 hover:text-blue-700 hover:bg-blue-50 text-xs"
+                        onClick={() => {
+                            setIsResendDisabled(true);
+                            toast.info("OTP baru telah dikirim");
+                        }}
+                        disabled={isResendDisabled || timeLeft <= 0}
+                    >
+                        {isResendDisabled ? "Resend OTP (30s)" : "Resend OTP"}
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-50 text-xs"
+                        onClick={handleCancel}
+                    >
+                        Cancel Transaction
+                    </Button>
+                </div>
+
+            </div>
+
+            {/* 7. Help & Contact Information */}
+            <div className="bg-slate-100 border-t py-6 px-6 mt-auto">
+                <div className="max-w-lg mx-auto text-center space-y-3">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Please contact us for assistance</p>
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-slate-600 font-medium">
+                        <span className="flex items-center gap-1">
+                            <PhoneIcon className="h-3 w-3" /> Halo BCA 1500 888
                         </span>
-                        {!isExpired && (
-                            <div className="font-mono font-bold text-lg tabular-nums">
-                                {timeLeftSeconds !== null ? formatTime(timeLeftSeconds) : '--:--'}
-                            </div>
-                        )}
+                        <span className="flex items-center gap-1">
+                            <MailIcon className="h-3 w-3" /> halobca@bca.co.id
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <MessageCircleIcon className="h-3 w-3" /> @halobca
+                        </span>
                     </div>
-                )}
-
-                {/* Content based on State */}
-                {isPaid ? (
-                    <SuccessView order={order} navigate={navigate} />
-                ) : isExpired ? (
-                    <ExpiredView navigate={navigate} />
-                ) : isFailed ? (
-                    <FailedView navigate={navigate} />
-                ) : (
-                    <>
-                        {/* 4. Payment Method Card */}
-                        <Card className="border shadow-sm">
-                            <CardContent className="p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-sm font-semibold text-zinc-700">Metode Pembayaran</h3>
-                                    <Button
-                                        variant="link"
-                                        className="text-primary text-xs h-auto p-0 font-semibold"
-                                        onClick={() => setIsMethodDialogOpen(true)}
-                                    >
-                                        Ganti Metode
-                                    </Button>
-                                    {/* Dialog for Changing Method */}
-                                    <Dialog open={isMethodDialogOpen} onOpenChange={setIsMethodDialogOpen}>
-                                        <DialogContent>
-                                            <DialogHeader><DialogTitle>Pilih Metode Pembayaran</DialogTitle></DialogHeader>
-                                            <RadioGroup value={paymentMethod} onValueChange={(v) => {
-                                                setPaymentMethod(v);
-                                                setIsMethodDialogOpen(false);
-                                                toast.success("Metode pembayaran diperbarui");
-                                                // Ideally trigger API update here
-                                            }} className="gap-2 mt-2">
-                                                {BANKS.map(bank => (
-                                                    <div key={bank.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-zinc-50 cursor-pointer">
-                                                        <div className="flex items-center gap-3">
-                                                            <InitialIcon letter={bank.name.includes('BCA') ? 'BCA' : bank.name[0]} className="text-[10px]" />
-                                                            <span className="text-sm font-medium">{bank.name}</span>
-                                                        </div>
-                                                        <RadioGroupItem value={bank.id} id={bank.id} />
-                                                    </div>
-                                                ))}
-                                            </RadioGroup>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-
-                                <div className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-900 rounded-lg border">
-                                    <div className="h-10 w-10 bg-white rounded flex items-center justify-center shadow-sm text-[10px] overflow-hidden">
-                                        {paymentInfo.icon}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-sm text-zinc-900">{paymentInfo.name}</p>
-                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                                            <p className="text-[11px] text-zinc-500">Verifikasi Otomatis ±1-5 menit</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* 5. Payment Destination (Criticial) */}
-                        <Card className="border shadow-sm">
-                            <CardContent className="p-5 space-y-6">
-                                {/* VA Display */}
-                                <div>
-                                    <label className="text-xs font-medium text-zinc-500 mb-2 block uppercase">Nomor Virtual Account</label>
-                                    <div className="flex gap-2">
-                                        <div className="flex-1 bg-zinc-50 border border-zinc-200 rounded-lg px-4 py-3 font-mono text-xl font-bold tracking-wider text-zinc-800 text-center select-all">
-                                            {paymentInfo.number.match(/.{1,4}/g)?.join(' ')}
-                                        </div>
-                                        <Button variant="outline" className="h-[52px] w-[52px] shrink-0" onClick={() => {
-                                            navigator.clipboard.writeText(paymentInfo.number);
-                                            toast.success("Nomor VA disalin");
-                                        }}>
-                                            <Copy className="h-5 w-5" />
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                {/* 5.2 Nominal Warning */}
-                                <div className="bg-amber-50 border border-amber-100 p-4 rounded-xl flex gap-3 items-start">
-                                    <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                                    <div className="space-y-1">
-                                        <p className="text-xs font-bold text-amber-800 uppercase">Penting!</p>
-                                        <p className="text-xs text-amber-700 leading-relaxed">
-                                            Transfer harus <span className="font-bold underline">SAMA PERSIS</span> dengan total tagihan
-                                            (<span className="font-mono font-bold">{formatCurrency(Number(order.totalAmount))}</span>).
-                                            <br />Jangan dibulatkan agar sistem dapat memverifikasi otomatis.
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* 6. Instructions */}
-                        <div className="pt-2">
-                            <h3 className="text-sm font-semibold mb-3 px-1 text-zinc-700">Cara Pembayaran</h3>
-                            <Accordion type="single" collapsible className="w-full bg-white border rounded-xl shadow-sm overflow-hidden">
-                                <InstructionItem value="mbanking" title="Via Mobile Banking">
-                                    <ol className="list-decimal list-inside space-y-2 text-sm text-zinc-600">
-                                        <li>Login ke aplikasi Mobile Banking Anda</li>
-                                        <li>Pilih menu <span className="font-semibold">Bayar / Transfer</span></li>
-                                        <li>Pilih <span className="font-semibold">Virtual Account</span></li>
-                                        <li>Masukkan nomor: <span className="font-mono bg-zinc-100 px-1 font-bold">{paymentInfo.number}</span></li>
-                                        <li>Pastikan nominal yang muncul sesuai: <span className="font-semibold text-primary">{formatCurrency(Number(order.totalAmount))}</span></li>
-                                        <li>Masukkan PIN untuk konfirmasi</li>
-                                    </ol>
-                                </InstructionItem>
-                                <InstructionItem value="atm" title="Via ATM">
-                                    <ol className="list-decimal list-inside space-y-2 text-sm text-zinc-600">
-                                        <li>Masukkan kartu ATM & PIN</li>
-                                        <li>Pilih menu <span className="font-semibold">Transaksi Lainnya</span></li>
-                                        <li>Pilih <span className="font-semibold">Transfer ke Virtual Account</span></li>
-                                        <li>Masukkan nomor VA: <span className="font-mono bg-zinc-100 px-1 font-bold">{paymentInfo.number}</span></li>
-                                        <li>Ikuti petunjuk di layar</li>
-                                    </ol>
-                                </InstructionItem>
-                            </Accordion>
-                        </div>
-                    </>
-                )}
-
-                {/* 10. Trust Signals (Global) */}
-                <div className="flex items-center justify-center gap-4 py-4 opacity-60 grayscale hover:grayscale-0 transition-all">
-                    <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 font-medium">
+                    <div className="pt-4 flex items-center justify-center gap-1 text-[10px] text-slate-400">
                         <Lock className="h-3 w-3" />
-                        Transaksi Aman & Terenkripsi
+                        <span>Secured by Mastercard Identity Check</span>
                     </div>
                 </div>
-
-            </main>
-
-            {/* 9. Sticky Bottom Action (System Driven) */}
-            {!isPaid && !isFailed && !isExpired && (
-                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t z-10">
-                    <div className="max-w-md mx-auto space-y-2">
-                        {/* Auto-verification Feedback */}
-                        {status === 'pending' && !isPolling && (
-                            <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 animate-pulse">
-                                <RefreshCw className="h-3 w-3 animate-spin duration-[3000ms]" />
-                                Menunggu pembayaran masuk...
-                            </div>
-                        )}
-
-                        <Button
-                            className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20"
-                            size="lg"
-                            onClick={handleVerifyParams}
-                            disabled={isPolling}
-                        >
-                            {isPolling ? (
-                                <>
-                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                    Mengecek Pembayaran...
-                                </>
-                            ) : (
-                                "Cek Status Pembayaran"
-                            )}
-                        </Button>
-                    </div>
-
-                    {/* DEV: Simulation Tools */}
-                    <div className="max-w-md mx-auto mt-4 pt-4 border-t border-dashed border-zinc-200 opacity-50 hover:opacity-100 transition-opacity">
-                        <p className="text-[10px] text-center text-zinc-400 mb-2 font-mono">⚠️ DEV: SIMULATE GATEWAY EVENT</p>
-                        <div className="flex gap-2 justify-center">
-                            <Button variant="outline" size="sm" className="h-7 text-[10px] bg-green-50 text-green-700 border-green-200 hover:bg-green-100" onClick={async () => {
-                                setIsPolling(true);
-                                await marketplaceService.simulatePayment(paymentId!, 'success');
-                                handleVerifyParams(); // Trigger check immediately
-                            }}>
-                                Force Paid
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-[10px] bg-red-50 text-red-700 border-red-200 hover:bg-red-100" onClick={async () => {
-                                setIsPolling(true);
-                                await marketplaceService.simulatePayment(paymentId!, 'failed');
-                                handleVerifyParams();
-                            }}>
-                                Force Failed
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// --- Sub-components ---
-
-function InitialIcon({ letter, className, color }: { letter: string, className?: string, color?: string }) {
-    return (
-        <div className={cn("h-8 w-8 rounded bg-zinc-100 flex items-center justify-center font-bold text-zinc-600", color?.replace('text-', 'bg-'), className)}>
-            {letter}
-        </div>
-    );
-}
-
-function HelpItem({ title, desc }: { title: string, desc: string }) {
-    return (
-        <div className="p-3 bg-zinc-50 rounded-lg">
-            <h4 className="font-semibold text-sm text-zinc-900 mb-1">{title}</h4>
-            <p className="text-xs text-zinc-600 leading-relaxed">{desc}</p>
-        </div>
-    );
-}
-
-function InstructionItem({ value, title, children }: any) {
-    return (
-        <AccordionItem value={value} className="border-b last:border-0">
-            <AccordionTrigger className="px-4 py-3 hover:bg-zinc-50 hover:no-underline text-sm font-medium">
-                {title}
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4 pt-1">
-                {children}
-            </AccordionContent>
-        </AccordionItem>
-    );
-}
-
-function SuccessView({ order, navigate }: { order: Order, navigate: any }) {
-    return (
-        <div className="py-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto ring-8 ring-green-50">
-                <CheckCircle2 className="h-12 w-12 text-green-600" />
-            </div>
-            <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-zinc-900">Pembayaran Diterima!</h3>
-                <p className="text-zinc-500 max-w-xs mx-auto">
-                    Terima kasih! Pesanan <span className="font-mono font-bold text-zinc-900">#{order.id.slice(0, 8)}</span> sedang diproses oleh penjual.
-                </p>
-            </div>
-            <div className="pt-4 space-y-3">
-                <Button className="w-full h-11" onClick={() => navigate('/marketplace/my-orders')}>
-                    Lihat Status Pesanan
-                </Button>
-                <Button variant="outline" className="w-full h-11" onClick={() => navigate('/marketplace')}>
-                    Kembali ke Beranda
-                </Button>
             </div>
         </div>
     );
 }
 
-function ExpiredView({ navigate }: { navigate: any }) {
-    return (
-        <div className="py-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-            <div className="w-24 h-24 bg-zinc-100 rounded-full flex items-center justify-center mx-auto">
-                <Clock className="h-10 w-10 text-zinc-400" />
-            </div>
-            <div className="space-y-2">
-                <h3 className="text-xl font-bold text-zinc-900">Pembayaran Kedaluwarsa</h3>
-                <p className="text-zinc-500 max-w-xs mx-auto text-sm">
-                    Batas waktu pembayaran telah habis. Silakan lakukan pemesanan ulang.
-                </p>
-            </div>
-            <Button className="w-full" variant="default" onClick={() => navigate('/marketplace')}>
-                Buat Pesanan Baru
-            </Button>
-        </div>
-    );
+// Icons
+function PhoneIcon(props: any) {
+    return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>;
 }
 
-function FailedView({ navigate }: { navigate: any }) {
-    return (
-        <div className="py-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
-            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                <Ban className="h-10 w-10 text-red-500" />
-            </div>
-            <div className="space-y-2">
-                <h3 className="text-xl font-bold text-zinc-900">Pembayaran Gagal</h3>
-                <p className="text-zinc-500 max-w-xs mx-auto text-sm">
-                    Terjadi masalah saat memproses pembayaran. Silakan coba metode lain.
-                </p>
-            </div>
-            <Button className="w-full" variant="outline" onClick={() => navigate(-1)}>
-                Coba Metode Lain
-            </Button>
-        </div>
-    );
+function MailIcon(props: any) {
+    return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><path d="M22 6l-10 7L2 6" /></svg>;
+}
+
+function MessageCircleIcon(props: any) {
+    return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></svg>;
 }

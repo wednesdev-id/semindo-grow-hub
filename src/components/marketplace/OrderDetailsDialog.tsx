@@ -190,7 +190,9 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
     const isBuyer = order && user && order.userId === user.id;
 
     // Logical check for cancellation availability
-    const canCancel = order && ['pending', 'paid', 'processing'].includes(order.status.toLowerCase());
+    // Only allow cancellation if order is strictly PENDING (unpaid).
+    // Once paid or processing, cancellation must be done via "Hubungi Penjual" or Refund Request (not yet impl).
+    const canCancel = order && ['pending'].includes(order.status.toLowerCase()) && order.paymentStatus !== 'paid';
 
     if (!orderId && !open) return null;
 
