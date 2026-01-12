@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
 import type { ConsultantProfile, BookingSlot } from '../../types/consultation';
 import { Star, Clock, Calendar } from 'lucide-react';
+import type { ConsultantProfile } from '../../types/consultation';
+import { Star, Clock, Calendar, ArrowLeft } from 'lucide-react';
+import Navigation from '@/components/ui/navigation';
+import Footer from '@/components/ui/footer';
+import { BookingForm } from '@/components/consultation/BookingForm';
+import ReviewList from '@/components/consultation/ReviewList';
+import ReviewForm from '@/components/consultation/ReviewForm';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function ConsultantProfile() {
     const { id } = useParams<{ id: string }>();
@@ -46,7 +54,17 @@ export default function ConsultantProfile() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Navigation />
+
+            {/* Back to Layanan Konsultasi */}
+            <div className="max-w-5xl mx-auto px-4 pt-24">
+                <Link to="/layanan-konsultasi" className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
+                    <ArrowLeft className="h-4 w-4" />
+                    Kembali ke Layanan Konsultasi
+                </Link>
+            </div>
+
             <div className="max-w-5xl mx-auto px-4 py-8">
                 {/* Header Card */}
                 <div className="bg-white rounded-lg shadow-lg p-8 mb-6">
@@ -80,7 +98,11 @@ export default function ConsultantProfile() {
 
                         <div className="text-right">
                             <div className="text-2xl font-bold text-blue-600">
-                                Rp {consultant.hourlyRate?.toLocaleString()}/hr
+                                {consultant.packages?.length ? (
+                                    <>Mulai Rp {Math.min(...consultant.packages.map((p: any) => p.price)).toLocaleString()}</>
+                                ) : consultant.hourlyRate ? (
+                                    <>Rp {consultant.hourlyRate.toLocaleString()}/hr</>
+                                ) : null}
                             </div>
                             <button
                                 onClick={() => setShowBookingModal(true)}
@@ -106,12 +128,12 @@ export default function ConsultantProfile() {
                 <div className="bg-white rounded-lg shadow p-6 mb-6">
                     <h2 className="text-xl font-bold mb-4">Expertise</h2>
                     <div className="flex flex-wrap gap-2">
-                        {consultant.expertiseAreas.map((area, idx) => (
+                        {((consultant as any).expertise || []).map((exp: any, idx: number) => (
                             <span
                                 key={idx}
                                 className="px-4 py-2 bg-blue-100 text-blue-700 rounded-full"
                             >
-                                {area}
+                                {exp.expertise?.name || exp.name}
                             </span>
                         ))}
                     </div>
@@ -147,13 +169,30 @@ export default function ConsultantProfile() {
                 </div>
             </div>
 
+            {/* Reviews Section */}
+            <div className="max-w-5xl mx-auto px-4 mb-8">
+                <ReviewList consultantId={id!} />
+            </div>
+
+            {/* Footer */}
+            <div className="mt-auto">
+                <Footer />
+            </div>
+
             {/* Booking Modal */}
-            {showBookingModal && (
+            {showBookingModal && consultant && (
                 <BookingModal
                     consultant={consultant}
                     onClose={() => setShowBookingModal(false)}
                 />
             )}
+
+            {/* Review Modal */}
+            {/* Logic for showing review modal from URL param or button */}
+            {/* For now, we rely on deep linking or a future button. 
+                If we want to support ?action=review, we need useEffect logic. 
+                Adding basic support for it. */}
+            <ReviewModalController consultant={consultant} />
         </div>
     );
 }
@@ -172,64 +211,53 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
     });
     const [submitting, setSubmitting] = useState(false);
 
-    // Fetch slots when date changes
     useEffect(() => {
-        if (selectedDate) {
-            fetchSlots(selectedDate);
-        } else {
-            setAvailableSlots([]);
+        if (searchParams.get('action') === 'review') {
+            setIsOpen(true);
         }
-    }, [selectedDate]);
+    }, [searchParams]);
 
-    const fetchSlots = async (date: string) => {
-        try {
-            setLoadingSlots(true);
-            // Fetch for the specific date (start = end = date)
-            const slots = await consultationService.getAvailableSlots(consultant.id, date, date);
-            setAvailableSlots(slots);
-        } catch (error) {
-            console.error('Failed to fetch slots:', error);
-        } finally {
-            setLoadingSlots(false);
-        }
+    const handleClose = () => {
+        setIsOpen(false);
+        // Remove param
+        searchParams.delete('action');
+        setSearchParams(searchParams);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!selectedSlot) {
-            alert('Please select a time slot');
-            return;
-        }
-
-        try {
-            setSubmitting(true);
+    if (!isOpen || !consultant) return null;
 
             // Calculate duration in minutes
             const start = new Date(`${selectedSlot.date}T${selectedSlot.startTime}`);
             const end = new Date(`${selectedSlot.date}T${selectedSlot.endTime}`);
             const durationMinutes = (end.getTime() - start.getTime()) / 60000;
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold">Write a Review</h3>
+                    <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <ReviewForm
+                    consultantId={consultant.id}
+                    consultantName={consultant.user.fullName}
+                    onSuccess={() => {
+                        handleClose();
+                        // Ideally refresh list
+                        window.location.reload();
+                    }}
+                    onCancel={handleClose}
+                />
+            </div>
+        </div>
+    )
+}
 
-            await consultationService.createRequest({
-                consultantId: consultant.id,
-                requestedDate: selectedSlot.date,
-                requestedStartTime: selectedSlot.startTime,
-                requestedEndTime: selectedSlot.endTime,
-                durationMinutes: durationMinutes,
-                topic: formData.topic,
-                description: formData.description,
-            });
-            alert('Booking request submitted successfully!');
-            navigate('/consultation/dashboard');
-        } catch (error) {
-            console.error('Failed to submit booking:', error);
-            alert('Failed to submit booking. Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
+// Booking Modal Component
+function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }): JSX.Element {
+    const navigate = useNavigate();
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-lg p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold">Book a Session</h2>
@@ -238,95 +266,14 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Date Selection */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Select Date</label>
-                        <input
-                            type="date"
-                            required
-                            min={new Date().toISOString().split('T')[0]}
-                            value={selectedDate}
-                            onChange={(e) => {
-                                setSelectedDate(e.target.value);
-                                setSelectedSlot(null);
-                            }}
-                            className="w-full px-3 py-2 border rounded-md"
-                        />
-                    </div>
-
-                    {/* Slot Selection */}
-                    {selectedDate && (
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Select Time Slot</label>
-                            {loadingSlots ? (
-                                <div className="text-center py-4 text-gray-500">Loading available slots...</div>
-                            ) : availableSlots.length === 0 ? (
-                                <div className="text-center py-4 text-gray-500 bg-gray-50 rounded-md border border-dashed">
-                                    No available slots on this date. Please choose another date.
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-3 gap-3">
-                                    {availableSlots.map((slot, idx) => (
-                                        <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() => setSelectedSlot(slot)}
-                                            className={`px - 3 py - 2 text - sm rounded - md border transition - all ${
-                selectedSlot === slot
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300'
-                                            }`}
-                                        >
-                                            {slot.startTime} - {slot.endTime}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Topic & Description */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Topic</label>
-                        <input
-                            type="text"
-                            required
-                            value={formData.topic}
-                            onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-                            placeholder="What would you like to discuss?"
-                            className="w-full px-3 py-2 border rounded-md"
-                        />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium mb-1">Description (Optional)</label>
-                        <textarea
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            rows={4}
-                            placeholder="Provide more details about your consultation needs..."
-                            className="w-full px-3 py-2 border rounded-md"
-                        />
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-4 border-t">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 border rounded-md hover:bg-gray-50"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={submitting || !selectedSlot}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {submitting ? 'Submitting...' : 'Confirm Booking'}
-                        </button>
-                    </div>
-                </form>
+                <BookingForm
+                    consultant={consultant}
+                    onSuccess={() => {
+                        alert('Booking request submitted successfully! Check pending status in history.');
+                        navigate('/consultation/history?status=pending');
+                    }}
+                    onCancel={onClose}
+                />
             </div>
         </div>
     );

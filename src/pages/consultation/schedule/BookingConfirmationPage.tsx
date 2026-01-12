@@ -125,7 +125,13 @@ export default function BookingConfirmationPage() {
                             <div className="pt-4 border-t flex justify-between items-center">
                                 <div>
                                     <p className="text-sm text-muted-foreground">Total Price</p>
-                                    <p className="text-xl font-bold">Rp {consultant?.hourlyRate?.toLocaleString()}</p>
+                                    <p className="text-xl font-bold">
+                                        {consultant?.packages?.length ? (
+                                            <>Rp {Math.min(...consultant.packages.map((p: any) => p.price)).toLocaleString()}</>
+                                        ) : consultant?.hourlyRate ? (
+                                            <>Rp {consultant.hourlyRate.toLocaleString()}</>
+                                        ) : '-'}
+                                    </p>
                                 </div>
                             </div>
                         </form>

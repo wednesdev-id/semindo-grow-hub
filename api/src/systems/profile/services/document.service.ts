@@ -13,7 +13,7 @@ export class DocumentService {
             where: { userId }
         });
 
-        if (!umkmProfile) {
+        if (!umkmProfiles) {
             throw new Error('UMKM Profile not found');
         }
 
@@ -24,7 +24,7 @@ export class DocumentService {
 
         return db.document.create({
             data: {
-                umkmProfileId: umkmProfile.id,
+                umkmProfileId: umkmProfiles.id,
                 type,
                 number,
                 fileUrl,
@@ -41,12 +41,12 @@ export class DocumentService {
             where: { userId }
         });
 
-        if (!umkmProfile) {
+        if (!umkmProfiles) {
             throw new Error('UMKM Profile not found');
         }
 
         return db.document.findMany({
-            where: { umkmProfileId: umkmProfile.id },
+            where: { umkmProfileId: umkmProfiles.id },
             orderBy: { createdAt: 'desc' }
         });
     }

@@ -5,16 +5,26 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, ShoppingCart, MapPin, Star, ShoppingBag } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Filter, ShoppingBag, ShoppingCart, MapPin, Star, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getCategoryColor } from '@/config/categoryColors';
+import { ProductFiltersComponent } from '@/components/marketplace/ProductFilters';
 
 export default function ProductListPage() {
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [filters, setFilters] = useState({
+        search: '',
+        category: null as string | null,
+        sortBy: 'newest',
+    });
 
-    const { data: products, isLoading: isLoadingProducts } = useQuery({
-        queryKey: ['marketplace-products'],
-        queryFn: marketplaceService.getFeaturedProducts
+    const { data: searchResults, isLoading: isLoadingProducts } = useQuery({
+        queryKey: ['marketplace-products', filters],
+        queryFn: () => marketplaceService.searchProducts({
+            ...filters,
+            category: filters.category || undefined,
+            limit: 20
+        })
     });
 
     const { data: categories } = useQuery({
@@ -22,12 +32,7 @@ export default function ProductListPage() {
         queryFn: marketplaceService.getCategories
     });
 
-    const filteredProducts = products?.filter(product => {
-        const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            product.description.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesCategory = selectedCategory ? product.category === selectedCategory : true;
-        return matchesSearch && matchesCategory;
-    });
+    const products = searchResults?.products || [];
 
     return (
         <div className="space-y-8">
@@ -46,21 +51,30 @@ export default function ProductListPage() {
                             type="search"
                             placeholder="Cari produk..."
                             className="pl-8"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            value={filters.search}
+                            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                         />
                     </div>
-                    <Button variant="outline" size="icon">
-                        <Filter className="h-4 w-4" />
-                    </Button>
+                    <ProductFiltersComponent
+                        filters={{
+                            search: filters.search,
+                            category: filters.category,
+                            sortBy: filters.sortBy as any,
+                            minPrice: 0,
+                            maxPrice: 10000000,
+                            stockStatus: 'all'
+                        }}
+                        onFiltersChange={(newFilters) => setFilters({ ...filters, ...newFilters })}
+                        categories={categories || []}
+                    />
                 </div>
             </div>
 
             {/* Categories */}
             <div className="flex gap-2 overflow-x-auto pb-4">
                 <Button
-                    variant={selectedCategory === null ? "default" : "outline"}
-                    onClick={() => setSelectedCategory(null)}
+                    variant={filters.category === null ? "default" : "outline"}
+                    onClick={() => setFilters({ ...filters, category: null })}
                     className="whitespace-nowrap"
                 >
                     Semua Kategori
@@ -68,8 +82,8 @@ export default function ProductListPage() {
                 {categories?.map((category) => (
                     <Button
                         key={category.id}
-                        variant={selectedCategory === category.id ? "default" : "outline"}
-                        onClick={() => setSelectedCategory(category.id)}
+                        variant={filters.category === category.id ? "default" : "outline"}
+                        onClick={() => setFilters({ ...filters, category: category.id })}
                         className="whitespace-nowrap"
                     >
                         {category.name}
@@ -92,48 +106,81 @@ export default function ProductListPage() {
                 </div>
             ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                    {filteredProducts?.map((product) => (
-                        <Link key={product.id} to={`/marketplace/products/${product.slug}`}>
-                            <Card className="h-full overflow-hidden transition-all hover:shadow-lg">
-                                <div className="aspect-video w-full overflow-hidden bg-muted">
-                                    <img
-                                        src={product.image}
-                                        alt={product.name}
-                                        className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                                    />
-                                </div>
-                                <CardContent className="p-4">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <Badge variant="secondary" className="text-xs">
+                    {products.map((product) => {
+                        const categoryColor = getCategoryColor(product.category);
+                        return (
+                            <Link key={product.id} to={`/marketplace/products/${product.slug}`}>
+                                <Card className="h-full overflow-hidden transition-all hover:shadow-lg">
+                                    <div className="aspect-video w-full overflow-hidden bg-muted relative">
+                                        <img
+                                            src={product.image}
+                                            alt={product.name}
+                                            className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                                        />
+                                    </div>
+                                    <CardContent className="p-4">
+                                        {/* Category Badge with Dynamic Color */}
+                                        <Badge
+                                            variant="secondary"
+                                            className="text-xs mb-2"
+                                            style={{
+                                                color: categoryColor.text,
+                                                backgroundColor: categoryColor.background,
+                                                borderColor: categoryColor.stroke,
+                                                border: `1px solid ${categoryColor.stroke}`
+                                            }}
+                                        >
                                             {product.category}
                                         </Badge>
-                                        <div className="flex items-center text-yellow-500">
+
+                                        {/* Product Name with Like Button */}
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <h3 className="line-clamp-2 text-lg font-semibold flex-1">
+                                                {product.name}
+                                            </h3>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    // TODO: Implement like functionality
+                                                }}
+                                                className="text-gray-400 hover:text-red-500 transition-colors"
+                                            >
+                                                <Heart className="h-5 w-5" />
+                                            </button>
+                                        </div>
+
+                                        {/* Rating */}
+                                        <div className="flex items-center text-yellow-500 mb-2">
                                             <Star className="mr-1 h-3 w-3 fill-current" />
                                             <span className="text-xs font-medium">{product.rating || 'New'}</span>
                                         </div>
-                                    </div>
-                                    <h3 className="line-clamp-2 text-lg font-semibold">{product.name}</h3>
-                                    <div className="mt-2 flex items-center text-sm text-muted-foreground">
-                                        <MapPin className="mr-1 h-3 w-3" />
-                                        {product.location}
-                                    </div>
-                                    <div className="mt-2 font-bold text-primary">
-                                        {product.price}
-                                    </div>
-                                </CardContent>
-                                <CardFooter className="p-4 pt-0">
-                                    <Button className="w-full" variant="outline">
-                                        <ShoppingBag className="mr-2 h-4 w-4" />
-                                        Lihat Detail
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        </Link>
-                    ))}
+
+                                        {/* Location */}
+                                        <div className="flex items-center text-sm text-muted-foreground mb-2">
+                                            <MapPin className="mr-1 h-3 w-3" />
+                                            {product.location}
+                                        </div>
+
+                                        {/* Price */}
+                                        <div className="font-bold text-primary text-lg">
+                                            {product.price}
+                                        </div>
+                                    </CardContent>
+                                    <CardFooter className="p-4 pt-0">
+                                        <Button
+                                            className="w-full"
+                                        >
+                                            Detail
+                                        </Button>
+                                    </CardFooter>
+                                </Card>
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
 
-            {!isLoadingProducts && filteredProducts?.length === 0 && (
+            {!isLoadingProducts && products.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                     <ShoppingBag className="h-12 w-12 text-muted-foreground/50" />
                     <h3 className="mt-4 text-lg font-semibold">Tidak ada produk ditemukan</h3>

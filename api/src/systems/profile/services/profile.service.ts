@@ -66,7 +66,18 @@ export class ProfileService {
             }
         })
 
-        return profile
+        if (existingProfile) {
+            // Update existing profile
+            return db.uMKMProfile.update({
+                where: { id: existingProfile.id },
+                data: { ...data }
+            })
+        } else {
+            // Create new profile
+            return db.uMKMProfile.create({
+                data: { userId, ...data }
+            })
+        }
     }
 
     // Approve UMKM profile and assign 'umkm' role to user

@@ -4,7 +4,8 @@
  */
 
 // User Roles
-export type UserRole = 'umkm' | 'consultant' | 'admin' | 'partner' | 'bank';
+// User Roles
+export type UserRole = 'umkm' | 'consultant' | 'konsultan' | 'admin' | 'partner' | 'bank';
 export type UserStatus = 'active' | 'inactive' | 'pending' | 'suspended';
 export type BusinessCategory = 'kuliner' | 'fashion' | 'agribisnis' | 'kerajinan' | 'jasa' | 'manufaktur' | 'lainnya';
 export type BusinessLevel = 'micro' | 'small' | 'medium';
@@ -13,10 +14,17 @@ export type BusinessLevel = 'micro' | 'small' | 'medium';
 export interface User {
   id: string;
   email: string;
+  fullName: string; // Added
+  phone?: string; // Added
   role: UserRole;
+  roles: string[]; // Added
+  permissions: string[]; // Added
   status: UserStatus;
   profile: UserProfile;
   businessProfile?: BusinessProfile;
+  umkmProfile?: any; // Added
+  mentorProfile?: any; // Added
+  consultantProfile?: any; // Added
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt?: Date;
@@ -154,7 +162,9 @@ export interface OAuthResponse {
   token: string;
 }
 
+// Export ApiClient types by re-exporting them
 import { ApiError, ApiResponse, ValidationError } from '../infrastructure/api/ApiClient';
+export type { ApiError, ApiResponse, ValidationError };
 import { DeviceInfo } from '../assessment/types';
 
 // Validation Types

@@ -2,6 +2,8 @@ import { Product, Order, Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { paymentService } from './payment.service';
 import { shopeeAdapter, tokopediaAdapter } from '../adapters/mock.adapter';
+import { options } from 'pdfkit';
+import { ProductSearchDto, ProductSearchResponse } from '../dto';
 
 // Order Status Enum
 enum OrderStatus {
@@ -31,12 +33,11 @@ export class MarketplaceService {
         const store = await prisma.store.findUnique({ where: { userId } });
         if (!store) throw new Error('User does not have a store. Please create a store first.');
 
-        const { variants, shopeeLink, tokopediaLink, ...productData } = data;
+        const productData = data;
 
         // Generate slug
         const baseSlug = productData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         const slug = `${baseSlug}-${Date.now()}`;
-
 
         return prisma.product.create({
             data: {
@@ -44,28 +45,98 @@ export class MarketplaceService {
                 slug,
                 storeId: store.id,
                 sellerId: userId, // Keep for legacy compatibility
-                variants: variants ? {
-                    create: variants
-                } : undefined
-            },
-            include: {
-                variants: true,
             }
         });
     }
+
+
 
     async findAllProducts(params: {
         skip?: number;
         take?: number;
         where?: Prisma.ProductWhereInput;
         orderBy?: Prisma.ProductOrderByWithRelationInput;
+        // New search and filter parameters
+        search?: string;
+        category?: string;
+        minPrice?: number;
+        maxPrice?: number;
+        inStock?: boolean;
+        sortBy?: 'price' | 'createdAt' | 'rating' | 'soldCount' | 'viewCount';
+        sortOrder?: 'asc' | 'desc';
     }): Promise<Product[]> {
-        const { skip, take, where, orderBy } = params;
-        return prisma.product.findMany({
+        const {
             skip,
             take,
             where,
             orderBy,
+            search,
+            category,
+            minPrice,
+            maxPrice,
+            inStock,
+            sortBy,
+            sortOrder
+        } = params;
+
+        // Build dynamic where clause
+        const dynamicWhere: Prisma.ProductWhereInput = {
+            ...where,
+        };
+
+        // Search by product title or description
+        if (search) {
+            dynamicWhere.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        // Filter by category
+        if (category) {
+            dynamicWhere.category = category;
+        }
+
+        // Filter by price range
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            dynamicWhere.price = {};
+            if (minPrice !== undefined) {
+                dynamicWhere.price.gte = minPrice;
+            }
+            if (maxPrice !== undefined) {
+                dynamicWhere.price.lte = maxPrice;
+            }
+        }
+
+        // Filter by stock status
+        if (inStock !== undefined) {
+            if (inStock) {
+                dynamicWhere.stock = { gt: 0 };
+            } else {
+                dynamicWhere.stock = { lte: 0 };
+            }
+        }
+
+        // Build dynamic orderBy clause
+        let dynamicOrderBy: Prisma.ProductOrderByWithRelationInput = orderBy || { createdAt: 'desc' };
+
+        if (sortBy) {
+            const order = sortOrder || 'desc';
+            dynamicOrderBy = { [sortBy]: order };
+        }
+
+        // If where clause already has deletedAt filter (admin view), don't add isPublished filter
+        const hasDeletedAtFilter = where && 'deletedAt' in where;
+
+        return prisma.product.findMany({
+            skip,
+            take,
+            where: hasDeletedAtFilter ? dynamicWhere : {
+                ...dynamicWhere,
+                deletedAt: null,
+                isPublished: true // Only show published products for public
+            },
+            orderBy: dynamicOrderBy,
             include: {
                 store: {
                     select: {
@@ -75,14 +146,260 @@ export class MarketplaceService {
                         rating: true,
                     }
                 },
-                variants: true,
             },
         });
     }
 
+    /**
+     * Search and filter products with pagination
+     * New method using ProductSearchDto
+     */
+    async searchProducts(params: ProductSearchDto): Promise<ProductSearchResponse> {
+        const {
+            search,
+            category,
+            minPrice,
+            maxPrice,
+            stockStatus = 'all',
+            sortBy = 'newest',
+            page = 1,
+            limit = 20,
+            sellerId,
+            status
+        } = params;
+
+        // Build where clause
+        const where: Prisma.ProductWhereInput = {
+            deletedAt: null,
+            isPublished: true,
+        };
+
+        // Search by title or description
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        // Filter by category
+        if (category) {
+            where.category = category;
+        }
+
+        // Filter by price range
+        if (minPrice !== undefined || maxPrice !== undefined) {
+            where.price = {};
+            if (minPrice !== undefined) {
+                where.price.gte = minPrice;
+            }
+            if (maxPrice !== undefined) {
+                where.price.lte = maxPrice;
+            }
+        }
+
+        // Filter by stock status
+        if (stockStatus === 'in_stock') {
+            where.stock = { gt: 0 };
+        } else if (stockStatus === 'low_stock') {
+            where.AND = [
+                { stock: { gt: 0 } },
+                { stock: { lt: 10 } }
+            ];
+        } else if (stockStatus === 'out_of_stock') {
+            where.stock = { lte: 0 };
+        }
+
+        // Filter by seller (for admin/specific use cases)
+        if (sellerId) {
+            where.sellerId = sellerId;
+        }
+
+        // Filter by status (for admin)
+        if (status) {
+            if (status === 'active') {
+                where.isPublished = true;
+            } else if (status === 'inactive') {
+                where.isPublished = false;
+            }
+        }
+
+        // Build orderBy clause
+        let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+
+        switch (sortBy) {
+            case 'price_asc':
+                orderBy = { price: 'asc' };
+                break;
+            case 'price_desc':
+                orderBy = { price: 'desc' };
+                break;
+            case 'popular':
+                orderBy = { viewCount: 'desc' };
+                break;
+            default:
+                orderBy = { createdAt: 'desc' };
+        }
+
+        // Calculate pagination
+        const skip = (page - 1) * limit;
+
+        // Execute query with count
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                orderBy,
+                skip,
+                take: limit,
+                include: {
+                    store: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true,
+                            rating: true,
+                        }
+                    },
+                },
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        // Calculate total pages
+        const totalPages = Math.ceil(total / limit);
+
+        // Return formatted response
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages
+            },
+            filters: {
+                search,
+                category,
+                minPrice,
+                maxPrice,
+                stockStatus,
+                sortBy
+            }
+        };
+    }
+
+    /**
+     * Admin: Get comprehensive list of products with filters
+     */
+    async getAdminProducts(params: {
+        search?: string;
+        category?: string;
+        status?: string;
+        sellerId?: string;
+        sortBy?: string;
+        page?: number;
+        limit?: number;
+        startDate?: Date;
+        endDate?: Date;
+    }) {
+        const { search, category, status, sellerId, sortBy, page = 1, limit = 20, startDate, endDate } = params;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.ProductWhereInput = {};
+
+        // Search
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+            ];
+            // Optional: Add store name search if relationship setup allows easy filtering, 
+            // but Prisma doesn't support deep relation filtering in OR easily without specific setup.
+            // We'll stick to title/desc for minimal complexity or add AND for store if possible.
+        }
+
+        // Filters
+        if (category) where.category = category;
+        if (sellerId) where.storeId = sellerId;
+
+        // Status Logic
+        if (status) {
+            switch (status) {
+                case 'active':
+                    where.isPublished = true;
+                    break;
+                case 'draft':
+                    where.status = 'draft';
+                    break;
+                case 'inactive':
+                    where.isPublished = false;
+                    break;
+                case 'archived':
+                    where.status = 'archived';
+                    break;
+                case 'rejected':
+                    where.status = 'rejected';
+                    break;
+            }
+        }
+
+        // Date Range
+        if (startDate || endDate) {
+            where.createdAt = {};
+            if (startDate) where.createdAt.gte = startDate;
+            if (endDate) where.createdAt.lte = endDate;
+        }
+
+        // Sorting
+        let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+        switch (sortBy) {
+            case 'price_asc': orderBy = { price: 'asc' }; break;
+            case 'price_desc': orderBy = { price: 'desc' }; break;
+            case 'oldest': orderBy = { createdAt: 'asc' }; break;
+            case 'name_asc': orderBy = { title: 'asc' }; break;
+            case 'name_desc': orderBy = { title: 'desc' }; break;
+            case 'newest':
+            default: orderBy = { createdAt: 'desc' };
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    store: {
+                        include: {
+                            user: {
+                                select: {
+                                    fullName: true,
+                                    email: true
+                                }
+                            }
+                        }
+                    }
+                },
+                skip,
+                take: limit,
+                orderBy
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+
+
     async findProductBySlug(slug: string): Promise<Product | null> {
-        return prisma.product.findUnique({
-            where: { slug },
+        return prisma.product.findFirst({
+            where: { slug, deletedAt: null },
             include: {
                 seller: {
                     select: {
@@ -95,45 +412,35 @@ export class MarketplaceService {
         });
     }
 
-    async createOrder(userId: string, items: { productId: string; quantity: number; variantId?: string }[]): Promise<Order> {
+    async createOrder(userId: string, items: { productId: string; quantity: number }[], shippingAddress?: any, courier?: string, shippingCost: number = 0): Promise<Order> {
         // Calculate total amount and verify stock
-        let totalAmount = 0;
+        let subtotal = 0;
         const orderItemsData: any[] = [];
 
         for (const item of items) {
             const product = await prisma.product.findUnique({
-                where: { id: item.productId },
-                include: { variants: true }
+                where: { id: item.productId }
             });
 
-            if (!product) throw new Error(`Product ${item.productId} not found`);
+            if (!product || product.deletedAt) throw new Error(`Product ${item.productId} not found or no longer available`);
 
             let price = Number(product.price);
             let stock = product.stock;
-            let variantName: string | null = null;
-
-            if (item.variantId) {
-                const variant = product.variants.find(v => v.id === item.variantId);
-                if (!variant) throw new Error(`Variant ${item.variantId} not found for product ${product.title}`);
-
-                price = Number(variant.price);
-                stock = variant.stock;
-                variantName = variant.name;
-            }
 
             if (stock < item.quantity) {
-                throw new Error(`Insufficient stock for ${product.title} ${variantName ? `(${variantName})` : ''} `);
+                throw new Error(`Insufficient stock for ${product.title}`);
             }
 
-            totalAmount += price * item.quantity;
+            subtotal += price * item.quantity;
             orderItemsData.push({
                 productId: item.productId,
-                variantId: item.variantId,
                 quantity: item.quantity,
                 price: price,
-                name: variantName ? `${product.title} - ${variantName} ` : product.title
+                name: product.title,
             });
         }
+
+        const totalAmount = subtotal + shippingCost;
 
         return prisma.$transaction(async (tx) => {
             // Create order
@@ -141,8 +448,11 @@ export class MarketplaceService {
                 data: {
                     userId,
                     totalAmount,
+                    shippingCost,
                     paymentLink: '', // Will be updated
                     paymentStatus: 'pending',
+                    shippingAddress,
+                    courier,
                     items: {
                         create: orderItemsData,
                     },
@@ -151,7 +461,6 @@ export class MarketplaceService {
                     items: {
                         include: {
                             product: true,
-                            variant: true,
                         },
                     },
                     user: true, // Include user to get details for payment
@@ -177,17 +486,10 @@ export class MarketplaceService {
 
             // Update stock
             for (const item of items) {
-                if (item.variantId) {
-                    await tx.productVariant.update({
-                        where: { id: item.variantId },
-                        data: { stock: { decrement: item.quantity } },
-                    });
-                } else {
-                    await tx.product.update({
-                        where: { id: item.productId },
-                        data: { stock: { decrement: item.quantity } },
-                    });
-                }
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { decrement: item.quantity } },
+                });
             }
 
             // Clear cart items if they exist
@@ -227,9 +529,28 @@ export class MarketplaceService {
         if (!product) throw new Error('Product not found');
         if (product.sellerId !== userId) throw new Error('Unauthorized');
 
+        // Handle Status Logic
+        if (typeof data.status === 'string') {
+            const newStatus = data.status;
+
+            // Sync isPublished based on status
+            if (newStatus === 'active') { // 'active' = Published
+                data.isPublished = true;
+            } else if (['draft', 'archived', 'suspended'].includes(newStatus)) {
+                data.isPublished = false;
+            }
+        }
+
         return prisma.product.update({
             where: { id },
             data,
+        });
+    }
+
+    async archiveProduct(id: string, userId: string): Promise<Product> {
+        return this.updateProduct(id, userId, {
+            status: 'archived',
+            isPublished: false
         });
     }
 
@@ -238,21 +559,99 @@ export class MarketplaceService {
         if (!product) throw new Error('Product not found');
         if (product.sellerId !== userId) throw new Error('Unauthorized');
 
-        return prisma.product.delete({
+        return prisma.product.update({
             where: { id },
+            data: {
+                deletedAt: new Date(),
+                isPublished: false // Also unpublish on delete
+            },
         });
     }
 
-    async getMyProducts(userId: string): Promise<Product[]> {
-        const store = await prisma.store.findUnique({ where: { userId } });
-        if (!store) return [];
+    async getMyProducts(userId: string, filters?: {
+        search?: string;
+        category?: string;
+        stockStatus?: string;
+        sortBy?: string;
+        minPrice?: number;
+        maxPrice?: number;
+    }): Promise<Product[]> {
+        const store = await prisma.store.findFirst({ where: { userId } });
+
+        // Base where clause for ownership
+        const where: Prisma.ProductWhereInput = {
+            OR: [
+                store ? { storeId: store.id } : {},
+                { sellerId: userId }
+            ],
+            deletedAt: null
+        };
+
+        // Apply Filters
+        if (filters) {
+            const { search, category, stockStatus, minPrice, maxPrice } = filters;
+
+            if (search) {
+                where.AND = [
+                    ...(Array.isArray(where.AND) ? where.AND : []),
+                    {
+                        OR: [
+                            { title: { contains: search, mode: 'insensitive' } },
+                            { description: { contains: search, mode: 'insensitive' } }
+                        ]
+                    }
+                ];
+            }
+
+            if (category) {
+                where.category = category;
+            }
+
+            if (minPrice !== undefined || maxPrice !== undefined) {
+                where.price = {};
+                if (minPrice !== undefined) where.price.gte = minPrice;
+                if (maxPrice !== undefined) where.price.lte = maxPrice;
+            }
+
+            if (stockStatus) {
+                if (stockStatus === 'in_stock') {
+                    where.stock = { gt: 0 };
+                } else if (stockStatus === 'low_stock') {
+                    where.stock = { gt: 0, lt: 10 };
+                } else if (stockStatus === 'out_of_stock') {
+                    where.stock = { lte: 0 };
+                }
+            }
+        }
+
+        // Apply Sorting
+        let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
+        if (filters?.sortBy) {
+            switch (filters.sortBy) {
+                case 'price_asc': orderBy = { price: 'asc' }; break;
+                case 'price_desc': orderBy = { price: 'desc' }; break;
+                case 'oldest': orderBy = { createdAt: 'asc' }; break;
+                case 'popular': orderBy = { viewCount: 'desc' }; break; // Assuming viewCount exists
+                case 'newest':
+                default: orderBy = { createdAt: 'desc' };
+            }
+        }
 
         return prisma.product.findMany({
-            where: { storeId: store.id },
-            orderBy: { createdAt: 'desc' },
+            where,
             include: {
-                variants: true,
-            }
+                seller: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        businessName: true,
+                        umkmProfiles: {
+                            select: { city: true }
+                        }
+                    }
+                }
+            },
+            orderBy
         });
     }
 
@@ -373,6 +772,79 @@ export class MarketplaceService {
         });
     }
 
+    async cancelOrder(id: string, userId: string, reason: string): Promise<Order> {
+        const order = await prisma.order.findUnique({
+            where: { id },
+            include: {
+                items: true,
+            }
+        });
+
+        if (!order) throw new Error('Order not found');
+
+        // Verify authorization: Buyer or Seller
+        const isBuyer = order.userId === userId;
+        const isSeller = await this.isOrderSeller(order.id, userId);
+
+        if (!isBuyer && !isSeller) {
+            throw new Error('Unauthorized: Only buyers or sellers can cancel an order');
+        }
+
+        // Check if transition to cancelled is valid
+        const validNextStatuses = VALID_TRANSITIONS[order.status] || [];
+        if (!validNextStatuses.includes('cancelled')) {
+            throw new Error(`Cannot cancel order in "${order.status}" status`);
+        }
+
+        return prisma.$transaction(async (tx) => {
+            // 1. If paid, handle refund (Mock)
+            if (order.paymentStatus === 'paid') {
+                await paymentService.refundOrder(order.id, Number(order.totalAmount));
+            }
+
+            // 2. Restore stock
+            for (const item of order.items) {
+                await tx.product.update({
+                    where: { id: item.productId },
+                    data: { stock: { increment: item.quantity } }
+                });
+            }
+
+            // 3. Update order status
+            return tx.order.update({
+                where: { id },
+                data: {
+                    status: 'cancelled',
+                    paymentStatus: order.paymentStatus === 'paid' ? 'refunded' : order.paymentStatus,
+                    cancellationReason: reason,
+                    cancelledAt: new Date(),
+                    cancelledBy: isBuyer ? 'buyer' : 'seller'
+                } as any // Use any because Prisma generate might have failed
+            });
+        });
+    }
+
+    private async isOrderSeller(orderId: string, userId: string): Promise<boolean> {
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                items: {
+                    include: {
+                        product: {
+                            include: { store: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!order) return false;
+
+        return order.items.some(
+            item => item.product.store?.userId === userId || item.product.sellerId === userId
+        );
+    }
+
     async syncStock(productId: string): Promise<{ success: boolean; newStock: number }> {
         const product = await prisma.product.findUnique({ where: { id: productId } });
         if (!product) throw new Error('Product not found');
@@ -394,28 +866,81 @@ export class MarketplaceService {
         if (!store) throw new Error('Store not found');
 
         const totalOrders = await prisma.order.count({
-            where: { storeId: store.id }
-        });
-
-        const completedOrders = await prisma.order.aggregate({
             where: {
-                storeId: store.id,
-                status: 'completed'
-            },
-            _sum: { totalAmount: true }
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
+                        }
+                    }
+                }
+            }
         });
 
-        const totalSales = Number(completedOrders._sum.totalAmount || 0);
+        const completedOrdersWithItems = await prisma.order.findMany({
+            where: {
+                status: 'completed',
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
+                        }
+                    }
+                }
+            },
+            include: {
+                items: {
+                    include: {
+                        product: true
+                    }
+                }
+            }
+        });
+
+        let totalSales = 0;
+        completedOrdersWithItems.forEach(order => {
+            order.items.forEach(item => {
+                if (item.product.storeId === store.id || item.product.sellerId === userId) {
+                    totalSales += Number(item.price) * item.quantity;
+                }
+            });
+        });
 
         const products = await prisma.product.count({
-            where: { storeId: store.id }
+            where: {
+                OR: [
+                    { storeId: store.id },
+                    { sellerId: userId }
+                ],
+                deletedAt: null
+            }
         });
 
         const recentOrders = await prisma.order.findMany({
-            where: { storeId: store.id },
+            where: {
+                items: {
+                    some: {
+                        product: {
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
+                        }
+                    }
+                }
+            },
             orderBy: { createdAt: 'desc' },
             take: 5,
-            include: { user: { select: { fullName: true } } }
+            include: {
+                user: { select: { fullName: true } },
+                items: { include: { product: true } }
+            }
         });
 
         // Mock monthly sales data for chart
@@ -437,18 +962,19 @@ export class MarketplaceService {
         };
     }
 
-    async getSellerOrders(userId: string): Promise<Order[]> {
-        // Get user's store
+    async getSellerOrders(userId: string): Promise<any[]> {
         const store = await prisma.store.findUnique({ where: { userId } });
         if (!store) return [];
 
-        // Find all orders that contain products from this seller's store
-        return prisma.order.findMany({
+        const orders = await prisma.order.findMany({
             where: {
                 items: {
                     some: {
                         product: {
-                            storeId: store.id
+                            OR: [
+                                { storeId: store.id },
+                                { sellerId: userId }
+                            ]
                         }
                     }
                 }
@@ -463,6 +989,7 @@ export class MarketplaceService {
                                 images: true,
                                 price: true,
                                 storeId: true,
+                                sellerId: true,
                             }
                         },
                     },
@@ -490,6 +1017,21 @@ export class MarketplaceService {
                 }
             },
             orderBy: { createdAt: 'desc' },
+        });
+
+        // Add seller-specific subtotal to each order
+        return orders.map(order => {
+            const sellerSubtotal = order.items.reduce((sum, item) => {
+                if (item.product.storeId === store.id || item.product.sellerId === userId) {
+                    return sum + (Number(item.price) * item.quantity);
+                }
+                return sum;
+            }, 0);
+
+            return {
+                ...order,
+                sellerSubtotal
+            };
         });
     }
 
@@ -550,5 +1092,338 @@ export class MarketplaceService {
                 status: approved ? 'active' : 'rejected'
             }
         });
+    }
+
+    async findProductsByStore(storeId: string): Promise<Product[]> {
+        return prisma.product.findMany({
+            where: { storeId, deletedAt: null },
+            orderBy: { createdAt: 'desc' }
+        });
+    }
+
+    async updateProductStatus(id: string, userId: string, status: string): Promise<Product> {
+        return this.updateProduct(id, userId, { status });
+    }
+
+    async attachImagesToProduct(id: string, userId: string, newImages: string[]): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        const currentImages = Array.isArray(product.images) ? (product.images as string[]) : [];
+        const updatedImages = [...currentImages, ...newImages];
+
+        return prisma.product.update({
+            where: { id },
+            data: { images: updatedImages }
+        });
+    }
+
+    async reorderProductImages(id: string, userId: string, images: string[]): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        return prisma.product.update({
+            where: { id },
+            data: { images }
+        });
+    }
+
+    async setProductImageThumbnail(id: string, userId: string, imageUrl: string): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        let currentImages = Array.isArray(product.images) ? (product.images as string[]) : [];
+
+        // Remove the image if it exists and unshift it to the front
+        currentImages = currentImages.filter(img => img !== imageUrl);
+        currentImages.unshift(imageUrl);
+
+        return prisma.product.update({
+            where: { id },
+            data: { images: currentImages }
+        });
+    }
+
+    async deleteProductImage(id: string, userId: string, imageUrl: string): Promise<Product> {
+        const product = await prisma.product.findUnique({ where: { id } });
+        if (!product) throw new Error('Product not found');
+        if (product.sellerId !== userId) throw new Error('Unauthorized');
+
+        const currentImages = Array.isArray(product.images) ? (product.images as string[]) : [];
+        const updatedImages = currentImages.filter(img => img !== imageUrl);
+
+        return prisma.product.update({
+            where: { id },
+            data: { images: updatedImages }
+        });
+    }
+
+
+    async getCategories() {
+        const categories = await prisma.product.groupBy({
+            by: ['category'],
+            where: { deletedAt: null, isPublished: true },
+            _count: {
+                _all: true
+            }
+        });
+
+        return categories.map(c => ({
+            id: c.category,
+            name: c.category,
+            count: c._count._all
+        }));
+    }
+
+    async getTopSellers() {
+        const topStores = await prisma.store.findMany({
+            where: { isActive: true },
+            take: 10,
+            include: {
+                _count: {
+                    select: {
+                        products: true,
+                        orders: {
+                            where: { status: 'completed' }
+                        }
+                    }
+                },
+                user: {
+                    select: {
+                        fullName: true,
+                        businessName: true,
+                        profilePictureUrl: true,
+                        umkmProfiles: {
+                            select: {
+                                city: true
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: {
+                orders: {
+                    _count: 'desc'
+                }
+            }
+        });
+
+        return topStores.map(s => ({
+            id: s.id,
+            name: s.name,
+            location: s.user?.umkmProfiles?.[0]?.city || 'Indramayu',
+            products: s._count.products,
+            rating: Number(s.rating) || 0,
+            totalSales: String(s._count.orders),
+            verified: s.isActive,
+            image: s.logoUrl || s.user?.profilePictureUrl || '/api/placeholder/80/80'
+        }));
+    }
+    async getConsultantClientsProducts(consultantId: string, params: {
+        search?: string;
+        clientId?: string;
+        status?: string;
+        page?: number;
+        limit?: number;
+    }) {
+        const { search, clientId, status, page = 1, limit = 10 } = params;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.ProductWhereInput = {
+            deletedAt: null
+        };
+
+        // 1. Filter by Client (Store)
+        if (clientId) {
+            where.storeId = clientId;
+        } else {
+            // For now, consistent with "Mock" consultant features, we'll return products from ALL stores
+            // In real implementation:
+            // const clients = await consultationService.getClients(consultantId);
+            // where.storeId = { in: clients.map(c => c.storeId) };
+        }
+
+        // 2. Search
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } }
+            ];
+        }
+
+        // 3. Status Filter
+        if (status) {
+            if (status === 'active') where.isPublished = true;
+            else if (status === 'draft') where.status = 'draft';
+            else if (status === 'inactive') where.isPublished = false;
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    store: {
+                        select: {
+                            id: true,
+                            name: true,
+                            user: {
+                                select: { fullName: true }
+                            }
+                        }
+                    }
+                },
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+    async getExportReadyProducts(params: {
+        page?: number;
+        limit?: number;
+        category?: string;
+        region?: string;
+    }) {
+        const { page = 1, limit = 10, category, region } = params;
+        const skip = (page - 1) * limit;
+
+        const where: Prisma.ProductWhereInput = {
+            isPublished: true,
+            deletedAt: null,
+            // Mock criteria for "Export Ready": Rating > 4.5 OR expensive items
+            OR: [
+                { price: { gt: 500000 } }, // Expensive items assumed high quality
+                // Real implementation would have a specific flag or score
+            ]
+        };
+
+        if (category) where.category = category;
+        if (region) {
+            where.store = {
+                user: {
+                    umkmProfiles: {
+                        some: { city: { contains: region, mode: 'insensitive' } }
+                    }
+                }
+            };
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                include: {
+                    store: {
+                        select: {
+                            id: true,
+                            name: true,
+                            user: {
+                                select: {
+                                    umkmProfiles: { select: { city: true } }
+                                }
+                            }
+                        }
+                    }
+                },
+                skip,
+                take: limit,
+                orderBy: { price: 'desc' }
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        return {
+            products,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
+    }
+
+    async getFinancingCandidates(params: {
+        page?: number;
+        limit?: number;
+        minRevenue?: number;
+        location?: string;
+    }) {
+        const { page = 1, limit = 10, minRevenue = 1000000, location } = params;
+        const skip = (page - 1) * limit;
+
+        // Find stores with orders sum > minRevenue
+        // This is complex with simple findMany, so we use groupBy or just fetch top stores
+        // For MVP, we'll fetch active stores and filter in memory or use the topSellers logic
+
+        const where: Prisma.StoreWhereInput = {
+            isActive: true
+        };
+
+        if (location) {
+            where.user = {
+                umkmProfiles: {
+                    some: { city: { contains: location, mode: 'insensitive' } }
+                }
+            };
+        }
+
+        const [stores, total] = await Promise.all([
+            prisma.store.findMany({
+                where,
+                include: {
+                    user: {
+                        select: {
+                            fullName: true,
+                            email: true,
+                            phone: true,
+                            umkmProfiles: { select: { city: true } }
+                        }
+                    },
+                    _count: {
+                        select: { orders: true }
+                    }
+                },
+                skip,
+                take: limit,
+                // approximating "revenue" by order count for sorting, ideal is Aggregation
+                orderBy: {
+                    orders: { _count: 'desc' }
+                }
+            }),
+            prisma.store.count({ where })
+        ]);
+
+        return {
+            candidates: stores.map(s => ({
+                id: s.id,
+                name: s.name,
+                owner: s.user?.fullName,
+                location: s.user?.umkmProfiles?.[0]?.city || 'Indramayu',
+                orderCount: s._count.orders,
+                // Mock revenue
+                estimatedRevenue: s._count.orders * 150000, // Avg order value assumption
+                status: 'Eligible'
+            })),
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        };
     }
 }

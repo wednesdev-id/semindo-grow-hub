@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Menu, X, User, LogOut, LayoutDashboard, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, AuthContext } from "@/contexts/AuthContext";
 import { useContext } from "react";
@@ -65,6 +65,7 @@ const Navigation = () => {
             <Button className="bg-gradient-primary hover:opacity-90 text-white font-medium">
               Mulai Konsultasi
             </Button>
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -86,9 +87,21 @@ const Navigation = () => {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
+                    <Link to="/marketplace/seller">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      <span>Seller Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
                     <Link to="/dashboard">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Dashboard</span>
+                      <span>Unified Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/marketplace/my-orders">
+                      <Package className="mr-2 h-4 w-4" />
+                      <span>Pesanan Saya</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -154,10 +167,22 @@ const Navigation = () => {
                         <span className="text-xs text-muted-foreground">{user.email}</span>
                       </div>
                     </div>
+                    <Link to="/marketplace/seller" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Seller Dashboard
+                      </Button>
+                    </Link>
                     <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Dashboard
+                        Unified Dashboard
+                      </Button>
+                    </Link>
+                    <Link to="/marketplace/my-orders" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
+                        <Package className="mr-2 h-4 w-4" />
+                        Pesanan Saya
                       </Button>
                     </Link>
                     <Link to="/profile" onClick={() => setIsOpen(false)}>

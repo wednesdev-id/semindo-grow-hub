@@ -1,5 +1,5 @@
 import { db as prisma } from '../../utils/db';
-import { Cart, CartItem } from '@prisma/client';
+import { Cart, CartItem, Prisma } from '@prisma/client';
 
 export const cartService = {
     getCart: async (userId: string) => {
@@ -19,7 +19,6 @@ export const cartService = {
                                 }
                             }
                         },
-                        variant: true,
                     },
                     orderBy: {
                         product: {
@@ -41,7 +40,6 @@ export const cartService = {
                                     store: true
                                 }
                             },
-                            variant: true
                         }
                     }
                 }
@@ -51,14 +49,13 @@ export const cartService = {
         return cart;
     },
 
-    addToCart: async (userId: string, productId: string, quantity: number, variantId?: string) => {
+    addToCart: async (userId: string, productId: string, quantity: number) => {
         const cart = await cartService.getCart(userId);
 
         const existingItem = await prisma.cartItem.findFirst({
             where: {
                 cartId: cart.id,
                 productId,
-                variantId: variantId || null,
             }
         });
 
@@ -74,7 +71,6 @@ export const cartService = {
                 cartId: cart.id,
                 productId,
                 quantity,
-                variantId,
             }
         });
     },

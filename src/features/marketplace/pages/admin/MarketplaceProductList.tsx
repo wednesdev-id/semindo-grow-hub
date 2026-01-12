@@ -24,10 +24,22 @@ export default function MarketplaceProductList() {
     const [loading, setLoading] = useState(true);
     const [deleteId, setDeleteId] = useState<string | null>(null);
 
+    const [filters, setFilters] = useState({
+        search: "",
+        category: "",
+        status: "",
+        page: 1,
+        limit: 10
+    });
+    const [pagination, setPagination] = useState<any>(null);
+
     const fetchProducts = async () => {
+        setLoading(true);
         try {
-            const data = await marketplaceService.getMyProducts();
+            // Admin view: get ALL products from all sellers with filters
+            const { products: data, pagination: pag } = await marketplaceService.getAllProductsForAdmin(filters);
             setProducts(data);
+            setPagination(pag);
         } catch (error) {
             console.error("Failed to fetch products:", error);
             toast.error("Gagal memuat produk");
@@ -37,8 +49,12 @@ export default function MarketplaceProductList() {
     };
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        // Debounce search
+        const timer = setTimeout(() => {
+            fetchProducts();
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [filters]);
 
     const handleDelete = async () => {
         if (!deleteId) return;
@@ -128,12 +144,116 @@ export default function MarketplaceProductList() {
                 }}
             />
 
+            <div className="flex gap-4 mb-6">
+                <input
+                    type="text"
+                    placeholder="Search products or stores..."
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 max-w-sm"
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                />
+
+                <select
+                    className="flex h-10 items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 w-[180px]"
+                    value={filters.status}
+                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
+                >
+                    <option value="">All Status</option>
+                    <option value="active">Active (Published)</option>
+                    <option value="draft">Draft</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="archived">Archived</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+
             <DataGrid
                 data={products}
-                columns={columns}
+                columns={[
+                    {
+                        header: "Product Name",
+                        accessorKey: "name",
+                        className: "font-medium",
+                    },
+                    {
+                        header: "Seller",
+                        accessorKey: "seller",
+                    },
+                    {
+                        header: "Status",
+                        accessorKey: "status",
+                        cell: (item: any) => (
+                            <div className={`capitalize ${item.status === 'active' ? 'text-green-600' :
+                                    item.status === 'draft' ? 'text-gray-500' : 'text-red-500'
+                                }`}>
+                                {item.status} {!item.isPublished && item.status === 'active' ? '(Unpublished)' : ''}
+                            </div>
+                        )
+                    },
+                    {
+                        header: "Category",
+                        accessorKey: "category",
+                    },
+                    {
+                        header: "Price",
+                        accessorKey: "price",
+                    },
+                    {
+                        header: "Stock",
+                        accessorKey: "stock",
+                    },
+                    {
+                        header: "Actions",
+                        cell: (item: any) => (
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => navigate(`/marketplace/product/${item.slug}`)}
+                                >
+                                    <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => setDeleteId(item.id)}
+                                >
+                                    <Trash className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        ),
+                    },
+                ]}
                 searchKey="name"
                 searchPlaceholder="Search products..."
+                hideSearch // Hiding built-in search to use server-side search above
             />
+
+            {/* Simple Pagination */}
+            {pagination && (
+                <div className="flex items-center justify-end space-x-2 py-4">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                        disabled={pagination.page <= 1}
+                    >
+                        Previous
+                    </Button>
+                    <div className="text-sm">
+                        Page {pagination.page} of {pagination.totalPages}
+                    </div>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                        disabled={pagination.page >= pagination.totalPages}
+                    >
+                        Next
+                    </Button>
+                </div>
+            )}
 
             <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <AlertDialogContent>

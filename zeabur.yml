@@ -1,0 +1,62 @@
+apiVersion: zeabur.com/v1
+kind: Template
+metadata:
+  name: Sinergi UMKM Indonesia
+  description: Platform Monitoring & Evaluasi UMKM Naik Kelas
+spec:
+  variables:
+    - key: JWT_SECRET
+      type: string
+      description: Secret key for JWT encryption
+      default: change-me-in-production
+    - key: JWT_EXPIRES_IN
+      type: string
+      description: JWT Expiration time
+      default: 7d
+
+  services:
+    # 1. Database Service (PostgreSQL)
+    - name: db
+      type: postgresql
+      # Zeabur automatically provides connection variables like POSTGRES_PASSWORD, etc.
+      # We reference the full connection string via ${db.CONNECTION_URI}
+
+    # 2. Redis (Optional - based on future needs, but good to have if you use queue)
+    # - name: redis
+    #   type: redis
+
+    # 3. Backend API
+    - name: api
+      type: nodejs
+      directory: api
+      repo:
+        provider: github
+        # This will be replaced by the user's repo integration in Zeabur
+      
+      # Build & Start
+      buildCommand: npm install && npx prisma generate && npm run build:docker
+      startCommand: npm start
+      
+      # Environment Variables
+      environment:
+        NODE_ENV: production
+        PORT: 3000
+        # Zeabur provides direct variable injection from other services
+        DATABASE_URL: ${db.CONNECTION_URI}
+        JWT_SECRET: ${JWT_SECRET}
+        JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+
+    # 4. Frontend Application
+    - name: frontend
+      type: static
+      directory: .
+      
+      # Build Configuration
+      # Note: VITE_API_URL is needed at build time
+      buildCommand: npm install && npm run build
+      outputDirectory: dist
+      
+      environment:
+        # We assume the API service exposes a public URL. 
+        # In Zeabur, ${api.PUBLIC_URL} creates a dependency linkage.
+        VITE_API_URL: ${api.PUBLIC_URL}/api/v1

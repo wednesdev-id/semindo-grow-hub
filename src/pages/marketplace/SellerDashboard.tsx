@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { marketplaceService, type Product } from '@/services/marketplaceService';
+import { marketplaceService, type Product, type ProductImage } from '@/services/marketplaceService';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
 import { Button } from '@/components/ui/button';
@@ -10,22 +10,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, ShoppingBag, Loader2, X, Upload, Archive, Star, Check, Search, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import { useAuth } from '@/core/auth/hooks/useAuth';
+import { MARKETPLACE_CATEGORIES } from '@/config/categories';
+import { ProductFiltersComponent, type ProductFilters } from '@/components/marketplace/ProductFilters';
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
+import { OrderDetailsDialog } from '@/components/marketplace/OrderDetailsDialog';
 
 interface Order {
     id: string;
     status: string;
     paymentStatus: string;
     totalAmount: number;
+    sellerSubtotal?: number;
     createdAt: string;
-    user: { fullName: string };
+    user: {
+        id: string;
+        fullName: string;
+    };
     items: {
         id: string;
         quantity: number;
-        product: { title: string };
+        product: {
+            id: string;
+            title: string;
+            price: number;
+            storeId?: string;
+            sellerId?: string;
+        };
     }[];
 }
 
@@ -37,35 +52,73 @@ export default function SellerDashboard() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('products');
 
+    // Detail Dialog State
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+    // Filters state
+    const [filters, setFilters] = useState<ProductFilters>({
+        search: '',
+        category: null,
+        minPrice: 0,
+        maxPrice: 100000000,
+        stockStatus: 'all',
+        sortBy: 'newest',
+    });
+    const [categories, setCategories] = useState<{ id: string; name: string; count: number }[]>([]);
+
     // Product Form State
     const [showProductForm, setShowProductForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [productForm, setProductForm] = useState({
+    const [productForm, setProductForm] = useState<{
+        title: string;
+        description: string;
+        price: string;
+        stock: string;
+        category: string;
+        images: ProductImage[];
+    }>({
         title: '',
         description: '',
         price: '',
         stock: '',
         category: '',
-        images: [] as string[]
+        images: []
     });
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const cats = await marketplaceService.getCategories();
+                setCategories(cats);
+            } catch (error) {
+                console.error('Failed to load categories', error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         if (!user) {
             navigate('/auth/login');
             return;
         }
-        loadData();
-    }, [user, activeTab]);
+        // Debounce search to prevent too many requests
+        const timeoutId = setTimeout(() => {
+            loadData();
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [user, activeTab, filters]);
 
     const loadData = async () => {
         try {
             setLoading(true);
             if (activeTab === 'products') {
-                const data = await marketplaceService.getMyProducts();
+                const data = await marketplaceService.getMyProducts(filters);
                 setProducts(data);
             } else {
-                const data = await marketplaceService.getAllOrders();
+                const data = await marketplaceService.getSellerOrders();
                 setOrders(data as any);
             }
         } catch (error) {
@@ -75,16 +128,23 @@ export default function SellerDashboard() {
         }
     };
 
+    const handleOpenDetails = (orderId: string) => {
+        setSelectedOrderId(orderId);
+        setIsDetailsOpen(true);
+    };
+
     const openProductForm = (product?: Product) => {
         if (product) {
             setEditingProduct(product);
             setProductForm({
                 title: product.name,
                 description: product.description,
-                price: product.price.replace(/[^0-9]/g, ''),
+                price: String(product.price).replace(/[^0-9]/g, ''),
                 stock: product.stock.toString(),
                 category: product.category,
-                images: product.images || []
+                images: (product.images || []).map(img =>
+                    typeof img === 'string' ? { url: img, thumbnail: img } : img
+                )
             });
         } else {
             setEditingProduct(null);
@@ -111,17 +171,23 @@ export default function SellerDashboard() {
         try {
             setSubmitting(true);
 
-            const payload = {
-                title: productForm.title,
-                description: productForm.description,
-                price: parseFloat(productForm.price),
-                stock: parseInt(productForm.stock),
-                category: productForm.category,
-                images: productForm.images.length > 0 ? productForm.images : ['/api/placeholder/300/200']
+            // Convert types for API and ensure images
+            const submissionData = {
+                ...productForm,
+                price: parseFloat(productForm.price) || 0,
+                stock: parseInt(productForm.stock) || 0,
+                images: productForm.images.length > 0
+                    ? productForm.images
+                    : [{ url: '/api/placeholder/300/200', thumbnail: '/api/placeholder/300/200', isMain: true }]
             };
 
-            await marketplaceService.createProduct(payload);
-            alert('Product saved successfully!');
+            if (editingProduct) {
+                await marketplaceService.updateProduct(editingProduct.id, submissionData);
+                toast.success('Product updated successfully!');
+            } else {
+                await marketplaceService.createProduct(submissionData);
+                toast.success('Product created successfully!');
+            }
             setShowProductForm(false);
             loadData();
         } catch (error) {
@@ -148,10 +214,22 @@ export default function SellerDashboard() {
         try {
             await marketplaceService.updateOrderStatus(orderId, newStatus);
             loadData();
+            toast.success(`Status pesanan berhasil diperbarui ke "${newStatus}"`);
         } catch (error) {
             console.error('Failed to update order status:', error);
-            alert('Failed to update order status');
+            toast.error('Gagal memperbarui status pesanan');
         }
+    };
+
+    const getStatusColor = (status: string) => {
+        const colors: Record<string, string> = {
+            pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400',
+            processing: 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400',
+            shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-950/30 dark:text-purple-400',
+            delivered: 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400',
+            cancelled: 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
+        };
+        return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
     };
 
     return (
@@ -178,7 +256,7 @@ export default function SellerDashboard() {
                         </TabsTrigger>
                         <TabsTrigger value="orders">
                             <ShoppingBag className="h-4 w-4 mr-2" />
-                            Orders
+                            Pesanan Masuk
                         </TabsTrigger>
                     </TabsList>
 
@@ -209,22 +287,109 @@ export default function SellerDashboard() {
                                                 alt={product.name}
                                                 className="w-full h-48 object-cover rounded-lg mb-4"
                                             />
+                                            {/* Badge - Draft, Published, or Archived */}
+                                            <div className="mb-2">
+                                                <Badge
+                                                    variant={
+                                                        product.status === 'active' ? "default" :
+                                                            product.status === 'archived' ? "destructive" :
+                                                                "secondary"
+                                                    }
+                                                    className={
+                                                        product.status === 'archived' ? "bg-orange-500 hover:bg-orange-600" : ""
+                                                    }
+                                                >
+                                                    {product.status === 'active' ? "Published" :
+                                                        product.status === 'archived' ? "Archived" :
+                                                            "Draft"}
+                                                </Badge>
+                                            </div>
                                             <h3 className="font-semibold mb-2 line-clamp-2">{product.name}</h3>
                                             <p className="text-lg font-bold text-primary mb-2">{product.price}</p>
                                             <p className="text-sm text-muted-foreground mb-4">Stock: {product.stock}</p>
-                                            <div className="flex gap-2">
-                                                <Button size="sm" variant="outline" onClick={() => openProductForm(product)}>
-                                                    <Edit className="h-4 w-4 mr-1" />
-                                                    Edit
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    onClick={() => handleDeleteProduct(product.id)}
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-1" />
-                                                    Delete
-                                                </Button>
+                                            <div className="flex flex-col gap-2">
+                                                {/* Publish/Unpublish Button */}
+                                                {!product.isPublished ? (
+                                                    <Button
+                                                        size="sm"
+                                                        className="w-full"
+                                                        onClick={async () => {
+                                                            try {
+                                                                await marketplaceService.updateProduct(product.id, {
+                                                                    isPublished: true,
+                                                                    status: 'active'
+                                                                });
+                                                                toast.success('Product published successfully!');
+                                                                loadData();
+                                                            } catch (error) {
+                                                                console.error('Failed to publish:', error);
+                                                                toast.error('Failed to publish product');
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Upload className="h-4 w-4 mr-1" />
+                                                        Publish
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="w-full"
+                                                        onClick={async () => {
+                                                            try {
+                                                                await marketplaceService.updateProduct(product.id, {
+                                                                    isPublished: false,
+                                                                    status: 'draft'
+                                                                });
+                                                                toast.success('Product unpublished successfully!');
+                                                                loadData();
+                                                            } catch (error) {
+                                                                console.error('Failed to unpublish:', error);
+                                                                toast.error('Failed to unpublish product');
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Package className="h-4 w-4 mr-1" />
+                                                        Unpublish
+                                                    </Button>
+                                                )}
+                                                {/* Archive Button (only for published/draft) */}
+                                                {product.status !== 'archived' && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="w-full text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                                        onClick={async () => {
+                                                            try {
+                                                                await marketplaceService.archiveProduct(product.id);
+                                                                toast.success('Product archived successfully!');
+                                                                loadData();
+                                                            } catch (error) {
+                                                                console.error('Failed to archive:', error);
+                                                                toast.error('Failed to archive product');
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Archive className="h-4 w-4 mr-1" />
+                                                        Archive
+                                                    </Button>
+                                                )}
+                                                {/* Edit and Delete Buttons */}
+                                                <div className="flex gap-2">
+                                                    <Button size="sm" variant="outline" className="flex-1" onClick={() => openProductForm(product)}>
+                                                        <Edit className="h-4 w-4 mr-1" />
+                                                        Edit
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="flex-1"
+                                                        onClick={() => handleDeleteProduct(product.id)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-1" />
+                                                        Delete
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -242,48 +407,58 @@ export default function SellerDashboard() {
                             <Card>
                                 <CardContent className="p-12 text-center">
                                     <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                                    <h2 className="text-xl font-semibold mb-2">No orders yet</h2>
-                                    <p className="text-muted-foreground">Orders will appear here when customers buy your products</p>
+                                    <h2 className="text-xl font-semibold mb-2">Belum ada pesanan</h2>
+                                    <p className="text-muted-foreground">Pesanan akan muncul di sini saat pelanggan membeli produk Anda</p>
                                 </CardContent>
                             </Card>
                         ) : (
                             <div className="space-y-4">
                                 {orders.map((order) => (
-                                    <Card key={order.id}>
+                                    <Card key={order.id} className="overflow-hidden border-zinc-200 dark:border-zinc-800 hover:shadow-md transition-shadow">
                                         <CardContent className="p-6">
-                                            <div className="flex justify-between items-start mb-4">
+                                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                                                 <div>
-                                                    <h3 className="font-semibold mb-1">Order #{order.id.slice(0, 8)}</h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        Customer: {order.user?.fullName || 'Unknown'}
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className="font-bold text-lg">Order #{order.id.slice(0, 8)}</h3>
+                                                        <Badge className={getStatusColor(order.status)}>
+                                                            {order.status}
+                                                        </Badge>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground font-medium">
+                                                        Customer: <span className="text-foreground">{order.user?.fullName || 'Unknown'}</span>
                                                     </p>
-                                                    <p className="text-sm text-muted-foreground">
+                                                    <p className="text-xs text-muted-foreground mt-1">
                                                         {format(new Date(order.createdAt), 'dd MMM yyyy, HH:mm')}
                                                     </p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-lg text-primary">
-                                                        Rp {order.totalAmount.toLocaleString('id-ID')}
+                                                <div className="flex flex-col items-start md:items-end">
+                                                    <p className="text-2xl font-black text-primary">
+                                                        Rp {(order.sellerSubtotal || order.totalAmount).toLocaleString('id-ID')}
                                                     </p>
-                                                    <Badge className="mt-1">
-                                                        {order.status}
-                                                    </Badge>
+                                                    <p className="text-xs text-muted-foreground font-bold">
+                                                        {order.items.length} Items
+                                                    </p>
                                                 </div>
                                             </div>
 
-                                            <div className="mb-4">
-                                                <p className="text-sm font-medium mb-2">Items:</p>
+                                            <div className="space-y-3 mb-6 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
                                                 {order.items.map((item, idx) => (
-                                                    <p key={idx} className="text-sm text-muted-foreground">
-                                                        {item.quantity}x {item.product.title}
-                                                    </p>
+                                                    <div key={idx} className="flex justify-between items-center text-sm">
+                                                        <span className="font-medium text-muted-foreground">
+                                                            {item.quantity}x <span className="text-foreground">{item.product.title}</span>
+                                                        </span>
+                                                        <span className="font-bold">
+                                                            Rp {(Number(item.product.price) * item.quantity).toLocaleString('id-ID')}
+                                                        </span>
+                                                    </div>
                                                 ))}
                                             </div>
 
-                                            <div className="flex gap-2">
+                                            <div className="flex flex-wrap gap-2">
                                                 {order.status === 'pending' && (
                                                     <Button
                                                         size="sm"
+                                                        className="font-bold"
                                                         onClick={() => handleUpdateOrderStatus(order.id, 'processing')}
                                                     >
                                                         Process Order
@@ -292,12 +467,19 @@ export default function SellerDashboard() {
                                                 {order.status === 'processing' && (
                                                     <Button
                                                         size="sm"
+                                                        className="font-bold"
                                                         onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
                                                     >
                                                         Mark as Shipped
                                                     </Button>
                                                 )}
-                                                <Button size="sm" variant="outline">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="font-bold gap-2"
+                                                    onClick={() => handleOpenDetails(order.id)}
+                                                >
+                                                    <Eye className="h-4 w-4" />
                                                     View Details
                                                 </Button>
                                             </div>
@@ -309,6 +491,14 @@ export default function SellerDashboard() {
                     </TabsContent>
                 </Tabs>
             </div>
+
+            {/* Order Details Modal */}
+            <OrderDetailsDialog
+                orderId={selectedOrderId}
+                open={isDetailsOpen}
+                onOpenChange={setIsDetailsOpen}
+                onOrderUpdated={loadData}
+            />
 
             {/* Product Form Modal */}
             {showProductForm && (
@@ -374,52 +564,167 @@ export default function SellerDashboard() {
 
                                 <div>
                                     <Label htmlFor="category">Category</Label>
-                                    <Input
-                                        id="category"
+                                    <Select
                                         value={productForm.category}
-                                        onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                                        placeholder="e.g., Fashion, Kuliner, Kerajinan"
-                                    />
+                                        onValueChange={(value) => setProductForm({ ...productForm, category: value })}
+                                    >
+                                        <SelectTrigger id="category">
+                                            <SelectValue placeholder="Pilih kategori" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {MARKETPLACE_CATEGORIES.map((cat) => (
+                                                <SelectItem key={cat} value={cat}>
+                                                    {cat}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div>
                                     <Label>Product Images</Label>
-                                    <p className="text-sm text-muted-foreground mb-2">
-                                        Image URLs (for MVP, use placeholder or external URLs)
-                                    </p>
-                                    <Input
-                                        placeholder="https://example.com/image.jpg"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                const input = e.target as HTMLInputElement;
-                                                if (input.value) {
+
+                                    {/* File Upload from Computer */}
+                                    <div className="mt-2 border-2 border-dashed rounded-lg p-3 hover:border-primary transition-colors relative group">
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={async (e) => {
+                                                const files = Array.from(e.target.files || []);
+                                                if (files.length === 0) return;
+
+                                                setSubmitting(true);
+                                                try {
+                                                    const uploadedImages = await marketplaceService.uploadMultipleImages(files);
+
+                                                    const updatedImages = [...productForm.images, ...uploadedImages];
+
+                                                    // Set first image as main if none exists
+                                                    if (updatedImages.length > 0 && !updatedImages.some(img => img.isMain)) {
+                                                        updatedImages[0].isMain = true;
+                                                    }
+
                                                     setProductForm({
                                                         ...productForm,
-                                                        images: [...productForm.images, input.value]
+                                                        images: updatedImages
                                                     });
-                                                    input.value = '';
+
+                                                    toast.success(`✅ ${uploadedImages.length} image(s) uploaded!`);
+                                                } catch (error) {
+                                                    console.error('Upload error:', error);
+                                                    toast.error('❌ Failed to upload images');
+                                                } finally {
+                                                    setSubmitting(false);
                                                 }
-                                            }
-                                        }}
-                                    />
-                                    <div className="flex gap-2 mt-2 flex-wrap">
+                                            }}
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            disabled={submitting}
+                                        />
+                                        <div className="text-center py-2">
+                                            <Upload className="h-6 w-6 mx-auto text-muted-foreground group-hover:text-primary mb-2" />
+                                            <p className="text-xs font-medium group-hover:text-primary">
+                                                {submitting ? 'Uploading...' : 'Click or drag to upload (JPG, PNG, WebP)'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* URL Input */}
+                                    <p className="text-sm text-muted-foreground mt-3 mb-2">
+                                        🔗 Or paste image URL and press Enter
+                                    </p>
+                                    <div className="relative">
+                                        <Input
+                                            placeholder="https://example.com/image.jpg"
+                                            disabled={submitting}
+                                            onKeyDown={async (e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const input = e.target as HTMLInputElement;
+                                                    const url = input.value.trim();
+                                                    if (url) {
+                                                        try {
+                                                            setSubmitting(true);
+                                                            const result = await marketplaceService.uploadFromUrl(url);
+                                                            const newImage: ProductImage = {
+                                                                url: result.url,
+                                                                thumbnail: result.thumbnail || result.url,
+                                                                isMain: productForm.images.length === 0
+                                                            };
+                                                            setProductForm({
+                                                                ...productForm,
+                                                                images: [...productForm.images, newImage]
+                                                            });
+                                                            input.value = '';
+                                                        } catch (err) {
+                                                            console.error('Failed to process image URL:', err);
+                                                            alert('Failed to process image URL. It might be blocked or invalid.');
+                                                        } finally {
+                                                            setSubmitting(false);
+                                                        }
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        {submitting && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 mt-3">
                                         {productForm.images.map((img, idx) => (
-                                            <Badge key={idx} variant="secondary">
-                                                Image {idx + 1}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setProductForm({
-                                                            ...productForm,
-                                                            images: productForm.images.filter((_, i) => i !== idx)
-                                                        });
-                                                    }}
-                                                    className="ml-2"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
-                                            </Badge>
+                                            <div key={idx} className={`relative aspect-square rounded-md overflow-hidden border-2 transition-all ${img.isMain ? 'border-primary shadow-md' : 'border-muted hover:border-primary/50'}`}>
+                                                <img src={img.url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+
+                                                {img.isMain && (
+                                                    <div className="absolute top-1 left-1 bg-primary text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow-sm">
+                                                        <Check className="h-2 w-2" /> Utama
+                                                    </div>
+                                                )}
+
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                                                    {!img.isMain && (
+                                                        <Button
+                                                            type="button"
+                                                            variant="secondary"
+                                                            size="icon"
+                                                            className="h-6 w-6 rounded-full"
+                                                            onClick={() => {
+                                                                const updated = productForm.images.map((im, i) => ({
+                                                                    ...im,
+                                                                    isMain: i === idx
+                                                                }));
+                                                                setProductForm({ ...productForm, images: updated });
+                                                            }}
+                                                        >
+                                                            <Star className="h-3 w-3" />
+                                                        </Button>
+                                                    )}
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="h-6 w-6 rounded-full"
+                                                        onClick={() => {
+                                                            const updated = productForm.images.filter((_, i) => i !== idx);
+                                                            // If we removed the main image, make the first remaining one main
+                                                            if (img.isMain && updated.length > 0) {
+                                                                updated[0].isMain = true;
+                                                            }
+                                                            setProductForm({ ...productForm, images: updated });
+                                                        }}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+
+                                                {img.metadata && (
+                                                    <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[7px] px-1 rounded">
+                                                        {(img.metadata.size / 1024).toFixed(0)} KB
+                                                    </div>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 </div>
@@ -435,11 +740,7 @@ export default function SellerDashboard() {
                                             'Save Product'
                                         )}
                                     </Button>
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setShowProductForm(false)}
-                                    >
+                                    <Button type="button" variant="outline" onClick={() => setShowProductForm(false)}>
                                         Cancel
                                     </Button>
                                 </div>
@@ -453,3 +754,4 @@ export default function SellerDashboard() {
         </div>
     );
 }
+

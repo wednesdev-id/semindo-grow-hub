@@ -1,8 +1,8 @@
 #!/bin/bash
 
-BASE_URL="http://localhost:3000/api/v1"
+BASE_URL="http://localhost:8080/api/v1"
 EMAIL="testuser_$(date +%s)@example.com"
-PASSWORD="password123"
+PASSWORD="dev"
 
 echo "1. Registering new user..."
 REGISTER_RESPONSE=$(curl -s -X POST "$BASE_URL/auth/register" \

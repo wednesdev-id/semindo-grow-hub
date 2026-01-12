@@ -60,13 +60,14 @@ const getMenuItems = (): {
         { name: "Aktivitas Terbaru", path: "/dashboard/activity" },
         { name: "Statistik Pengguna", path: "/dashboard/user-stats" },
         { name: "Status Server & API", path: "/dashboard/server-status", roles: ["admin"] },
-        { name: "Notifikasi Sistem", path: "/dashboard/notifications" },
+        { name: "Pesanan Saya", path: "/marketplace/my-orders" },
+        { name: "Notifikasi Saya", path: "/notifications" },
       ],
     },
     // 2. User Management
     {
       icon: <Users size={20} />,
-      name: "User Management",
+      name: "Manajemen Pengguna",
       // Main menu visible to all, sub-items controlled by roles
       subItems: [
         { name: "Semua Pengguna", path: "/users/all", roles: ["admin", "management"] },
@@ -77,9 +78,9 @@ const getMenuItems = (): {
         { name: "Kelola Staf Manajemen", path: "/users/staff", roles: ["admin"] },
         { name: "Kelola Admin", path: "/users/admins", roles: ["admin"] },
         { name: "Import / Export Data User", path: "/users/import-export", roles: ["admin"] },
-        { name: "Audit User Activity", path: "/users/audit", roles: ["admin", "management"] },
+        { name: "Audit Aktivitas Pengguna", path: "/users/audit", roles: ["admin", "management"] },
         // Consultant Self-Service
-        { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
+        { name: "Profil Konsultan Saya", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
       ],
     },
     // 3. UMKM Database
@@ -89,8 +90,8 @@ const getMenuItems = (): {
       // Accessible to UMKM for their own data
       subItems: [
         { name: "Daftar UMKM", path: "/umkm/list", roles: ["admin", "management", "mentor"] },
-        { name: "Segmentasi (Pemula / Madya / Utama)", path: "/umkm/segmentation", roles: ["admin", "management", "mentor"] },
-        { name: "Region Mapping (Provinsi / Kota)", path: "/umkm/region", roles: ["admin", "management"] },
+        { name: "Segmentasi UMKM", path: "/umkm/segmentation", roles: ["admin", "management", "mentor"] },
+        { name: "Pemetaan Wilayah (Provinsi / Kota)", path: "/umkm/region", roles: ["admin", "management"] },
         { name: "Self-Assessment", path: "/assessment" }, // All can view
         { name: "Status Program", path: "/umkm/program-status" }, // All can view
         { name: "Histori Pendampingan UMKM", path: "/umkm/history", roles: ["admin", "management", "mentor", "umkm"] },
@@ -148,12 +149,14 @@ const getMenuItems = (): {
     // 7. Marketplace Manager
     {
       icon: <ShoppingBag size={20} />,
-      name: "Marketplace Manager",
+      name: "Manajer Marketplace",
+      roles: ["admin", "management", "umkm"], // Allowed UMKM access
       subItems: [
-        { name: "Produk UMKM", path: "/marketplace/products" }, // All can view
+        { name: "Produk UMKM", path: "/marketplace/products", roles: ["admin", "management", "umkm"] },
+        { name: "Produk Favorit", path: "/marketplace/wishlist" },
         { name: "Verifikasi Produk", path: "/marketplace/verification", roles: ["admin", "management"] },
-        { name: "Toko UMKM", path: "/marketplace/stores" }, // All can view
-        { name: "Transaksi & Order", path: "/marketplace/orders" }, // UMKM can view their own
+        { name: "Toko UMKM", path: "/marketplace/stores", roles: ["admin", "management", "umkm"] },
+        { name: "Transaksi & Order", path: "/marketplace/orders", roles: ["admin", "management", "umkm"] },
         { name: "Komplain & Resolusi", path: "/marketplace/complaints", roles: ["admin", "management"] },
         { name: "Fee & Komisi Marketplace", path: "/marketplace/fees", roles: ["admin", "management"] },
         { name: "Integrasi Marketplace Eksternal", path: "/marketplace/integration", roles: ["admin"] },
@@ -163,46 +166,48 @@ const getMenuItems = (): {
     // 8. Financing Manager
     {
       icon: <Banknote size={20} />,
-      name: "Financing Manager",
+      name: "Manajer Pembiayaan",
       subItems: [
         { name: "Produk Pembiayaan", path: "/financing/products" }, // All can view options
         { name: "Pengajuan UMKM", path: "/financing/applications" }, // UMKM can submit
         { name: "Tahapan Verifikasi", path: "/financing/verification", roles: ["admin", "management", "finance_partner"] },
         { name: "Approval Pembiayaan", path: "/financing/approval", roles: ["admin", "finance_partner"] },
         { name: "Dokumen Pembiayaan", path: "/financing/documents", roles: ["admin", "management", "finance_partner", "umkm"] },
-        { name: "Kerjasama Bank / Lembaga Keuangan", path: "/financing/partners", roles: ["admin", "management"] },
-        { name: "Reporting Pembiayaan", path: "/financing/reports", roles: ["admin", "management", "finance_partner"] },
+        { name: "Lembaga Keuangan Mitra", path: "/financing/partners", roles: ["admin", "management"] },
+        { name: "Laporan Pembiayaan", path: "/financing/reports", roles: ["admin", "management", "finance_partner"] },
       ],
     },
     // 9. Export Hub Manager
     {
       icon: <Globe size={20} />,
-      name: "Export Hub Manager",
+      name: "Manajer Hub Ekspor",
       subItems: [
         { name: "Panduan Ekspor", path: "/export/guide" }, // All can view guide
-        { name: "Buyer Directory", path: "/export/buyers" }, // All can view
+        { name: "Direktori Pembeli", path: "/export/buyers" }, // All can view
         { name: "Checklist Ekspor", path: "/export/checklist" }, // All can use
         { name: "Dokumen Ekspor", path: "/export/documents" }, // All participants
         { name: "Fasilitasi Ekspor", path: "/export/facilitation", roles: ["admin", "management", "umkm"] },
-        { name: "Approval Permintaan Konsultasi Ekspor", path: "/export/approval", roles: ["admin", "management"] },
+        { name: "Persetujuan Konsultasi Ekspor", path: "/export/approval", roles: ["admin", "management"] },
         { name: "Laporan Ekspor", path: "/export/reports", roles: ["admin", "management"] },
       ],
     },
     // 10. Consultation Management
     {
       icon: <MessageSquare size={20} />,
-      name: "Consultation Management",
+      name: "Manajemen Konsultasi",
       subItems: [
         // User Features (All can access)
-        { name: "Browse Consultants", path: "/consultation/consultants" },
-        { name: "My Consultations", path: "/consultation/dashboard" },
-        { name: "Schedule Consultation", path: "/consultation/schedule" }, // Preview
-        { name: "Consultation History", path: "/consultation/history" }, // Preview
+        { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
+        { name: "Browse Consultants", path: "/consultation/consultants", roles: ["admin", "management", "umkm"] },
+        { name: "My Consultations", path: "/consultation/dashboard", roles: ["consultant", "konsultan"] },
+        { name: "Schedule Consultation", path: "/consultation/schedule", roles: ["umkm"] },
+        { name: "Consultation History", path: "/consultation/history", roles: ["umkm", "consultant", "konsultan"] },
 
         // Admin Features
         { name: "Dashboard Overview", path: "/dashboard/consultation/dashboard", roles: ["admin", "management"] },
         { name: "Pending Approvals", path: "/dashboard/consultation/consultants/pending", roles: ["admin", "management"] },
         { name: "Active Consultants", path: "/dashboard/consultation/consultants/active", roles: ["admin", "management"] }, // Preview
+        { name: "Expertise Categories", path: "/dashboard/consultation/expertise", roles: ["admin", "management"] },
         { name: "All Requests", path: "/dashboard/consultation/requests/all", roles: ["admin", "management"] }, // Preview
         { name: "Chat Monitoring", path: "/dashboard/consultation/chat-monitoring", roles: ["admin", "management"] }, // Preview
         { name: "Reports & Analytics", path: "/dashboard/consultation/reports", roles: ["admin", "management"] }, // Preview
@@ -211,14 +216,14 @@ const getMenuItems = (): {
     // 11. Community Platform Manager
     {
       icon: <MessagesSquare size={20} />,
-      name: "Community Platform Manager",
+      name: "Manajer Platform Komunitas",
       subItems: [
         { name: "Forum", path: "/community/forum" }, // All can participate
         { name: "Manajemen Topik", path: "/community/topics", roles: ["admin", "management"] },
         { name: "Post & Komentar", path: "/community/posts" }, // All can post
         { name: "Moderasi Konten", path: "/community/moderation", roles: ["admin", "management"] },
         { name: "Event Komunitas", path: "/community/events" }, // All can view/join
-        { name: "Report Misconduct", path: "/community/reports" }, // All can report
+        { name: "Laporkan Pelanggaran", path: "/community/reports" }, // All can report
       ],
     },
   ];
@@ -227,31 +232,31 @@ const getMenuItems = (): {
     // 12. Analytics & Reporting
     {
       icon: <BarChart2 size={20} />,
-      name: "Analytics & Reporting",
+      name: "Analisis & Laporan",
       subItems: [
-        { name: "UMKM Analytics", path: "/analytics/umkm", roles: ["admin", "management"] },
-        { name: "Program Analytics", path: "/analytics/programs", roles: ["admin", "management"] },
-        { name: "LMS Insights", path: "/analytics/lms", roles: ["admin", "management", "trainer"] },
-        { name: "Pendampingan Analytics", path: "/analytics/mentoring", roles: ["admin", "management", "mentor"] },
-        { name: "Pembiayaan Analytics", path: "/analytics/financing", roles: ["admin", "management", "finance_partner"] },
-        { name: "Marketplace Analytics", path: "/analytics/marketplace", roles: ["admin", "management"] },
-        { name: "Export Analytics", path: "/analytics/export", roles: ["admin", "management"] },
-        { name: "Performance KPI (UMKM / Mentor / Program)", path: "/analytics/kpi", roles: ["admin", "management"] },
-        { name: "Data Visualization & Export", path: "/analytics/visualization", roles: ["admin", "management"] },
+        { name: "Analisis UMKM", path: "/analytics/umkm", roles: ["admin", "management"] },
+        { name: "Analisis Program", path: "/analytics/programs", roles: ["admin", "management"] },
+        { name: "Wawasan LMS", path: "/analytics/lms", roles: ["admin", "management", "trainer"] },
+        { name: "Analisis Pendampingan", path: "/analytics/mentoring", roles: ["admin", "management", "mentor"] },
+        { name: "Analisis Pembiayaan", path: "/analytics/financing", roles: ["admin", "management", "finance_partner"] },
+        { name: "Analisis Marketplace", path: "/analytics/marketplace", roles: ["admin", "management"] },
+        { name: "Analisis Ekspor", path: "/analytics/export", roles: ["admin", "management"] },
+        { name: "KPI Performa (UMKM / Mentor / Program)", path: "/analytics/kpi", roles: ["admin", "management"] },
+        { name: "Visualisasi Data & Ekspor", path: "/analytics/visualization", roles: ["admin", "management"] },
       ],
     },
     // 13. System Settings
     {
       icon: <Settings size={20} />,
-      name: "System Settings",
+      name: "Pengaturan Sistem",
       subItems: [
-        { name: "General Settings", path: "/settings/general", roles: ["admin"] },
+        { name: "Pengaturan Umum", path: "/settings/general", roles: ["admin"] },
         { name: "Branding & Identitas Visual", path: "/settings/branding", roles: ["admin"] },
-        { name: "Email & Notification Settings", path: "/settings/notifications", roles: ["admin"] },
-        { name: "API Key Manager", path: "/settings/api-keys", roles: ["admin"] },
+        { name: "Pengaturan Email & Notifikasi", path: "/settings/notifications", roles: ["admin"] },
+        { name: "Manajer API Key", path: "/settings/api-keys", roles: ["admin"] },
         { name: "Integrasi Pihak Ketiga", path: "/settings/integrations", roles: ["admin"] },
-        { name: "Backup & Restore", path: "/settings/backup", roles: ["admin"] },
-        { name: "Environment Configuration", path: "/settings/environment", roles: ["admin"] },
+        { name: "Cadangkan & Pulihkan", path: "/settings/backup", roles: ["admin"] },
+        { name: "Konfigurasi Lingkungan", path: "/settings/environment", roles: ["admin"] },
       ],
     },
   ];

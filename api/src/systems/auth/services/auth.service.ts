@@ -160,7 +160,10 @@ export class AuthService {
                             }
                         }
                     }
-                }
+                },
+                umkmProfiles: true,
+                mentorProfile: true,
+                consultantProfile: true
             }
         })
 
@@ -179,8 +182,12 @@ export class AuthService {
             id: user.id,
             email: user.email,
             fullName: user.fullName,
+            phone: user.phone,
             roles,
-            permissions
+            permissions,
+            umkmProfiles: user.umkmProfiles,
+            mentorProfile: user.mentorProfile,
+            consultantProfile: user.consultantProfile
         }
     }
 }
