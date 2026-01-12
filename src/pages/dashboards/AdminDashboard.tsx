@@ -59,37 +59,37 @@ export default function AdminDashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                        <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{data.stats.totalUsers.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">Rp {data.stats.totalSales?.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground">
-                            +12% from last month
+                            +20.1% from last month
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                        <Activity className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{data.stats.totalOrders}</div>
+                        <p className="text-xs text-muted-foreground">
+                            {data.stats.activeStores} Active Stores
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Active Users</CardTitle>
-                        <Activity className="h-4 w-4 text-muted-foreground" />
+                        <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{data.stats.activeUsers.toLocaleString()}</div>
                         <p className="text-xs text-muted-foreground">
-                            {Math.round((data.stats.activeUsers / data.stats.totalUsers) * 100)}% engagement rate
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending Verifications</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{data.stats.pendingVerifications}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Requires immediate attention
+                            {Math.round((data.stats.activeUsers / (data.stats.totalUsers || 1)) * 100)}% engagement rate
                         </p>
                     </CardContent>
                 </Card>

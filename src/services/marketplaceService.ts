@@ -83,6 +83,8 @@ export interface Order {
     status: string;
     paymentLink?: string;
     paymentStatus: string;
+    paymentMethod?: string;
+    paymentData?: any;
     createdAt: string;
     items: OrderItem[];
     cancellationReason?: string;
@@ -92,6 +94,7 @@ export interface Order {
     courier?: string;
     trackingNumber?: string;
     shippingCost?: string | number;
+    expiryTime?: string;
 }
 
 export const marketplaceService = {
@@ -402,8 +405,8 @@ export const marketplaceService = {
         return api.post('/marketplace/products', data);
     },
 
-    createOrder: async (items: { productId: string; quantity: number }[], shippingAddress?: any, shippingCost: number = 0) => {
-        return api.post('/marketplace/orders', { items, shippingAddress, shippingCost });
+    createOrder: async (items: { productId: string; quantity: number }[], shippingAddress?: any, shippingCost: number = 0, paymentMethod?: string) => {
+        return api.post('/marketplace/orders', { items, shippingAddress, shippingCost, paymentMethod });
     },
 
     getMyOrders: async () => {
@@ -426,7 +429,7 @@ export const marketplaceService = {
         return response.data;
     },
 
-    getAllOrders: async () => {
+    async getAllOrders() {
         // Admin endpoint - reusing getSellerOrders for now for consistency in seller view
         const response = await api.get<{ data: any[] }>('/marketplace/seller/orders');
         return response.data.map((o: any) => ({
@@ -439,9 +442,19 @@ export const marketplaceService = {
         }));
     },
 
+    /**
+     * Trigger a check with the payment gateway
+     */
+    async checkPaymentStatus(orderId: string): Promise<Order> {
+        const response = await api.post<{ data: any }>(`/marketplace/orders/${orderId}/check-payment`, {});
+        return response.data;
+    },
+
     syncStock: async (productId: string) => {
         return api.post(`/marketplace/products/${productId}/sync`, {});
     },
+
+
 
     getMyProducts: async (filters?: {
         search?: string;
@@ -521,18 +534,29 @@ export const marketplaceService = {
     getAdminStats: async () => {
         const response = await api.get<{ data: any }>('/marketplace/analytics/admin');
         const data = response.data;
-        return {
-            totalSales: data.totalSales || 0,
-            totalOrders: data.totalOrders || 0,
-            activeProducts: data.activeProducts || 0,
-            pendingVerifications: data.pendingProducts || 0,
-            salesTrend: { value: 0, positive: true },
-            ordersTrend: { value: 0, positive: true },
-            productsTrend: { value: 0, positive: true },
-            verificationTrend: { value: 0, positive: false },
-        };
+        // Map backend response if needed or just return raw if new dashboard uses raw
+        return data.data || data;
     },
 
+    getAdminProducts: async (filters: { status?: string, page?: number, search?: string }) => {
+        const queryParams = new URLSearchParams();
+        if (filters.status) queryParams.append('status', filters.status);
+        if (filters.search) queryParams.append('search', filters.search);
+        if (filters.page) queryParams.append('page', filters.page.toString());
+
+        const response = await api.get<{ products: any[], pagination: any }>(`/marketplace/admin/products?${queryParams.toString()}`);
+        return response.products;
+    },
+
+    approveProduct: async (id: string) => {
+        const response = await api.patch<{ data: any }>(`/marketplace/admin/products/${id}/approve`, {});
+        return response.data.data;
+    },
+
+    rejectProduct: async (id: string, reason: string) => {
+        const response = await api.patch<{ data: any }>(`/marketplace/admin/products/${id}/reject`, { reason });
+        return response.data;
+    },
     // Cart API
     getCart: async () => {
         const response = await api.get<{ data: any }>('/marketplace/cart');
@@ -567,7 +591,7 @@ export const marketplaceService = {
         return response.data;
     },
 
-    async getSellerAnalytics() {
+    async getSellerAnalytics(userId?: string) {
         const response = await api.get<{ data: any }>('/marketplace/analytics/seller');
         return response.data;
     },
@@ -654,5 +678,10 @@ export const marketplaceService = {
 
         const response = await api.get<{ candidates: any[]; pagination: any }>(`/marketplace/bank/candidates?${queryParams.toString()}`);
         return response;
+    },
+
+    simulatePayment: async (orderId: string, status: 'success' | 'failed') => {
+        const response = await api.post<{ data: any }>('/marketplace/payment/callback', { orderId, status });
+        return response.data;
     }
 };

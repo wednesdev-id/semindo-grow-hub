@@ -117,17 +117,19 @@ export default function OrderHistory() {
                 <Tabs defaultValue="all" className="space-y-6">
                     <TabsList className="bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl w-full sm:w-auto inline-flex h-12">
                         <TabsTrigger value="all" className="rounded-lg px-6 h-10 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-950 data-[state=active]:shadow-sm transition-all duration-300">Semua</TabsTrigger>
+                        <TabsTrigger value="unpaid" className="rounded-lg px-6 h-10 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-950 data-[state=active]:shadow-sm transition-all duration-300 text-orange-600 dark:text-orange-400 font-bold">Belum Bayar</TabsTrigger>
                         <TabsTrigger value="active" className="rounded-lg px-6 h-10 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-950 data-[state=active]:shadow-sm transition-all duration-300">Berlangsung</TabsTrigger>
                         <TabsTrigger value="completed" className="rounded-lg px-6 h-10 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-950 data-[state=active]:shadow-sm transition-all duration-300">Selesai</TabsTrigger>
                     </TabsList>
 
-                    {['all', 'active', 'completed'].map((tabValue) => {
+                    {['all', 'unpaid', 'active', 'completed'].map((tabValue) => {
                         const filteredOrders = orders.filter(order => {
                             // User request: Cancelled orders should disappear (restored to cart = undo)
                             if (order.status.toLowerCase() === 'cancelled') return false;
 
                             if (tabValue === 'all') return true;
-                            if (tabValue === 'active') return ['pending', 'processing', 'shipped', 'unpaid', 'paid'].includes(order.status.toLowerCase());
+                            if (tabValue === 'unpaid') return order.paymentStatus.toLowerCase() === 'unpaid';
+                            if (tabValue === 'active') return ['pending', 'processing', 'shipped', 'unpaid', 'paid'].includes(order.status.toLowerCase()) && order.paymentStatus.toLowerCase() !== 'unpaid'; // Move unpaid to its own tab generally, or keep in both? Shopee separates them. Let's keep active for processing/shipped.
                             if (tabValue === 'completed') return ['delivered', 'failed'].includes(order.status.toLowerCase());
                             return true;
                         });
@@ -137,10 +139,14 @@ export default function OrderHistory() {
                                 {filteredOrders.length === 0 ? (
                                     <div className="py-12">
                                         <EmptyState
-                                            title={tabValue === 'active' ? "Tidak ada pesanan aktif" : "Belum ada riwayat pesanan"}
-                                            description="Pesanan Anda akan muncul di sini."
-                                            icon={Package}
-                                            action={tabValue === 'all' ? {
+                                            title={
+                                                tabValue === 'active' ? "Tidak ada pesanan aktif" :
+                                                    tabValue === 'unpaid' ? "Tidak ada tagihan belum dibayar" :
+                                                        "Belum ada riwayat pesanan"
+                                            }
+                                            description={tabValue === 'unpaid' ? "Semua tagihan lunas! Yuk belanja lagi." : "Pesanan Anda akan muncul di sini."}
+                                            icon={tabValue === 'unpaid' ? ShoppingBag : Package}
+                                            action={['all', 'unpaid'].includes(tabValue) ? {
                                                 label: "Mulai Belanja",
                                                 to: "/marketplace"
                                             } : undefined}
@@ -237,7 +243,17 @@ export default function OrderHistory() {
                                                             </Button>
                                                         )}
                                                         {order.paymentStatus === 'unpaid' && order.status !== 'cancelled' && (
-                                                            <Button size="sm" className="ml-auto w-full md:w-auto font-bold px-8 shadow-lg shadow-primary/20">
+                                                            <Button
+                                                                size="sm"
+                                                                className="ml-auto w-full md:w-auto font-bold px-8 shadow-lg shadow-primary/20"
+                                                                onClick={() => {
+                                                                    if ((order as any).paymentLink) {
+                                                                        window.location.href = (order as any).paymentLink;
+                                                                    } else {
+                                                                        handleOpenDetails(order.id);
+                                                                    }
+                                                                }}
+                                                            >
                                                                 Bayar Sekarang
                                                             </Button>
                                                         )}

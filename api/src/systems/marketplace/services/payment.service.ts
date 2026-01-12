@@ -1,41 +1,73 @@
-import { Order } from '@prisma/client';
+import { PrismaClient, Order } from '@prisma/client';
+import { MidtransService } from './midtrans.service';
 
-export interface PaymentGateway {
-    createPaymentLink(order: Order, user: { name: string; email: string }): Promise<{ paymentLink: string; paymentId: string }>;
-    verifyPayment(paymentId: string): Promise<string>; // Returns status
-    refundOrder(orderId: string, amount: number): Promise<{ success: boolean; refundId?: string }>;
-}
+const prisma = new PrismaClient();
+const midtrans = new MidtransService();
 
-class MockPaymentGateway implements PaymentGateway {
-    async createPaymentLink(order: Order, user: { name: string; email: string }): Promise<{ paymentLink: string; paymentId: string }> {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+export const paymentService = {
+    /**
+     * Create a payment link (Core API Transaction)
+     * Returns the transaction details (VA number, etc)
+     */
+    async createPaymentLink(order: Order, method: string) {
+        // Use Midtrans Core API
+        const transaction = await midtrans.createTransaction(order, method);
 
-        const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        const paymentLink = `https://payment.sinergiumkm.com/pay/${paymentId}?amount=${order.totalAmount}`;
+        // Save token/transaction ID AND full paymentData
+        await prisma.order.update({
+            where: { id: order.id },
+            data: {
+                paymentToken: transaction.transaction_id || transaction.token,
+                paymentGateway: 'midtrans',
+                paymentData: transaction // Save full response (VA numbers, etc)
+            }
+        });
 
-        return { paymentLink, paymentId };
-    }
-
-    async verifyPayment(paymentId: string): Promise<string> {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Randomly return success or pending for mock
-        return Math.random() > 0.2 ? 'paid' : 'pending';
-    }
-
-    async refundOrder(orderId: string, amount: number): Promise<{ success: boolean; refundId?: string }> {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        console.log(`[MockPaymentGateway] Refunding ${amount} for order ${orderId}`);
+        // Map Midtrans response to our internal "Payment Link" concept if needed,
+        // OR just return the data to be displayed by Frontend
+        // For Core API, we return the whole object so the frontend can display VA numbers
+        // We construct a link to our OWN Payment Page, but now backed by real data
+        const paymentLink = `/marketplace/payment-simulation/${order.id}?method=${method}`;
 
         return {
-            success: true,
-            refundId: `ref_${Date.now()}_${Math.random().toString(36).substring(7)}`
+            paymentLink,
+            paymentId: transaction.transaction_id,
+            // Pass generic data for frontend to display (VA numbers etc)
+            ...transaction
         };
-    }
-}
+    },
 
-export const paymentService = new MockPaymentGateway();
+    /**
+     * Verify payment status
+     * Now checks real status from Midtrans
+     */
+    async verifyPayment(orderId: string, transactionId?: string): Promise<string> {
+        // If we have a transaction ID, check that, otherwise try orderId
+        const idToCheck = transactionId || orderId;
+        const status = await midtrans.verifyTransaction(idToCheck);
+
+        // Normalize status to our internal state machine
+        // Midtrans: settlement -> paid
+        // Midtrans: pending -> pending
+        // Midtrans: expire -> expired
+        // Midtrans: deny/cancel -> failed
+
+        if (status === 'settlement' || status === 'capture') return 'paid';
+        if (status === 'expire') return 'expired';
+        if (status === 'deny' || status === 'cancel' || status === 'failure') return 'failed';
+
+        // If pending, check if actually expired locally (if midtrans hasn't updated yet)
+        if (status === 'pending') {
+            // Optional: Check order expiry time from DB if needed, but usually we trust Gateway
+            // For now, return pending. UI will handle 'verifying' state.
+            return 'pending';
+        }
+
+        return status || 'pending';
+    },
+
+    async refundOrder(orderId: string) {
+        // Implement refund logic via Midtrans API (optional for now)
+        return true;
+    }
+};

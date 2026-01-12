@@ -27,9 +27,12 @@ import consultationRouter from './systems/consultation/routes/consultation.route
 
 
 
+import { CronService } from './systems/scheduler/cron.service';
+
 export function createServer(): Application {
   const app = express()
 
+  // ... (existing middleware) ...
   app.disable('x-powered-by')
   // Global Middleware
   app.use(compression())
@@ -51,6 +54,7 @@ export function createServer(): Application {
     next()
   })
 
+  // ... (existing routes) ...
   app.use('/healthz', healthRouter)
   app.use('/api/v1/auth', authRouter)
   app.use('/api/v1/users', usersRouter)
@@ -86,5 +90,10 @@ export function createServer(): Application {
     res.status(404).json({ error: 'Not Found', path: req.path })
   })
 
+  // Initialize Cron Jobs
+  const cronService = CronService.getInstance();
+  cronService.init();
+
   return app
 }
+

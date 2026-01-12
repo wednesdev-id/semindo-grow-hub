@@ -42,12 +42,18 @@ export interface AdminDashboardOverview {
         activeUsers: number;
         pendingVerifications: number;
         systemHealth: number;
+
+        // Added fields from backend
+        totalOrders: number;
+        totalSales: number;
+        totalFees: number;
+        activeStores: number;
     };
     userGrowth: {
         name: string;
         users: number;
     }[];
-    pendingVerifications: {
+    pendingVerifications?: {
         id: string;
         businessName: string;
         owner: string;

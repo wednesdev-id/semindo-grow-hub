@@ -29,6 +29,7 @@ const Marketplace = lazy(() => import("./pages/Marketplace"));
 const ProductDetail = lazy(() => import("./pages/marketplace/ProductDetail"));
 const Cart = lazy(() => import("./pages/marketplace/Cart"));
 const Checkout = lazy(() => import("./pages/marketplace/Checkout"));
+const PaymentSimulationPage = lazy(() => import("./features/marketplace/pages/PaymentSimulationPage"));
 const OrderHistory = lazy(() => import("./pages/marketplace/OrderHistory"));
 // Consolidated with SellerDashboard
 const FinancingHub = lazy(() => import("./pages/FinancingHub"));
@@ -97,6 +98,7 @@ const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/page
 const MarketplaceProductList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductList"));
 const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/ProductUploadPage"));
 const AdminProductDetailPage = lazy(() => import("./features/marketplace/pages/admin/AdminProductDetailPage"));
+const ProductModerationPage = lazy(() => import("./features/marketplace/pages/admin/ProductModerationPage"));
 
 // Consultation Pages
 const ConsultantList = lazy(() => import("./pages/consultation/ConsultantList"));
@@ -168,6 +170,7 @@ const App = () => {
                       <Route path="/marketplace/product/:slug" element={<ProductDetail />} />
                       <Route path="/marketplace/cart" element={<Cart />} />
                       <Route path="/marketplace/checkout" element={<Checkout />} />
+                      <Route path="/payment-simulation/:paymentId" element={<PaymentSimulationPage />} />
                       <Route path="/marketplace/my-orders" element={<OrderHistory />} />
                       <Route path="/marketplace/wishlist" element={<Wishlist />} />
                       <Route path="/notifications" element={<Notifications />} />
@@ -208,6 +211,8 @@ const App = () => {
                         <Route path="users" element={<UserManagement />} />
                         <Route path="umkm" element={<UMKMListPage />} />
                         <Route path="umkm/:id" element={<UMKMDetailPage />} />
+                        <Route path="products" element={<ProductModerationPage />} />
+                        <Route path="orders" element={<MarketplaceOrderList />} />
                         <Route path="programs" element={<ProgramListPage />} />
                         <Route path="programs/:id" element={<ProgramDetailPage />} />
                         <Route path="marketplace" element={<MarketplaceAdminDashboard />} />
