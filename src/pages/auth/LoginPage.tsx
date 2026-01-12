@@ -11,6 +11,25 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
+    const getErrorMessage = (err: unknown): string => {
+        if (typeof err === 'string') return err;
+        if (err instanceof Error) {
+            // Handle specific cases
+            if (err.message.includes('Network Error')) return 'Terjadi kesalahan jaringan. Periksa koneksi internet Anda.';
+            if (err.message.includes('401')) return 'Email atau password salah.';
+            if (err.message.includes('400')) return 'Data tidak valid.';
+            return err.message;
+        }
+        if (typeof err === 'object' && err !== null) {
+            const apiError = err as any;
+            return apiError.response?.data?.message ||
+                apiError.response?.data?.error ||
+                apiError.message ||
+                'Terjadi kesalahan yang tidak diketahui.';
+        }
+        return 'Login gagal. Silakan coba lagi.';
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
@@ -20,60 +39,9 @@ export default function LoginPage() {
             await login(email, password)
             navigate('/dashboard')
         } catch (err: unknown) {
-            console.error('=== LOGIN ERROR DEBUG ===');
-            console.error('Error type:', typeof err);
-            console.error('Error object:', err);
-            console.error('Error stringified:', JSON.stringify(err, null, 2));
-
-            let message = 'Login gagal. Silakan periksa email dan password Anda.';
-
-            // Try to extract error message from various possible structures
-            if (err instanceof Error) {
-                console.error('Error is instance of Error');
-                console.error('Error message:', err.message);
-
-                // Check for specific error messages from backend
-                if (err.message.includes('User not found') ||
-                    err.message.includes('Invalid password') ||
-                    err.message.includes('Invalid credentials') ||
-                    err.message.includes('Invalid email or password')) {
-                    message = 'Email atau password salah. Silakan coba lagi.';
-                } else if (err.message.includes('Network Error')) {
-                    message = 'Terjadi kesalahan jaringan. Periksa koneksi internet Anda.';
-                } else if (err.message.includes('Too many requests')) {
-                    message = 'Terlalu banyak percobaan login. Silakan tunggu beberapa saat.';
-                } else if (err.message && err.message.trim() !== '') {
-                    message = err.message;
-                }
-            }
-
-            // Handle API error response structure (axios-like errors)
-            if (typeof err === 'object' && err !== null) {
-                const apiError = err as any;
-                console.error('Checking API error structure...');
-                console.error('Has response?', !!apiError.response);
-                console.error('Has response.data?', !!(apiError.response && apiError.response.data));
-                console.error('Has response.data.message?', !!(apiError.response && apiError.response.data && apiError.response.data.message));
-
-                if (apiError.response?.data?.message) {
-                    message = apiError.response.data.message;
-                    console.error('Using response.data.message:', message);
-                } else if (apiError.response?.data?.error) {
-                    message = apiError.response.data.error;
-                    console.error('Using response.data.error:', message);
-                } else if (apiError.data?.message) {
-                    message = apiError.data.message;
-                    console.error('Using data.message:', message);
-                } else if (apiError.message && typeof apiError.message === 'string' && apiError.message.trim() !== '') {
-                    message = apiError.message;
-                    console.error('Using message:', message);
-                }
-            }
-
-            console.error('Final error message to display:', message);
-            console.error('=== END LOGIN ERROR DEBUG ===');
-
-            setError(message)
+            console.error('Login Error:', err);
+            const message = getErrorMessage(err);
+            setError(message);
         } finally {
             setLoading(false)
         }
@@ -161,12 +129,12 @@ export default function LoginPage() {
                     </div>
 
                     {error && (
-                        <div className="rounded-lg bg-danger bg-opacity-10 p-4">
+                        <div className="rounded-lg bg-red-50 p-4 border border-red-200 mb-6">
                             <div className="flex items-center gap-2">
-                                <svg className="h-5 w-5 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <p className="text-sm text-danger">{error}</p>
+                                <p className="text-sm text-red-600 font-medium">{error}</p>
                             </div>
                         </div>
                     )}
