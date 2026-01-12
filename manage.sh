@@ -32,6 +32,8 @@ show_help() {
     echo "  docker-stop      Stop semua Docker containers"
     echo "  docker-clean     Hapus semua Docker containers dan volumes"
     echo "  docker-logs      Lihat logs dari Docker containers"
+    echo "  deploy           Build dan deploy production via Docker Compose"
+    echo "  destroy          Stop, hapus containers, images & build cache (tanpa hapus volume)"
     echo ""
     echo -e "${GREEN}💻 LOCAL DEVELOPMENT:${NC}"
     echo "  dev              Menjalankan frontend & backend (local, tanpa Docker)"
@@ -234,6 +236,46 @@ docker_logs() {
     docker-compose logs -f
 }
 
+# Deploy production via Docker Compose (build + up)
+deploy() {
+    echo -e "${BLUE}🚀 Deploying production environment...${NC}"
+    echo -e "${YELLOW}Step 1/2: Building Docker images...${NC}"
+    docker-compose --profile prod build
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Build failed!${NC}"
+        return 1
+    fi
+    echo -e "${YELLOW}Step 2/2: Starting containers...${NC}"
+    docker-compose --profile prod up -d
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Deploy failed!${NC}"
+        return 1
+    fi
+    echo -e "${GREEN}✅ Production deployment complete!${NC}"
+    echo -e "${YELLOW}Frontend: http://localhost:8080${NC}"
+    echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
+}
+
+# Destroy containers, images, and build cache without removing volumes
+destroy() {
+    echo -e "${BLUE}🛑 Stopping and removing containers, images, and build cache (volumes preserved)...${NC}"
+    
+    # Stop and remove containers
+    docker-compose --profile dev down --remove-orphans --rmi local
+    docker-compose --profile prod down --remove-orphans --rmi local
+    
+    # Remove build cache
+    echo -e "${BLUE}🧹 Cleaning Docker build cache...${NC}"
+    docker builder prune -f
+    
+    # Remove dangling images
+    echo -e "${BLUE}🗑️ Removing dangling images...${NC}"
+    docker image prune -f
+    
+    echo -e "${GREEN}✅ Containers, images, and build cache removed!${NC}"
+    echo -e "${YELLOW}Note: Volumes are preserved. Use 'docker-clean' to remove volumes.${NC}"
+}
+
 db_migrate() {
     echo -e "${BLUE}🔄 Running database migrations...${NC}"
     docker-compose exec backend npx prisma migrate deploy
@@ -296,6 +338,12 @@ case $COMMAND in
         ;;
     docker-logs)
         docker_logs
+        ;;
+    deploy)
+        deploy
+        ;;
+    destroy)
+        destroy
         ;;
     
     # Database commands

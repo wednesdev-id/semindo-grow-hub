@@ -788,7 +788,7 @@ export class MarketplaceService {
                         id: true,
                         fullName: true,
                         businessName: true,
-                        umkmProfile: {
+                        umkmProfiles: {
                             select: { city: true }
                         }
                     }
@@ -1400,7 +1400,7 @@ export class MarketplaceService {
                         fullName: true,
                         businessName: true,
                         profilePictureUrl: true,
-                        umkmProfile: {
+                        umkmProfiles: {
                             select: {
                                 city: true
                             }
@@ -1418,7 +1418,7 @@ export class MarketplaceService {
         return topStores.map(s => ({
             id: s.id,
             name: s.name,
-            location: s.user?.umkmProfile?.city || 'Indramayu',
+            location: s.user?.umkmProfiles?.[0]?.city || 'Indramayu',
             products: s._count.products,
             rating: Number(s.rating) || 0,
             totalSales: String(s._count.orders),
@@ -1519,8 +1519,8 @@ export class MarketplaceService {
         if (region) {
             where.store = {
                 user: {
-                    umkmProfile: {
-                        city: { contains: region, mode: 'insensitive' }
+                    umkmProfiles: {
+                        some: { city: { contains: region, mode: 'insensitive' } }
                     }
                 }
             };
@@ -1536,7 +1536,7 @@ export class MarketplaceService {
                             name: true,
                             user: {
                                 select: {
-                                    umkmProfile: { select: { city: true } }
+                                    umkmProfiles: { select: { city: true } }
                                 }
                             }
                         }
@@ -1579,8 +1579,8 @@ export class MarketplaceService {
 
         if (location) {
             where.user = {
-                umkmProfile: {
-                    city: { contains: location, mode: 'insensitive' }
+                umkmProfiles: {
+                    some: { city: { contains: location, mode: 'insensitive' } }
                 }
             };
         }
@@ -1594,7 +1594,7 @@ export class MarketplaceService {
                             fullName: true,
                             email: true,
                             phone: true,
-                            umkmProfile: { select: { city: true } }
+                            umkmProfiles: { select: { city: true } }
                         }
                     },
                     _count: {
@@ -1616,7 +1616,7 @@ export class MarketplaceService {
                 id: s.id,
                 name: s.name,
                 owner: s.user?.fullName,
-                location: s.user?.umkmProfile?.city || 'Indramayu',
+                location: s.user?.umkmProfiles?.[0]?.city || 'Indramayu',
                 orderCount: s._count.orders,
                 // Mock revenue
                 estimatedRevenue: s._count.orders * 150000, // Avg order value assumption

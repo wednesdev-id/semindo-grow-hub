@@ -105,6 +105,38 @@ export const rejectRequest = async (req: Request, res: Response, next: NextFunct
 };
 
 /**
+ * Consultant: Complete session with notes
+ */
+export const completeSession = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user.id;
+        const { sessionNotes, recommendations } = req.body;
+
+        if (!sessionNotes || !sessionNotes.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Session notes are required'
+            });
+        }
+
+        const request = await bookingService.completeSession(id, userId, {
+            sessionNotes,
+            recommendations
+        });
+
+        res.json({
+            success: true,
+            data: request,
+            message: 'Session completed successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+/**
  * Consultant: Update meeting link for approved request
  */
 export const updateMeetingLink = async (req: Request, res: Response) => {
@@ -166,5 +198,45 @@ export const getAvailableSlots = async (req: Request, res: Response) => {
         res.json({ success: true, data: slots });
     } catch (error: any) {
         res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * Archive a consultation request
+ */
+export const archiveRequest = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user.id;
+
+        const request = await bookingService.archiveRequest(id, userId);
+
+        res.json({
+            success: true,
+            data: request,
+            message: 'Request archived successfully'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Unarchive a consultation request
+ */
+export const unarchiveRequest = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const userId = (req as any).user.id;
+
+        const request = await bookingService.unarchiveRequest(id, userId);
+
+        res.json({
+            success: true,
+            data: request,
+            message: 'Request unarchived successfully'
+        });
+    } catch (error) {
+        next(error);
     }
 };

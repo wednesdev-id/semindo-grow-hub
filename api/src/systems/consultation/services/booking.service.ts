@@ -86,7 +86,7 @@ export const getUserRequests = async (userId: string, role?: string) => {
             return [];
         }
 
-        return await prisma.consultationRequest.findMany({
+        const requests = await prisma.consultationRequest.findMany({
             where: {
                 consultantId: profile.id
             },
@@ -95,19 +95,46 @@ export const getUserRequests = async (userId: string, role?: string) => {
                     select: {
                         fullName: true,
                         email: true,
-                        phone: true
+                        phone: true,
+                        profilePictureUrl: true
                     }
                 },
-                type: true
+                consultant: {
+                    include: {
+                        user: {
+                            select: {
+                                fullName: true,
+                                profilePictureUrl: true
+                            }
+                        }
+                    }
+                },
+                type: true,
+                chatChannel: {
+                    include: {
+                        messages: {
+                            where: {
+                                isRead: false,
+                                senderId: { not: userId }
+                            },
+                            select: { id: true }
+                        }
+                    }
+                }
             },
             orderBy: {
                 createdAt: 'desc'
             }
         });
+
+        return requests.map(req => ({
+            ...req,
+            unreadCount: req.chatChannel?.messages?.length || 0
+        }));
     }
 
     // Default: Get as client
-    return await prisma.consultationRequest.findMany({
+    const requests = await prisma.consultationRequest.findMany({
         where: {
             clientId: userId
         },
@@ -119,15 +146,40 @@ export const getUserRequests = async (userId: string, role?: string) => {
                             fullName: true,
                             profilePictureUrl: true
                         }
+                    },
+                    expertise: {
+                        include: {
+                            expertise: true
+                        }
+                    },
+                    packages: {
+                        where: { isActive: true },
+                        orderBy: { sortOrder: 'asc' }
                     }
                 }
             },
-            type: true
+            type: true,
+            chatChannel: {
+                include: {
+                    messages: {
+                        where: {
+                            isRead: false,
+                            senderId: { not: userId }
+                        },
+                        select: { id: true }
+                    }
+                }
+            }
         },
         orderBy: {
             createdAt: 'desc'
         }
     });
+
+    return requests.map(req => ({
+        ...req,
+        unreadCount: req.chatChannel?.messages?.length || 0
+    }));
 };
 
 /**
@@ -270,6 +322,52 @@ export const rejectRequest = async (
     });
 
     // TODO: Send notification to client
+};
+
+/**
+ * Consultant: Complete session with notes
+ */
+export const completeSession = async (
+    requestId: string,
+    consultantUserId: string,
+    data: { sessionNotes: string; recommendations?: string }
+) => {
+    const request = await prisma.consultationRequest.findUnique({
+        where: { id: requestId },
+        include: {
+            consultant: {
+                select: {
+                    userId: true
+                }
+            }
+        }
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    if (request.consultant.userId !== consultantUserId) {
+        throw new Error('Unauthorized');
+    }
+
+    if (request.status !== 'approved') {
+        throw new Error(`Cannot complete session with status: ${request.status}`);
+    }
+
+    return await prisma.consultationRequest.update({
+        where: { id: requestId },
+        data: {
+            status: 'completed',
+            sessionNotes: data.sessionNotes,
+            // Store recommendations in statusReason field as workaround
+            // In production, you might want a dedicated field
+            statusReason: data.recommendations
+        }
+    });
+
+    // TODO: Send completion notification to client
+    // TODO: Unlock review/rating feature for client
 };
 
 /**
@@ -460,4 +558,77 @@ export const getAvailableSlots = async (
     }
 
     return slots;
+};
+
+/**
+ * Archive a consultation request
+ */
+export const archiveRequest = async (requestId: string, userId: string) => {
+    const request = await prisma.consultationRequest.findUnique({
+        where: { id: requestId },
+        include: {
+            consultant: {
+                select: { userId: true }
+            }
+        }
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    // Only consultant or client can archive
+    const isClient = request.clientId === userId;
+    const isConsultant = request.consultant.userId === userId;
+
+    if (!isClient && !isConsultant) {
+        throw new Error('Unauthorized');
+    }
+
+    // Can only archive completed, rejected, or cancelled requests
+    if (!['completed', 'rejected', 'cancelled'].includes(request.status)) {
+        throw new Error('Can only archive completed, rejected, or cancelled requests');
+    }
+
+    return await prisma.consultationRequest.update({
+        where: { id: requestId },
+        data: {
+            isArchived: true,
+            archivedAt: new Date()
+        }
+    });
+};
+
+/**
+ * Unarchive a consultation request
+ */
+export const unarchiveRequest = async (requestId: string, userId: string) => {
+    const request = await prisma.consultationRequest.findUnique({
+        where: { id: requestId },
+        include: {
+            consultant: {
+                select: { userId: true }
+            }
+        }
+    });
+
+    if (!request) {
+        throw new Error('Request not found');
+    }
+
+    // Only consultant or client can unarchive
+    const isClient = request.clientId === userId;
+    const isConsultant = request.consultant.userId === userId;
+
+    if (!isClient && !isConsultant) {
+        throw new Error('Unauthorized');
+    }
+
+    return await prisma.consultationRequest.update({
+        where: { id: requestId },
+        data: {
+            isArchived: false,
+            archivedAt: null
+        }
+    });
 };

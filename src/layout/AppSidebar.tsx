@@ -195,18 +195,20 @@ const getMenuItems = (): {
       name: "Manajemen Konsultasi",
       subItems: [
         // User Features (All can access)
-        { name: "Cari Konsultan", path: "/consultation/consultants" },
-        { name: "Dashboard Konsultasi Saya", path: "/consultation/dashboard" },
-        { name: "Jadwalkan Konsultasi", path: "/consultation/schedule" }, // Preview
-        { name: "Riwayat Konsultasi", path: "/consultation/history" }, // Preview
+        { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
+        { name: "Browse Consultants", path: "/consultation/consultants", roles: ["admin", "management", "umkm"] },
+        { name: "My Consultations", path: "/consultation/dashboard", roles: ["consultant", "konsultan"] },
+        { name: "Schedule Consultation", path: "/consultation/schedule", roles: ["umkm"] },
+        { name: "Consultation History", path: "/consultation/history", roles: ["umkm", "consultant", "konsultan"] },
 
         // Admin Features
-        { name: "Ringkasan Dashboard", path: "/dashboard/consultation/dashboard", roles: ["admin", "management"] },
-        { name: "Persetujuan Tertunda", path: "/dashboard/consultation/consultants/pending", roles: ["admin", "management"] },
-        { name: "Konsultan Aktif", path: "/dashboard/consultation/consultants/active", roles: ["admin", "management"] }, // Preview
-        { name: "Semua Permintaan", path: "/dashboard/consultation/requests/all", roles: ["admin", "management"] }, // Preview
-        { name: "Monitoring Chat", path: "/dashboard/consultation/chat-monitoring", roles: ["admin", "management"] }, // Preview
-        { name: "Laporan & Analisis", path: "/dashboard/consultation/reports", roles: ["admin", "management"] }, // Preview
+        { name: "Dashboard Overview", path: "/dashboard/consultation/dashboard", roles: ["admin", "management"] },
+        { name: "Pending Approvals", path: "/dashboard/consultation/consultants/pending", roles: ["admin", "management"] },
+        { name: "Active Consultants", path: "/dashboard/consultation/consultants/active", roles: ["admin", "management"] }, // Preview
+        { name: "Expertise Categories", path: "/dashboard/consultation/expertise", roles: ["admin", "management"] },
+        { name: "All Requests", path: "/dashboard/consultation/requests/all", roles: ["admin", "management"] }, // Preview
+        { name: "Chat Monitoring", path: "/dashboard/consultation/chat-monitoring", roles: ["admin", "management"] }, // Preview
+        { name: "Reports & Analytics", path: "/dashboard/consultation/reports", roles: ["admin", "management"] }, // Preview
       ],
     },
     // 11. Community Platform Manager

@@ -36,7 +36,7 @@ export const api = {
             body: body instanceof FormData ? body : JSON.stringify(body)
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || res.statusText);
+        if (!res.ok) throw new Error(data.error || data.message || res.statusText);
         return data as T;
     },
     put: async <T = unknown>(url: string, body: unknown, options?: RequestInit): Promise<T> => {

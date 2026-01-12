@@ -403,6 +403,62 @@ async function main() {
     });
     console.log("✅ Mentor user created:", mentorUser.email);
 
+    // 7a. Create MentorProfile for the mentor user
+    await prisma.mentorProfile.upsert({
+        where: { userId: mentorUser.id },
+        update: {},
+        create: {
+            userId: mentorUser.id,
+            title: "Senior Business Mentor",
+            bio: "Berpengalaman 10+ tahun dalam membimbing UMKM untuk berkembang. Spesialisasi di digital marketing dan manajemen keuangan.",
+            expertise: ["Marketing", "Finance", "Business Strategy"],
+            experience: 10,
+            isVerified: true,
+            rating: 4.8
+        }
+    });
+    console.log("✅ MentorProfile created for:", mentorUser.email);
+
+    // 7b. Create Consultant User
+    const consultantPassword = await bcrypt.hash("konsultan123", 10);
+    const consultantUser = await prisma.user.upsert({
+        where: { email: "kons@mail.me" },
+        update: {},
+        create: {
+            email: "kons@mail.me",
+            passwordHash: consultantPassword,
+            fullName: "Sarah Dewi",
+            userRoles: {
+                create: {
+                    role: { connect: { name: "konsultan" } }
+                }
+            }
+        },
+    });
+    console.log("✅ Consultant user created:", consultantUser.email);
+
+    // 7c. Create ConsultantProfile for the consultant user
+    await prisma.consultantProfile.upsert({
+        where: { userId: consultantUser.id },
+        update: {},
+        create: {
+            userId: consultantUser.id,
+            title: "Digital Marketing Specialist",
+            tagline: "Grow Your Business Online",
+            bio: "Expert dalam digital marketing dengan fokus pada social media strategy dan content marketing untuk UMKM.",
+            expertiseAreas: ["Digital Marketing", "Social Media", "Content Strategy"],
+            industries: ["Retail", "F&B", "Fashion"],
+            languages: ["Indonesian", "English"],
+            yearsExperience: 8,
+            hourlyRate: 250000,
+            canTeachCourses: true,
+            isAcceptingNewClients: true,
+            status: "approved",
+            verificationStatus: "verified",
+            averageRating: 4.9
+        }
+    });
+    console.log("✅ ConsultantProfile created for:", consultantUser.email);
 
     // 8. Create Courses
     const courses = [
