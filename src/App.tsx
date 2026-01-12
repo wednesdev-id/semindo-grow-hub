@@ -95,7 +95,6 @@ const UMKMFormPage = lazy(() => import("./pages/admin/umkm/UMKMFormPage"));
 const UMKMDetailPage = lazy(() => import("./pages/admin/umkm/UMKMDetailPage"));
 const UMKMSegmentationPage = lazy(() => import("./pages/admin/umkm/UMKMSegmentationPage"));
 const UMKMRegionMapPage = lazy(() => import("./pages/admin/umkm/UMKMRegionMapPage"));
-const SellerDashboard = lazy(() => import("./features/marketplace/pages/admin/SellerDashboard").then(module => ({ default: module.SellerDashboard })));
 const SellerDashboard = lazy(() => import("./pages/marketplace/SellerDashboard"));
 // Redundant admin seller dashboard removed
 const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
@@ -345,16 +344,8 @@ const App = () => {
                         <Route path="/admin/umkm/:id/edit" element={<UMKMFormPage />} />
 
                         <Route path="/umkm/list" element={<UserManagement defaultRole="umkm" />} />
-                        <Route path="/umkm/segmentation" element={<FeaturePreviewPage
-                          title="Segmentasi UMKM"
-                          description="Analisis dan pengelompokan UMKM berdasarkan kriteria."
-                          features={["Automated segmentation", "Custom segment rules", "Targeted campaigns"]}
-                        />} />
-                        <Route path="/umkm/region" element={<FeaturePreviewPage
-                          title="Region Mapping"
-                          description="Peta persebaran UMKM di seluruh Indonesia."
-                          features={["Interactive map", "Regional statistics", "Heatmaps"]}
-                        />} />
+                        <Route path="/umkm/segmentation" element={<UMKMSegmentationPage />} />
+                        <Route path="/umkm/region" element={<UMKMRegionMapPage />} />
                         <Route path="/umkm/assessment-status" element={<FeaturePreviewPage
                           title="Status Self-Assessment"
                           description="Monitor progres assessment UMKM."

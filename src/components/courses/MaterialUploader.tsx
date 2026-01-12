@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, X, CheckCircle, AlertCircle, FileVideo, Presentation } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle, AlertCircle, FileVideo, Presentation, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { lmsService } from '@/services/lmsService';
 
 interface MaterialUploaderProps {
-    onUploadComplete: (url: string, type: 'pdf' | 'video' | 'slide') => void;
+    onUploadComplete: (url: string, type: 'pdf' | 'video' | 'slide' | 'image') => void;
     accept?: string;
     maxSizeMB?: number; // Default 50MB
     label?: string;
@@ -99,9 +99,10 @@ export default function MaterialUploader({
                 });
             }, 500);
 
-            let type: 'pdf' | 'video' | 'slide' = 'pdf';
+            let type: 'pdf' | 'video' | 'slide' | 'image' = 'pdf';
             if (file.type.includes('video')) type = 'video';
             else if (file.type.includes('presentation') || file.name.endsWith('.ppt') || file.name.endsWith('.pptx')) type = 'slide';
+            else if (file.type.includes('image')) type = 'image';
 
             console.log('Uploading file:', file.name, type);
 
@@ -128,6 +129,8 @@ export default function MaterialUploader({
     const onButtonClick = () => {
         fileInputRef.current?.click();
     };
+
+    const isImageAccept = accept.includes('image');
 
     return (
         <div className="w-full">
@@ -164,9 +167,15 @@ export default function MaterialUploader({
                 ) : (
                     <div className="space-y-2">
                         <div className="flex justify-center gap-2 text-gray-400">
-                            <FileText className="h-8 w-8" />
-                            <Presentation className="h-8 w-8" />
-                            <FileVideo className="h-8 w-8" />
+                            {isImageAccept ? (
+                                <ImageIcon className="h-8 w-8" />
+                            ) : (
+                                <>
+                                    <FileText className="h-8 w-8" />
+                                    <Presentation className="h-8 w-8" />
+                                    <FileVideo className="h-8 w-8" />
+                                </>
+                            )}
                         </div>
                         <div className="space-y-1">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -197,7 +206,7 @@ export default function MaterialUploader({
                 )}
             </div>
             <div className="mt-2 flex justify-between text-xs text-gray-400 px-1">
-                <span>Supported: PDF, PPT, Video (MP4)</span>
+                <span>Supported: {isImageAccept ? 'Images (JPEG, PNG)' : 'PDF, PPT, Video (MP4)'}</span>
                 <span>Max: {maxSizeMB}MB</span>
             </div>
         </div>

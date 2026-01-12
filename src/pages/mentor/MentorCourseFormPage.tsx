@@ -142,7 +142,7 @@ export default function MentorCourseFormPage() {
         }
     };
 
-    const addLesson = async (moduleId: string, type: 'video' | 'pdf' | 'slide', url: string, title: string = "New Lesson") => {
+    const addLesson = async (moduleId: string, type: string, url: string, title: string = "New Lesson") => {
         try {
             await lmsService.createLesson(moduleId, {
                 title: title,
@@ -260,15 +260,22 @@ export default function MentorCourseFormPage() {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="thumbnail">Thumbnail URL</Label>
-                                    <div className="flex gap-4 items-center">
+                                    <div className="flex-1">
                                         <Input
                                             id="thumbnail"
                                             value={formData.thumbnailUrl}
                                             onChange={(e) => setFormData(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
                                             placeholder="https://..."
                                         />
-                                        {/* Ideally add an image uploader here later */}
                                     </div>
+                                </div>
+                                <div className="mt-2">
+                                    <MaterialUploader
+                                        label="Upload Thumbnail Image"
+                                        accept="image/*"
+                                        onUploadComplete={(url) => setFormData(prev => ({ ...prev, thumbnailUrl: url }))}
+                                        maxSizeMB={5}
+                                    />
                                     {formData.thumbnailUrl && (
                                         <img src={formData.thumbnailUrl} alt="Preview" className="h-32 w-auto rounded-md object-cover mt-2 border" />
                                     )}

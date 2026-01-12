@@ -49,20 +49,13 @@ model User {
   programParticipations ProgramParticipant[]
   quizAttempts          QuizAttempt[]
   assignmentSubmissions AssignmentSubmission[]
-  quizAttempts          QuizAttempt[]
-  loanApplications      LoanApplication[]
-  mentorProfile         MentorProfile?
-  orders                Order[]
-  products              Product[]
-  programParticipations ProgramParticipant[]
-  organizedPrograms     Program[]
-  reviews               Review[]
   sessionFiles          SessionFile[]
-  store                 Store?
-  umkmProfiles          UMKMProfile[]  // 1:N relation - one user can have many UMKM
-  userRoles             UserRole[]
   createdExpertise      ExpertiseCategory[]
   expertiseAuditLogs    ExpertiseAuditLog[]
+  consultantProfile     ConsultantProfile?
+  consultationRequests  ConsultationRequest[]
+  consultationReviews   ConsultationReview[]
+  sentMessages          ChatMessage[]
 
   @@map("users")
 }
@@ -287,7 +280,7 @@ model UMKMProfile {
 
   categoryId String?       @map("category_id")
   category   UMKMCategory? @relation(fields: [categoryId], references: [id])
-  tags       UMKMTag[]
+  tags       UMKMTag[]     @relation("UMKMProfileToUMKMTag")
 
   @@map("umkm_profiles")
 }
@@ -326,12 +319,13 @@ model MentorProfile {
   rating            Decimal            @default(0) @db.Decimal(3, 2)
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
-  courses           Course[]           @relation("MentorCourses")
+
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   mentoringSessions MentoringSession[]
   events            MentorEvent[]
-  courses           Course[]           @relation("MentorCourses")
 
+
+  courses           Course[]           @relation("MentorCourses")
   @@map("mentor_profiles")
 }
 
@@ -1165,7 +1159,7 @@ model ConsultantProfile {
   user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   consultationRequests  ConsultationRequest[]
   reviews               ConsultationReview[]
-  courses               Course[]                 @relation("ConsultantCourses")
+  courses               Course[]                 @relation("InstructorCourses")
   expertise             ConsultantExpertise[]
   packages              ConsultationPackage[]
 
