@@ -142,6 +142,7 @@ const AnalyticsTracker = () => {
 const App = () => {
   const container = useMemo(() => ServiceContainer.getInstance(), []);
   const [ready, setReady] = useState(false);
+  const [initError, setInitError] = useState<Error | null>(null);
 
   useEffect(() => {
     console.log('App: Initializing services...')
@@ -151,13 +152,40 @@ const App = () => {
       if (mounted) setReady(true);
     }).catch((err) => {
       console.error('App: Service initialization failed', err)
-      if (mounted) setReady(false);
+      if (mounted) setInitError(err instanceof Error ? err : new Error(String(err)));
     });
     return () => { mounted = false };
   }, []);
 
   const authService = ready ? container.getService<AuthService>("authService") : undefined;
   const tokenService = ready ? container.getService<TokenService>("tokenService") : undefined;
+
+  if (initError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center space-y-4">
+          <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">Gagal Memuat Aplikasi</h2>
+          <p className="text-slate-600">
+            Terjadi kesalahan saat menginisialisasi sistem. Mohon periksa koneksi internet Anda atau coba muat ulang halaman.
+          </p>
+          <div className="bg-slate-100 p-3 rounded-lg text-left overflow-auto max-h-32 text-xs text-slate-500 font-mono">
+            {initError.message}
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-2 px-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+          >
+            Muat Ulang
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -835,7 +863,7 @@ const App = () => {
                     <Route path="/marketplace/cart" element={<Cart />} />
                     <Route path="/marketplace/checkout" element={<Checkout />} />
                     <Route path="/marketplace/orders" element={<OrderHistory />} />
-                    <Route path="/marketplace/seller" element={<MarketplaceSellerDashboard />} />
+                    <Route path="/marketplace/seller" element={<SellerDashboard />} />
                     <Route path="/financing-hub" element={<FinancingHub />} />
                     <Route path="/export-hub" element={<ExportHub />} />
                     <Route path="/community" element={<CommunityLayout />}>
@@ -1098,7 +1126,7 @@ const App = () => {
                       <Route path="/dashboard/marketplace/products" element={<MarketplaceProductList />} />
                       <Route path="/dashboard/marketplace/products/new" element={<ProductUploadPage />} />
                       <Route path="/marketplace/products" element={<ProductListPage />} />
-                      <Route path="/marketplace/product/:slug" element={<ProductDetailPage />} />
+                      <Route path="/marketplace/product/:slug" element={<ProductDetail />} />
                       <Route path="/marketplace/verification" element={<MarketplaceProductVerification />} />
                       <Route path="/marketplace/stores" element={<FeaturePreviewPage
                         title="Toko UMKM"
