@@ -411,22 +411,12 @@ const App = () => {
                         />} />
                         <Route path="/dashboard/consultation/dashboard" element={<ConsultationManagement />} />
                         <Route path="/dashboard/consultation/consultants/pending" element={<PendingConsultants />} />
-                        <Route path="/dashboard/consultation/consultants/active" element={<FeaturePreviewPage
-                          title="Active Consultants"
-                          description="Daftar lengkap konsultan aktif dengan metrik performa."
-                          features={["Performance metrics", "Client reviews", "Session statistics", "Revenue tracking"]}
-                        />} />
-                        <Route path="/dashboard/consultation/requests/all" element={<FeaturePreviewPage
-                          title="All Consultation Requests"
-                          description="Manajemen semua permintaan konsultasi dalam sistem."
-                          features={["Request filtering", "Status tracking", "Bulk actions", "Export data"]}
-                        />} />
+                        <Route path="/dashboard/consultation/consultants/active" element={<ActiveConsultants />} />
+                        <Route path="/dashboard/consultation/requests/all" element={<AllRequests />} />
                         <Route path="/dashboard/consultation/chat-monitoring" element={<ChatMonitoringPage />} />
-                        <Route path="/dashboard/consultation/reports" element={<FeaturePreviewPage
-                          title="Reports & Analytics"
-                          description="Laporan komprehensif dan analytics untuk consultation hub."
-                          features={["Revenue analytics", "Consultant performance", "Client satisfaction", "Custom reports"]}
-                        />} />
+                        <Route path="/dashboard/consultation/reports" element={<ReportsAnalytics />} />
+                        <Route path="/dashboard/consultation/expertise" element={<ExpertiseManagement />} />
+                        <Route path="/consultation/consultants" element={<PublicConsultantBrowse />} />
 
                         {/* Program Management */}
                         <Route path="/programs/list" element={<ProgramList />} />
