@@ -7,34 +7,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Video, Users, Award, Clock, Star, PlayCircle, Calendar } from "lucide-react";
 import SEOHead from "@/components/ui/seo-head";
 
+import { useQuery } from "@tanstack/react-query";
+import { lmsService } from "@/services/lmsService";
+import { Link } from "react-router-dom";
+
 const LearningHub = () => {
+  const { data: courses = [] } = useQuery({
+    queryKey: ['courses'],
+    queryFn: () => lmsService.getCourses()
+  });
+
+  // Group courses by category
   const modules = [
     {
-      category: "Marketing Digital",
+      category: "Marketing",
       icon: "📱",
-      courses: [
-        { title: "Social Media Marketing untuk UMKM", duration: "4 jam", level: "Pemula", rating: 4.8 },
-        { title: "E-commerce & Marketplace Strategy", duration: "6 jam", level: "Menengah", rating: 4.9 },
-        { title: "Content Marketing & SEO", duration: "5 jam", level: "Lanjutan", rating: 4.7 }
-      ]
+      courses: courses.filter(c => c.category === 'Marketing')
     },
     {
-      category: "Keuangan",
+      category: "Finance",
       icon: "💰",
-      courses: [
-        { title: "Pembukuan Sederhana untuk UMKM", duration: "3 jam", level: "Pemula", rating: 4.9 },
-        { title: "Cash Flow Management", duration: "4 jam", level: "Menengah", rating: 4.8 },
-        { title: "Investment & Funding Strategy", duration: "5 jam", level: "Lanjutan", rating: 4.6 }
-      ]
+      courses: courses.filter(c => c.category === 'Finance')
     },
     {
-      category: "Ekspor",
+      category: "Export",
       icon: "🌍",
-      courses: [
-        { title: "Export Readiness Assessment", duration: "3 jam", level: "Pemula", rating: 4.7 },
-        { title: "International Trade Documentation", duration: "6 hours", level: "Menengah", rating: 4.8 },
-        { title: "Global Market Entry Strategy", duration: "8 jam", level: "Lanjutan", rating: 4.9 }
-      ]
+      courses: courses.filter(c => c.category === 'Export')
     }
   ];
 
@@ -49,7 +47,7 @@ const LearningHub = () => {
     },
     {
       title: "Export Market Opportunities 2024",
-      date: "28 Oktober 2024", 
+      date: "28 Oktober 2024",
       time: "20:00 WIB",
       speaker: "Budi Santoso",
       participants: 320,
@@ -58,49 +56,38 @@ const LearningHub = () => {
     {
       title: "Fintech Solutions for SME Funding",
       date: "22 Oktober 2024",
-      time: "19:30 WIB", 
+      time: "19:30 WIB",
       speaker: "Sari Maharani",
       participants: 280,
       status: "completed"
     }
   ];
 
-  const mentors = [
-    {
-      name: "Sarah Dewi",
-      expertise: "Digital Marketing Specialist",
-      experience: "8 tahun",
-      rating: 4.9,
-      sessions: 150,
-      price: "Rp 250K/jam"
-    },
-    {
-      name: "Robert Chen",
-      expertise: "Export Trade Consultant", 
-      experience: "12 tahun",
-      rating: 4.8,
-      sessions: 200,
-      price: "Rp 400K/jam"
-    },
-    {
-      name: "Indira Sari",
-      expertise: "Financial Advisor",
-      experience: "10 tahun", 
-      rating: 4.9,
-      sessions: 180,
-      price: "Rp 350K/jam"
+  // Fetch instructors from database
+  const { data: instructors = [] } = useQuery({
+    queryKey: ['instructors'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/v1/consultation/instructors');
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.data || [];
+      } catch (error) {
+        console.error('Failed to fetch instructors:', error);
+        return [];
+      }
     }
-  ];
+  });
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead 
+      <SEOHead
         title="Learning Hub Semindo – Modul, Webinar, & Sertifikat Digital"
         description="Belajar marketing digital, keuangan, ekspor, dan legalitas. Ikuti webinar, temukan mentor, dan raih sertifikat digital blockchain-ready."
         keywords="learning hub, modul pembelajaran UMKM, webinar bisnis, sertifikat digital, mentor bisnis"
       />
       <Navigation />
-      
+
       {/* Hero Section */}
       <section className="pt-20 pb-12 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
         <div className="max-w-7xl mx-auto text-center">
@@ -128,51 +115,72 @@ const LearningHub = () => {
               Kurikulum komprehensif yang dirancang khusus untuk UMKM
             </p>
           </div>
-          
+
           <Tabs defaultValue="marketing" className="w-full">
             <TabsList className="grid w-full md:grid-cols-3">
               <TabsTrigger value="marketing">Marketing Digital</TabsTrigger>
               <TabsTrigger value="finance">Keuangan</TabsTrigger>
               <TabsTrigger value="export">Ekspor</TabsTrigger>
             </TabsList>
-            
+
             {modules.map((module, index) => (
-              <TabsContent key={index} value={module.category.toLowerCase().split(' ')[0]} className="mt-8">
+              <TabsContent key={index} value={module.category.toLowerCase()} className="mt-8">
                 <div className="grid md:grid-cols-1 gap-6">
-                  {module.courses.map((course, idx) => (
-                    <Card key={idx} className="hover:shadow-lg transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex-1">
-                            <h3 className="text-xl font-semibold mb-2">{course.title}</h3>
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                {course.duration}
-                              </div>
-                              <Badge variant="secondary">{course.level}</Badge>
-                              <div className="flex items-center gap-1">
-                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                {course.rating}
+                  {module.courses.length === 0 ? (
+                    <div className="text-center p-8 text-muted-foreground">
+                      Belum ada kursus untuk kategori ini.
+                    </div>
+                  ) : (
+                    module.courses.map((course, idx) => (
+                      <Card key={idx} className="hover:shadow-lg transition-shadow">
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-semibold mb-2">{course.title}</h3>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4" />
+                                  {/* Assuming duration is in minutes, convert to hours roughly or display as is */}
+                                  {course.modules?.reduce((acc, m) => acc + m.lessons.reduce((lAcc, l) => lAcc + (l.duration || 0), 0), 0)} menit
+                                </div>
+                                <Badge variant="secondary">{course.level}</Badge>
+                                <div className="flex items-center gap-1">
+                                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                  4.8 {/* Hardcoded rating for now as it's not in Course interface yet */}
+                                </div>
                               </div>
                             </div>
+                            <div className="text-4xl">{module.icon}</div>
                           </div>
-                          <div className="text-4xl">{module.icon}</div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <Button variant="outline" size="sm">
-                            <PlayCircle className="h-4 w-4 mr-2" />
-                            Preview
-                          </Button>
-                          <Button size="sm">Mulai Kursus</Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <div className="flex items-center justify-between">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link to={`/lms/courses/${course.slug}`}>
+                                <PlayCircle className="h-4 w-4 mr-2" />
+                                Preview
+                              </Link>
+                            </Button>
+                            <Button size="sm" asChild>
+                              <Link to={`/lms/courses/${course.slug}`}>Mulai Kursus</Link>
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
               </TabsContent>
             ))}
           </Tabs>
+
+          {/* View All Courses CTA */}
+          <div className="text-center mt-8">
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/explore/courses">
+                <BookOpen className="h-5 w-5 mr-2" />
+                Lihat Semua Kursus
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -187,7 +195,7 @@ const LearningHub = () => {
               Sesi live bersama para ahli dan praktisi berpengalaman
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
             {webinars.map((webinar, index) => (
               <Card key={index} className={`${webinar.status === 'upcoming' ? 'border-primary' : 'opacity-75'}`}>
@@ -224,52 +232,175 @@ const LearningHub = () => {
               </Card>
             ))}
           </div>
+
+          {/* View All Webinars CTA */}
+          <div className="text-center mt-8">
+            <Button size="lg" variant="outline" asChild>
+              <Link to="/community/events">
+                <Video className="h-5 w-5 mr-2" />
+                Lihat Semua Webinar & Event
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
 
-      {/* Mentor Directory */}
+      {/* Course Instructors */}
       <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Mentor & Trainer Directory
+              Instruktur Berpengalaman
             </h2>
             <p className="text-xl text-muted-foreground">
-              Belajar langsung dari para ahli dengan sesi mentoring 1-on-1
+              Belajar dari mentor dan expert yang berpengalaman di bidangnya
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-1 lg:grid-cols-3 gap-6">
-            {mentors.map((mentor, index) => (
-              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
-                    <Users className="h-10 w-10 text-primary" />
-                  </div>
-                  <CardTitle>{mentor.name}</CardTitle>
-                  <CardDescription>{mentor.expertise}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Pengalaman:</span>
-                    <span className="font-medium">{mentor.experience}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Rating:</span>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="font-medium">{mentor.rating}</span>
+
+          {(!instructors?.mentors?.length) ? (
+            <div className="text-center p-8 text-muted-foreground">
+              Instruktur akan segera hadir
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Display Mentors */}
+              {instructors?.mentors?.map((mentor: any) => (
+                <Card key={mentor.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="w-20 h-20 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center overflow-hidden">
+                      {mentor.user?.profilePictureUrl ? (
+                        <img src={mentor.user.profilePictureUrl} alt={mentor.user?.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="h-10 w-10 text-primary" />
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Sesi:</span>
-                    <span className="font-medium">{mentor.sessions}+</span>
-                  </div>
-                  <div className="text-lg font-semibold text-primary">{mentor.price}</div>
-                  <Button className="w-full">Book Mentoring</Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <CardTitle className="text-center text-base">{mentor.user?.fullName || 'Mentor'}</CardTitle>
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                        Mentor
+                      </Badge>
+                    </div>
+                    <CardDescription className="text-center">{mentor.title}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {mentor.expertise?.slice(0, 2).map((exp: string, idx: number) => (
+                        <Badge key={idx} variant="outline">{exp}</Badge>
+                      ))}
+                    </div>
+                    {mentor.yearsExperience && (
+                      <div className="text-center text-sm text-muted-foreground">
+                        {mentor.yearsExperience} tahun pengalaman
+                      </div>
+                    )}
+                    <div className="text-center text-sm text-muted-foreground">
+                      {mentor.courses?.length || 0} kursus
+                    </div>
+                    <Button variant="outline" size="sm" className="w-full" asChild>
+                      <Link to={`/lms/instructor/mentor/${mentor.id}`}>Lihat Kursus</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Bottom CTA: Clear Pathways */}
+      <section className="py-16 px-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-4">
+            Butuh Bimbingan Lebih Lanjut?
+          </h2>
+          <p className="text-center text-muted-foreground mb-12">
+            Pilih jalur pembelajaran yang sesuai dengan kebutuhan Anda
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Option 1: Free Mentoring */}
+            <Card className="border-2 border-blue-200 dark:border-blue-800">
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    🎓 Program Mentoring
+                  </CardTitle>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Gratis</Badge>
+                </div>
+                <CardDescription className="text-base">
+                  Bimbingan berkelanjutan 3-6 bulan
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></div>
+                    </div>
+                    <span>Mentor profesional di-assign khusus untuk Anda</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></div>
+                    </div>
+                    <span>Follow-up rutin dan monitoring progress bisnis</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full"></div>
+                    </div>
+                    <span>Cocok untuk UMKM pemula yang membutuhkan bimbingan menyeluruh</span>
+                  </li>
+                </ul>
+                <Button className="w-full" variant="outline" size="lg" asChild>
+                  <Link to="/explore/mentors">
+                    Cari Mentor →
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Option 2: Paid Consultation */}
+            <Card className="border-2 border-purple-200 dark:border-purple-800">
+              <CardHeader>
+                <div className="flex items-start justify-between mb-2">
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    💼 Konsultasi Expert
+                  </CardTitle>
+                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100">On-Demand</Badge>
+                </div>
+                <CardDescription className="text-base">
+                  Solusi cepat untuk masalah spesifik
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                    </div>
+                    <span>Pilih expert sesuai kebutuhan dan budget Anda</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                    </div>
+                    <span>Booking langsung, fleksibel sesuai jadwal Anda</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm">
+                    <div className="mt-1 w-5 h-5 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                      <div className="w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                    </div>
+                    <span>Sesi 1-2 jam untuk mendapat solusi cepat</span>
+                  </li>
+                </ul>
+                <Button className="w-full" size="lg" asChild>
+                  <Link to="/layanan-konsultasi">
+                    Cari Konsultan →
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
@@ -283,7 +414,7 @@ const LearningHub = () => {
           <p className="text-xl text-muted-foreground mb-8">
             Dapatkan sertifikat blockchain-ready yang diakui industri setelah menyelesaikan modul pembelajaran
           </p>
-          
+
           <Card>
             <CardContent className="p-8">
               <div className="grid md:grid-cols-2 gap-8 items-center">

@@ -1,0 +1,6 @@
+# Ignore secrets file for local testing
+.secrets
+
+# Ignore backup files
+backups/
+*.backup
