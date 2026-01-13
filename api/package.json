@@ -27,10 +27,10 @@
     "sharp": "^0.34.5",
     "socket.io": "^4.8.1",
     "uuidv7": "^1.1.0",
-    "zod": "^4.3.5"
+    "zod": "^4.3.5",
+    "@prisma/client": "^6.19.1"
   },
   "devDependencies": {
-    "@prisma/client": "^6.19.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/compression": "^1.8.1",
     "@types/jsonwebtoken": "^9.0.10",
@@ -43,6 +43,7 @@
     "vitest": "^4.0.14"
   },
   "prisma": {
+    "schema": "prisma/schema.prisma",
     "seed": "ts-node prisma/seed.ts"
   }
 }
