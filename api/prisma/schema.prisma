@@ -773,8 +773,6 @@ model Order {
   shippingAddress Json? // Snapshot of address
   courier         String?
   trackingNumber  String? @map("tracking_number")
-  shipmentStatus  String  @default("processed") @map("shipment_status") // processed, packed, shipped, in_transit, near_destination, delivered
-  shipmentHistory Json?   @map("shipment_history") // Array of { status, timestamp, location?, note? }
 
   // Cancellation Information
   cancellationReason String?   @map("cancellation_reason")

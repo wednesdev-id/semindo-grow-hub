@@ -482,11 +482,16 @@ export class MarketplaceService {
             const user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user) throw new Error('User not found');
 
-            const { paymentLink } = await paymentService.createPaymentLink(order, order.paymentMethod || 'bca_va');
+            const { paymentLink, paymentToken, paymentGateway, paymentData } = await paymentService.createPaymentLink(order, order.paymentMethod || 'bca_va');
 
             const updatedOrder = await tx.order.update({
                 where: { id: order.id },
-                data: { paymentLink }
+                data: {
+                    paymentLink,
+                    paymentToken,
+                    paymentGateway,
+                    paymentData
+                }
             });
 
             // Clear cart items
@@ -610,39 +615,6 @@ export class MarketplaceService {
         }
 
         return order; // Still pending
-    }
-
-    async updateShipmentStatus(orderId: string, status: string, location?: string): Promise<Order> {
-        const order = await prisma.order.findUnique({ where: { id: orderId } });
-        if (!order) throw new Error('Order not found');
-
-        // Append to history
-        const history = (order.shipmentHistory as any[]) || [];
-        history.push({
-            status,
-            timestamp: new Date(),
-            location: location || 'Warehouse',
-            note: `Status updated to ${status}`
-        });
-
-        // State Machine logic for shipment
-        const data: any = {
-            shipmentStatus: status,
-            shipmentHistory: history,
-            updatedAt: new Date()
-        };
-
-        // Sync main Order Status if relevant
-        if (status === 'shipped') {
-            data.status = 'shipped';
-        } else if (status === 'delivered') {
-            data.status = 'delivered';
-        }
-
-        return prisma.order.update({
-            where: { id: orderId },
-            data
-        });
     }
 
     async getMyOrders(userId: string): Promise<Order[]> {

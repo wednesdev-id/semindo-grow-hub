@@ -104,8 +104,6 @@ const ProductUploadPage = lazy(() => import("./features/marketplace/pages/admin/
 const AdminProductDetailPage = lazy(() => import("./features/marketplace/pages/admin/AdminProductDetailPage"));
 const ProductModerationPage = lazy(() => import("./features/marketplace/pages/admin/ProductModerationPage"));
 
-const ShipmentTrackingPage = lazy(() => import("./pages/marketplace/ShipmentTrackingPage"));
-
 // Consultation Pages
 const ConsultantList = lazy(() => import("./pages/consultation/ConsultantList"));
 const ConsultantProfile = lazy(() => import("./pages/consultation/ConsultantProfile"));

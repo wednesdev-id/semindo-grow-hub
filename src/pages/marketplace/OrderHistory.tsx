@@ -154,9 +154,17 @@ export default function OrderHistory() {
                         <TabsTrigger value="completed" className="rounded-lg px-6 h-10 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-950 data-[state=active]:shadow-sm transition-all duration-300">Selesai</TabsTrigger>
                     </TabsList>
 
-                    {['all', 'unpaid', 'active', 'completed'].map((key) => {
-                        const tabValue = key as keyof typeof groupedOrders;
-                        const filteredOrders = groupedOrders[tabValue];
+                    {['all', 'unpaid', 'active', 'completed'].map((tabValue) => {
+                        const filteredOrders = orders.filter(order => {
+                            // User request: Cancelled orders should disappear (restored to cart = undo)
+                            if (order.status.toLowerCase() === 'cancelled') return false;
+
+                            if (tabValue === 'all') return true;
+                            if (tabValue === 'unpaid') return order.paymentStatus.toLowerCase() === 'unpaid';
+                            if (tabValue === 'active') return ['pending', 'processing', 'shipped', 'unpaid', 'paid'].includes(order.status.toLowerCase()) && order.paymentStatus.toLowerCase() !== 'unpaid'; // Move unpaid to its own tab generally, or keep in both? Shopee separates them. Let's keep active for processing/shipped.
+                            if (tabValue === 'completed') return ['delivered', 'failed'].includes(order.status.toLowerCase());
+                            return true;
+                        });
 
                         return (
                             <TabsContent key={tabValue} value={tabValue} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -186,37 +194,39 @@ export default function OrderHistory() {
                                                         <div>
                                                             <div className="flex items-center flex-wrap gap-2 mb-2">
                                                                 <h3 className="font-bold text-lg">Pesanan #{order.id.slice(0, 8)}</h3>
+                                                                {/* Consolidated Status Badge */}
                                                                 {(() => {
-                                                                    const s = order.status.toLowerCase();
-                                                                    const p = order.paymentStatus.toLowerCase();
-                                                                    let label = order.status;
-                                                                    let className = getStatusColor(order.status);
+                                                                    const status = order.status?.toLowerCase();
+                                                                    const paymentStatus = order.paymentStatus?.toLowerCase();
 
-                                                                    if (s === 'cancelled') {
+                                                                    let label = status;
+                                                                    let colorClass = 'bg-gray-100 text-gray-800';
+
+                                                                    if (status === 'cancelled') {
                                                                         label = 'Dibatalkan';
-                                                                        className = getStatusColor('cancelled');
-                                                                    } else if (s === 'delivered' || s === 'completed') {
-                                                                        label = 'Selesai';
-                                                                        className = getStatusColor('delivered');
-                                                                    } else if (s === 'shipped') {
-                                                                        label = 'Dikirim';
-                                                                        className = getStatusColor('shipped');
-                                                                    } else if (s === 'processing') {
+                                                                        colorClass = 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400';
+                                                                    } else if (paymentStatus === 'failed') {
+                                                                        label = 'Pembayaran Gagal';
+                                                                        colorClass = 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400';
+                                                                    } else if (paymentStatus === 'pending' || paymentStatus === 'unpaid') {
+                                                                        label = 'Menunggu Pembayaran';
+                                                                        colorClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400';
+                                                                    } else if (status === 'pending' || status === 'paid') {
+                                                                        label = 'Sudah Dibayar';
+                                                                        colorClass = 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400';
+                                                                    } else if (status === 'processing') {
                                                                         label = 'Diproses';
-                                                                        className = getStatusColor('processing');
-                                                                    } else if (s === 'paid' || p === 'paid') {
-                                                                        label = 'Sudah Bayar';
-                                                                        className = getPaymentStatusColor('paid');
-                                                                    } else if (p === 'unpaid' || p === 'pending' || s === 'pending_payment' || s === 'pending') {
-                                                                        label = 'Belum Bayar';
-                                                                        className = getPaymentStatusColor('unpaid');
-                                                                    } else if (p === 'failed') {
-                                                                        label = 'Gagal';
-                                                                        className = getPaymentStatusColor('failed');
+                                                                        colorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400';
+                                                                    } else if (status === 'shipped') {
+                                                                        label = 'Dikirim';
+                                                                        colorClass = 'bg-purple-100 text-purple-800 dark:bg-purple-950/30 dark:text-purple-400';
+                                                                    } else if (status === 'delivered' || status === 'completed') {
+                                                                        label = 'Selesai';
+                                                                        colorClass = 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400';
                                                                     }
 
                                                                     return (
-                                                                        <Badge className={className}>
+                                                                        <Badge className={colorClass}>
                                                                             {label}
                                                                         </Badge>
                                                                     );

@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 export default function Checkout() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { user, loading: authLoading } = useAuth();
+    const { user, isLoading: authLoading } = useAuth();
     const { items, total, clearCart } = useCart();
     const [processing, setProcessing] = useState(false);
 
@@ -162,28 +162,32 @@ export default function Checkout() {
 
             // Call real API
             const response = await marketplaceService.createOrder(orderItems, { ...shippingAddress, paymentMethod }, shippingCost) as any;
-            const { paymentLink } = response.data;
 
-            console.log('[ANALYTICS] Checkout Completed', { orderId: response.data.id });
+            // The response structure from api.post is the JSON body { data: Order }
+            const order = response.data;
+
+            if (!order || !order.id) {
+                throw new Error('Invalid order response');
+            }
+
+            console.log('[ANALYTICS] Checkout Completed', { orderId: order.id });
 
             // Clear cart after successful order
             clearCart();
 
             // Show success message
-            toast.success('Pesanan berhasil dibuat!');
+            toast.success('Pesanan berhasil dibuat! Mengalihkan ke pembayaran...');
 
-            // Redirect based on payment method
+            // Redirect to Payment Simulation Page
             setTimeout(() => {
-                if (paymentMethod === 'manual' || !paymentLink) {
-                    navigate('/marketplace/my-orders');
-                } else {
-                    // Open payment link in new tab or same window
-                    window.location.href = paymentLink;
-                }
-            }, 1500);
-        } catch (error) {
+                navigate(`/payment-simulation/${order.id}`);
+            }, 1000);
+
+        } catch (error: any) {
             console.error('Failed to create order:', error);
-            toast.error('Gagal membuat pesanan. Silakan coba lagi.');
+            // Show specific error if available
+            const errorMessage = error.message || 'Gagal membuat pesanan. Silakan coba lagi.';
+            toast.error(errorMessage);
         } finally {
             setProcessing(false);
         }
