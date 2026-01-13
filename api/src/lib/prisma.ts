@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../prisma/generated/client';
 import { uuidv7 } from 'uuidv7';
 
 const prismaClientSingleton = () => {
@@ -6,7 +6,11 @@ const prismaClientSingleton = () => {
         ? { log: ['query', 'info', 'warn', 'error'] as ('query' | 'info' | 'warn' | 'error')[] }
         : { log: ['warn', 'error'] as ('warn' | 'error')[] };
 
-    return new PrismaClient(logOptions).$extends({
+    // Prisma 7 requires datasourceUrl to be passed to PrismaClient constructor
+    return new PrismaClient({
+        ...logOptions,
+        datasourceUrl: process.env.DATABASE_URL,
+    }).$extends({
         query: {
             $allModels: {
                 async create({ args, query, model }) {
