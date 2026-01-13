@@ -2,7 +2,11 @@ import { PrismaClient } from '@prisma/client';
 import { uuidv7 } from 'uuidv7';
 
 const prismaClientSingleton = () => {
-    return new PrismaClient().$extends({
+    const logOptions = process.env.NODE_ENV !== 'production'
+        ? { log: ['query', 'info', 'warn', 'error'] as ('query' | 'info' | 'warn' | 'error')[] }
+        : { log: ['warn', 'error'] as ('warn' | 'error')[] };
+
+    return new PrismaClient(logOptions).$extends({
         query: {
             $allModels: {
                 async create({ args, query, model }) {

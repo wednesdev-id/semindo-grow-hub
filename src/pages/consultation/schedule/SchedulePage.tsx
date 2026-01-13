@@ -10,15 +10,7 @@ import { ArrowLeft, Clock, Calendar as CalendarIcon, Loader2, CheckCircle2 } fro
 import { format, addDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from "date-fns";
 import { consultationService } from "@/services/consultationService";
 
-import { AvailabilitySlot } from "@/types/consultation";
-
-interface Slot extends Omit<AvailabilitySlot, 'id' | 'isRecurring' | 'isAvailable' | 'specificDate'> {
-    date: string;
-    startTime: string; // '09:00'
-    endTime: string;
-    status: 'available' | 'booked';
-    id?: string; // Add optional id for compatibility if needed
-}
+import { BookingSlot } from "@/types/consultation";
 
 export default function SchedulePage() {
     const [searchParams] = useSearchParams();
@@ -27,8 +19,8 @@ export default function SchedulePage() {
 
     const consultantId = searchParams.get('consultantId');
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-    const [availableSlots, setAvailableSlots] = useState<Slot[]>([]);
-    const [selectedSlot, setSelectedSlot] = useState<Slot | null>(null);
+    const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
+    const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
     const [loading, setLoading] = useState(false);
     const [consultant, setConsultant] = useState<any>(null);
 
@@ -56,15 +48,7 @@ export default function SchedulePage() {
 
             const slots = await consultationService.getAvailableSlots(consultantId!, start, end);
 
-            // Map AvailabilitySlot[] to Slot[]
-            const mappedSlots: Slot[] = slots.map(s => ({
-                date: s.specificDate || format(new Date(), 'yyyy-MM-dd'), // Use specificDate from AvailabilitySlot
-                startTime: s.startTime,
-                endTime: s.endTime,
-                status: s.isAvailable ? 'available' : 'booked'
-            }));
-
-            setAvailableSlots(mappedSlots);
+            setAvailableSlots(slots);
         } catch (error) {
             toast({
                 title: "Error fetching slots",

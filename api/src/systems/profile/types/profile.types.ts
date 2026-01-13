@@ -16,6 +16,7 @@ export interface UMKMProfileDto {
     assetsValue?: number
     legalEntity?: string // PT, CV, etc.
     nib?: string
+    location?: { lat: number; lng: number } // Koordinat lokasi UMKM
 }
 
 export interface MentorProfileDto {

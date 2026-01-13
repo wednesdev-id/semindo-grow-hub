@@ -185,11 +185,7 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
-          text: |
-            🧪 Staging Deployment ${{ job.status }}
-            Branch: ${{ github.ref }}
-            Commit: ${{ github.sha }}
-            Author: ${{ github.actor }}
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          fields: repo,commit,author,ref,workflow
+
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

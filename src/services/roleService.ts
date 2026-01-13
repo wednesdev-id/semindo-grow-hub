@@ -45,7 +45,7 @@ export interface UpdatePermissionData {
 
 export const roleService = {
     // Role CRUD
-    getAllRoles: () => api.get('/roles'),
+    getAllRoles: () => api.get<{ data: Role[] }>('/roles'),
     getRoleById: (id: string) => api.get(`/roles/${id}`),
     createRole: (data: CreateRoleData) => api.post('/roles', data),
     updateRole: (id: string, data: UpdateRoleData) => api.patch(`/roles/${id}`, data),

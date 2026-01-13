@@ -64,12 +64,14 @@ export interface Course {
     category: string;
     price: number;
     isPublished: boolean;
+    isUMKMOnly?: boolean;
     author: {
         id: string;
         fullName: string;
     };
     _count?: {
-        modules: number;
+        modules?: number;
+        enrollments?: number;
     };
     modules?: Module[];
 }

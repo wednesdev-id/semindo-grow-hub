@@ -148,7 +148,8 @@ export class ProgramService {
                                 businessName: true,
                                 sector: true,
                                 city: true
-                            }
+                            },
+                            take: 1 // Get first/primary profile
                         }
                     },
                 },
