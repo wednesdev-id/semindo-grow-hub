@@ -1,6 +1,5 @@
-import { PrismaClient, CourseCategory } from '../../../../prisma/generated/client';
+import { prisma } from '../../../lib/prisma';
 
-const prisma = new PrismaClient();
 
 export class CourseCategoryService {
     async findAll() {

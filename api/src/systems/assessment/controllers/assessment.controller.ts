@@ -23,7 +23,7 @@ export class AssessmentController {
 
     async create(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId
+            const userId = (req as any).user.userId as string
             const { templateId } = req.body
             const assessment = await assessmentService.createAssessment(userId, templateId)
             res.status(201).json({ data: assessment })
@@ -34,9 +34,9 @@ export class AssessmentController {
 
     async getOne(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId
+            const userId = (req as any).user.userId as string
             const { id } = req.params
-            const assessment = await assessmentService.getAssessment(id, userId)
+            const assessment = await assessmentService.getAssessment(id as string, userId)
             if (!assessment) return res.status(404).json({ error: 'Assessment not found' })
             res.json({ data: assessment })
         } catch (error: any) {
@@ -46,7 +46,7 @@ export class AssessmentController {
 
     async getMyAssessments(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId
+            const userId = (req as any).user.userId as string
             const assessments = await assessmentService.getUserAssessments(userId)
             res.json({ data: assessments })
         } catch (error: any) {
@@ -56,11 +56,11 @@ export class AssessmentController {
 
     async saveResponse(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId
+            const userId = (req as any).user.userId as string
             const { id } = req.params
             const { questionId, answerValue } = req.body
 
-            const response = await assessmentService.saveResponse(id, userId, questionId, answerValue)
+            const response = await assessmentService.saveResponse(id as string, userId, questionId, answerValue)
             res.json({ data: response })
         } catch (error: any) {
             res.status(400).json({ error: error.message })
@@ -69,10 +69,10 @@ export class AssessmentController {
 
     async submit(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId
+            const userId = (req as any).user.userId as string
             const { id } = req.params
 
-            const result = await assessmentService.submitAssessment(id, userId)
+            const result = await assessmentService.submitAssessment(id as string, userId)
             res.json({ data: result })
         } catch (error: any) {
             res.status(400).json({ error: error.message })
@@ -81,11 +81,11 @@ export class AssessmentController {
 
     async downloadPdf(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { id } = req.params;
 
             // Get full assessment data
-            const assessment = await assessmentService.getAssessment(id, userId);
+            const assessment = await assessmentService.getAssessment(id as string, userId);
             if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
 
             // Generate PDF
@@ -104,11 +104,11 @@ export class AssessmentController {
 
     async previewPdf(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { id } = req.params;
 
             // Get full assessment data
-            const assessment = await assessmentService.getAssessment(id, userId);
+            const assessment = await assessmentService.getAssessment(id as string, userId);
             if (!assessment) return res.status(404).json({ error: 'Assessment not found' });
 
             // Generate PDF

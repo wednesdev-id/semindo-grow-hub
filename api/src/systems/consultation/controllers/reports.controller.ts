@@ -1,7 +1,6 @@
+import { prisma } from '../../../lib/prisma';
 import { Request, Response } from 'express';
-import { PrismaClient } from '../../../../prisma/generated/client';
 
-const prisma = new PrismaClient();
 
 /**
  * Get revenue summary

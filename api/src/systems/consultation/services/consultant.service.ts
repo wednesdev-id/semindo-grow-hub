@@ -1,6 +1,5 @@
-import { PrismaClient } from '../../../../prisma/generated/client';
+import { prisma } from '../../../lib/prisma';
 
-const prisma = new PrismaClient();
 
 interface ListConsultantsFilters {
     expertise?: string;

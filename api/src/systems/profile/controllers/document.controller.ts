@@ -6,7 +6,7 @@ const documentService = new DocumentService();
 export class DocumentController {
     async upload(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const file = req.file;
             const { type, number } = req.body;
 
@@ -28,7 +28,7 @@ export class DocumentController {
 
     async list(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const documents = await documentService.getDocuments(userId);
             res.json({ data: documents });
         } catch (error: any) {
@@ -38,7 +38,7 @@ export class DocumentController {
 
     async delete(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { id } = req.params;
             await documentService.deleteDocument(id, userId);
             res.json({ message: 'Document deleted successfully' });

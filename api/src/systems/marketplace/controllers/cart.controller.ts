@@ -39,7 +39,7 @@ export const cartController = {
 
     updateCartItem: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { id } = req.params;
             const { quantity } = updateCartItemSchema.parse(req.body);
 
@@ -52,7 +52,7 @@ export const cartController = {
 
     removeCartItem: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { id } = req.params;
 
             await cartService.removeCartItem(userId, id);
@@ -64,7 +64,7 @@ export const cartController = {
 
     clearCart: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             await cartService.clearCart(userId);
             res.status(204).send();
         } catch (error: any) {

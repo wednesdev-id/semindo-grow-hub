@@ -39,7 +39,7 @@ export class UMKMController {
 
     static async createProfile(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const profile = await umkmService.create(userId, req.body);
             res.status(201).json(profile);
         } catch (error) {
@@ -106,7 +106,7 @@ export class UMKMController {
 
     static async verifyDocument(req: Request, res: Response) {
         try {
-            const verifierId = (req as any).user.userId;
+            const verifierId = (req as any).user.userId as string;
             const { status, reason } = req.body;
             const doc = await documentService.verifyDocument(req.params.docId, verifierId, status, reason);
             res.json(doc);

@@ -20,7 +20,7 @@ const updateStoreSchema = z.object({
 export const storeController = {
     createStore: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const data = createStoreSchema.parse(req.body);
 
             const existingStore = await storeService.getStoreByUserId(userId);
@@ -40,7 +40,7 @@ export const storeController = {
 
     getMyStore: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const store = await storeService.getStoreByUserId(userId);
             if (!store) {
                 return res.status(404).json({ error: 'Store not found' });
@@ -66,7 +66,7 @@ export const storeController = {
 
     updateMyStore: async (req: Request, res: Response) => {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const data = updateStoreSchema.parse(req.body);
 
             const store = await storeService.updateStore(userId, data);

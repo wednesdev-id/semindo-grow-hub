@@ -1,6 +1,5 @@
-import { PrismaClient } from '../../../../prisma/generated/client';
+import { prisma } from '../../../lib/prisma';
 
-const prisma = new PrismaClient();
 
 /**
  * Upload file for a consultation request
