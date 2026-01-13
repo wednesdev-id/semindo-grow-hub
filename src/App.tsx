@@ -97,6 +97,7 @@ const UMKMDetailPage = lazy(() => import("./pages/admin/umkm/UMKMDetailPage"));
 const UMKMSegmentationPage = lazy(() => import("./pages/admin/umkm/UMKMSegmentationPage"));
 const UMKMRegionMapPage = lazy(() => import("./pages/admin/umkm/UMKMRegionMapPage"));
 const SellerDashboard = lazy(() => import("./pages/marketplace/SellerDashboard"));
+const ShipmentTrackingPage = lazy(() => import("./pages/marketplace/ShipmentTrackingPage"));
 // Redundant admin seller dashboard removed
 const MarketplaceAdminDashboard = lazy(() => import("./features/marketplace/pages/admin/AdminDashboard").then(module => ({ default: module.AdminDashboard })));
 const MarketplaceProductList = lazy(() => import("./features/marketplace/pages/admin/MarketplaceProductList"));
