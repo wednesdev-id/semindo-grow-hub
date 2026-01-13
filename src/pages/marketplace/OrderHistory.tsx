@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { marketplaceService } from '@/services/marketplaceService';
 import Navigation from '@/components/ui/navigation';
@@ -6,13 +6,11 @@ import Footer from '@/components/ui/footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Package, ArrowLeft, Loader2, Eye } from 'lucide-react';
+import { Package, ArrowLeft, Loader2, Eye, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/core/auth/hooks/useAuth';
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ShoppingBag } from 'lucide-react';
 import { OrderDetailsDialog } from '@/components/marketplace/OrderDetailsDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -36,6 +34,26 @@ interface Order {
         };
     }[];
 }
+
+const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+        pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400',
+        processing: 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400',
+        shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-950/30 dark:text-purple-400',
+        delivered: 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400',
+        cancelled: 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
+    };
+    return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
+};
+
+const getPaymentStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+        unpaid: 'bg-orange-100 text-orange-800 dark:bg-orange-950/30 dark:text-orange-400',
+        paid: 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400',
+        failed: 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
+    };
+    return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
+};
 
 export default function OrderHistory() {
     const navigate = useNavigate();
@@ -70,25 +88,39 @@ export default function OrderHistory() {
         setIsDetailsOpen(true);
     };
 
-    const getStatusColor = (status: string) => {
-        const colors: Record<string, string> = {
-            pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-400',
-            processing: 'bg-blue-100 text-blue-800 dark:bg-blue-950/30 dark:text-blue-400',
-            shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-950/30 dark:text-purple-400',
-            delivered: 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400',
-            cancelled: 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
+    const groupedOrders = useMemo(() => {
+        const categories = {
+            all: [] as Order[],
+            unpaid: [] as Order[],
+            active: [] as Order[],
+            completed: [] as Order[]
         };
-        return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
-    };
 
-    const getPaymentStatusColor = (status: string) => {
-        const colors: Record<string, string> = {
-            unpaid: 'bg-orange-100 text-orange-800 dark:bg-orange-950/30 dark:text-orange-400',
-            paid: 'bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-400',
-            failed: 'bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-400'
-        };
-        return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
-    };
+        orders.forEach(order => {
+            if (order.status.toLowerCase() === 'cancelled') return;
+
+            // All non-cancelled
+            categories.all.push(order);
+
+            // Unpaid
+            if (order.paymentStatus.toLowerCase() === 'unpaid') {
+                categories.unpaid.push(order);
+            }
+
+            // Active (Pending/Processing/Shipped + Paid/Unpaid technically, but we filter unpaid out of active usually or keep logic consistent)
+            // Original logic: ['pending', 'processing', 'shipped', 'unpaid', 'paid'].includes(order.status) && order.paymentStatus !== 'unpaid'
+            if (['pending', 'processing', 'shipped', 'unpaid', 'paid'].includes(order.status.toLowerCase()) && order.paymentStatus.toLowerCase() !== 'unpaid') {
+                categories.active.push(order);
+            }
+
+            // Completed
+            if (['delivered', 'failed'].includes(order.status.toLowerCase())) {
+                categories.completed.push(order);
+            }
+        });
+
+        return categories;
+    }, [orders]);
 
     if (loading) {
         return (
@@ -235,7 +267,7 @@ export default function OrderHistory() {
                                                         ))}
                                                     </div>
 
-                                                    {(order.courier || order.trackingNumber) && (
+                                                    {(order.paymentStatus === 'paid' && (order.courier || order.trackingNumber)) && (
                                                         <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-zinc-100 dark:border-zinc-800">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="p-2 bg-white dark:bg-zinc-800 rounded-full border border-zinc-100 dark:border-zinc-700 shadow-sm text-primary">
@@ -246,7 +278,7 @@ export default function OrderHistory() {
                                                                     <p className="text-sm font-bold">{order.courier || 'Kurir'} - <span className="text-primary">{order.trackingNumber || 'No Resi tidak tersedia'}</span></p>
                                                                 </div>
                                                             </div>
-                                                            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold underline hover:bg-transparent hover:text-primary transition-colors" onClick={() => toast.info('Fitur lacak paket sedang disinkronisasi.')}>
+                                                            <Button variant="ghost" size="sm" className="h-8 text-xs font-bold underline hover:bg-transparent hover:text-primary transition-colors" onClick={() => navigate(`/marketplace/order/${order.id}/track`)}>
                                                                 Lacak Paket
                                                             </Button>
                                                         </div>

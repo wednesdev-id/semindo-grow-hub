@@ -275,4 +275,58 @@ All colors MUST be HSL.
   .menu-dropdown-badge-inactive {
     @apply bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300;
   }
+
+  /* ========================================
+     Leaflet Map Styles
+     ======================================== */
+
+  /* Custom marker styling */
+  .custom-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* Map container styling */
+  .leaflet-container {
+    font-family: inherit;
+    z-index: 0;
+  }
+
+  /* Popup styling */
+  .leaflet-popup-content-wrapper {
+    @apply bg-white dark:bg-slate-800 rounded-lg shadow-lg;
+  }
+
+  .leaflet-popup-content {
+    @apply text-foreground;
+    margin: 12px 16px;
+  }
+
+  .leaflet-popup-tip {
+    @apply bg-white dark:bg-slate-800;
+  }
+
+  /* Control styling */
+  .leaflet-control-zoom {
+    @apply border-none shadow-lg overflow-hidden;
+  }
+
+  .leaflet-control-zoom a {
+    @apply bg-white dark:bg-slate-800 text-foreground hover:bg-gray-100 dark:hover:bg-slate-700;
+  }
+
+  .leaflet-control-zoom-in,
+  .leaflet-control-zoom-out {
+    @apply border-b border-gray-200 dark:border-slate-700;
+  }
+
+  /* Attribution styling */
+  .leaflet-control-attribution {
+    @apply bg-white/80 dark:bg-slate-800/80 text-xs;
+  }
+
+  /* Circle/Cluster hover effect */
+  .leaflet-interactive:hover {
+    cursor: pointer;
+  }
 }

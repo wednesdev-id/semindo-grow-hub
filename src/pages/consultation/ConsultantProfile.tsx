@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
+import type { ConsultantProfile, BookingSlot } from '../../types/consultation';
+import { Star, Clock, Calendar } from 'lucide-react';
 import type { ConsultantProfile } from '../../types/consultation';
 import { Star, Clock, Calendar, ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/ui/navigation';
@@ -195,11 +197,19 @@ export default function ConsultantProfile() {
     );
 }
 
-// Review Modal Controller to handle URL params
-function ReviewModalController({ consultant }: { consultant: ConsultantProfile | null }) {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const [isOpen, setIsOpen] = useState(false);
-    const { toast } = useToast();
+// Booking Modal Component
+function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }) {
+    const navigate = useNavigate();
+    const [selectedDate, setSelectedDate] = useState('');
+    const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
+    const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
+    const [loadingSlots, setLoadingSlots] = useState(false);
+
+    const [formData, setFormData] = useState({
+        topic: '',
+        description: '',
+    });
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('action') === 'review') {

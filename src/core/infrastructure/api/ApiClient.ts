@@ -603,7 +603,7 @@ export class ApiClientFactory {
     onUnauthorized?: () => void;
   }): ApiClient {
     const baseURLs = {
-      development: 'http://localhost:8080/api/v1', // Fixed: Match backend port
+      development: 'http://localhost:3000/api/v1', // Fixed: Match backend port
       staging: 'https://staging.semindo.id/api',
       production: 'https://api.semindo.id'
     };

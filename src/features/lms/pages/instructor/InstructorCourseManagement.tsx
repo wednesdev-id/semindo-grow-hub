@@ -10,9 +10,7 @@ import {
     Eye,
     Trash2,
     Plus,
-    BookOpen,
-    Clock,
-    DollarSign
+    BookOpen
 } from "lucide-react";
 import { lmsService, Course } from "@/services/lmsService";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";

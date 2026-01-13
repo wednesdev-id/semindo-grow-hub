@@ -242,6 +242,18 @@ class MarketplaceController {
         }
     }
 
+    async updateShipmentStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { status, location } = req.body;
+            // In real app: Verify admin/seller or system role
+            const order = await marketplaceService.updateShipmentStatus(id, status, location);
+            res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async syncStock(req: Request, res: Response) {
         try {
             const { id } = req.params;

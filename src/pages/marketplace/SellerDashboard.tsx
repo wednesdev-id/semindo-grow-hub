@@ -19,6 +19,7 @@ import { ProductFiltersComponent, type ProductFilters } from '@/components/marke
 import SEOHead from '@/components/ui/seo-head';
 import { format } from 'date-fns';
 import { OrderDetailsDialog } from '@/components/marketplace/OrderDetailsDialog';
+import { ShipmentDialog } from '@/components/marketplace/ShipmentDialog';
 
 interface Order {
     id: string;
@@ -55,6 +56,10 @@ export default function SellerDashboard() {
     // Detail Dialog State
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
+    // Shipment Dialog State
+    const [shipmentOrderId, setShipmentOrderId] = useState<string | null>(null);
+    const [isShipmentOpen, setIsShipmentOpen] = useState(false);
 
     // Filters state
     const [filters, setFilters] = useState<ProductFilters>({
@@ -467,10 +472,13 @@ export default function SellerDashboard() {
                                                 {order.status === 'processing' && (
                                                     <Button
                                                         size="sm"
-                                                        className="font-bold"
-                                                        onClick={() => handleUpdateOrderStatus(order.id, 'shipped')}
+                                                        className="font-bold bg-primary text-primary-foreground hover:bg-primary/90"
+                                                        onClick={() => {
+                                                            setShipmentOrderId(order.id);
+                                                            setIsShipmentOpen(true);
+                                                        }}
                                                     >
-                                                        Mark as Shipped
+                                                        Kirim Pesanan (Input Resi)
                                                     </Button>
                                                 )}
                                                 <Button
@@ -498,6 +506,14 @@ export default function SellerDashboard() {
                 open={isDetailsOpen}
                 onOpenChange={setIsDetailsOpen}
                 onOrderUpdated={loadData}
+            />
+
+            {/* Shipment Dialog */}
+            <ShipmentDialog
+                orderId={shipmentOrderId}
+                open={isShipmentOpen}
+                onOpenChange={setIsShipmentOpen}
+                onShipmentSubmitted={loadData}
             />
 
             {/* Product Form Modal */}

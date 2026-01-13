@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot, ConsultationReview } from '../types/consultation';
+import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot, BookingSlot } from '../types/consultation';
 
 const BASE_URL = '/consultation';
 
@@ -62,7 +62,7 @@ export const consultationService = {
     },
 
     async getAvailableSlots(consultantId: string, startDate: string, endDate: string) {
-        const response = await api.get<{ success: boolean; data: AvailabilitySlot[] }>(
+        const response = await api.get<{ success: boolean; data: BookingSlot[] }>(
             `${BASE_URL}/consultants/${consultantId}/slots?startDate=${startDate}&endDate=${endDate}`
         );
         return response.data;

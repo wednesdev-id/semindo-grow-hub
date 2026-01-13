@@ -15,6 +15,7 @@ export default function RegisterPage() {
         businessName: '',
         phone: '',
         agreeTerms: false,
+        hasUMKM: false, // Saya memiliki usaha UMKM
     })
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
@@ -55,8 +56,14 @@ export default function RegisterPage() {
                 businessCategory: 'retail' // Default for now
             })
 
-            // Redirect to login after successful registration
-            navigate('/login')
+            // Redirect based on hasUMKM checkbox
+            if (formData.hasUMKM) {
+                // User has business, redirect to business onboarding
+                navigate('/onboarding/business')
+            } else {
+                // Regular user, redirect to dashboard
+                navigate('/dashboard')
+            }
         } catch (err: any) {
             setError(err.message || 'Registration failed. Please try again.')
         } finally {

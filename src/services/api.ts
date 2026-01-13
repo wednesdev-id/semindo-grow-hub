@@ -17,9 +17,21 @@ export const api = {
                 ...options?.headers
             }
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || res.statusText);
-        return data as T;
+        
+        if (!res.ok) {
+            try {
+                const errorData = await res.json();
+                throw new Error(errorData.error || errorData.message || res.statusText);
+            } catch (e) {
+                if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
+                    // Re-throw if it's the error we just created
+                    throw e;
+                }
+                throw new Error(res.statusText || `Request failed with status ${res.status}`);
+            }
+        }
+        
+        return await res.json() as T;
     },
     post: async <T = unknown>(url: string, body: unknown, options?: RequestInit): Promise<T> => {
         const headers: any = { ...getHeaders(), ...options?.headers };
@@ -35,9 +47,20 @@ export const api = {
             headers,
             body: body instanceof FormData ? body : JSON.stringify(body)
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || data.message || res.statusText);
-        return data as T;
+        
+        if (!res.ok) {
+            try {
+                const errorData = await res.json();
+                throw new Error(errorData.error || errorData.message || res.statusText);
+            } catch (e) {
+                if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
+                    throw e;
+                }
+                throw new Error(res.statusText || `Request failed with status ${res.status}`);
+            }
+        }
+
+        return await res.json() as T;
     },
     put: async <T = unknown>(url: string, body: unknown, options?: RequestInit): Promise<T> => {
         const res = await fetch(`${API_URL}${url}`, {
@@ -46,9 +69,20 @@ export const api = {
             headers: { ...getHeaders(), ...options?.headers },
             body: JSON.stringify(body)
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || res.statusText);
-        return data as T;
+        
+        if (!res.ok) {
+            try {
+                const errorData = await res.json();
+                throw new Error(errorData.error || errorData.message || res.statusText);
+            } catch (e) {
+                if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
+                    throw e;
+                }
+                throw new Error(res.statusText || `Request failed with status ${res.status}`);
+            }
+        }
+
+        return await res.json() as T;
     },
     patch: async <T = unknown>(url: string, body: unknown, options?: RequestInit): Promise<T> => {
         const res = await fetch(`${API_URL}${url}`, {
@@ -57,9 +91,20 @@ export const api = {
             headers: { ...getHeaders(), ...options?.headers },
             body: JSON.stringify(body)
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || res.statusText);
-        return data as T;
+        
+        if (!res.ok) {
+            try {
+                const errorData = await res.json();
+                throw new Error(errorData.error || errorData.message || res.statusText);
+            } catch (e) {
+                if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
+                    throw e;
+                }
+                throw new Error(res.statusText || `Request failed with status ${res.status}`);
+            }
+        }
+
+        return await res.json() as T;
     },
     delete: async <T = unknown>(url: string, options?: RequestInit): Promise<T> => {
         const res = await fetch(`${API_URL}${url}`, {
@@ -67,8 +112,19 @@ export const api = {
             ...options,
             headers: { ...getHeaders(), ...options?.headers }
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || res.statusText);
-        return data as T;
+        
+        if (!res.ok) {
+            try {
+                const errorData = await res.json();
+                throw new Error(errorData.error || errorData.message || res.statusText);
+            } catch (e) {
+                if (e instanceof Error && e.message !== "Unexpected end of JSON input") {
+                    throw e;
+                }
+                throw new Error(res.statusText || `Request failed with status ${res.status}`);
+            }
+        }
+
+        return await res.json() as T;
     }
 };

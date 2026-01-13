@@ -264,15 +264,77 @@ export default function PaymentSimulationPage() {
     );
 }
 
-// Icons
-function PhoneIcon(props: any) {
-    return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" /></svg>;
+function InstructionItem({ value, title, children }: any) {
+    return (
+        <AccordionItem value={value} className="border-b last:border-0">
+            <AccordionTrigger className="px-4 py-3 hover:bg-zinc-50 hover:no-underline text-sm font-medium">
+                {title}
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4 pt-1">
+                {children}
+            </AccordionContent>
+        </AccordionItem>
+    );
 }
 
-function MailIcon(props: any) {
-    return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><path d="M22 6l-10 7L2 6" /></svg>;
+function SuccessView({ order, navigate }: { order: Order, navigate: any }) {
+    return (
+        <div className="py-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto ring-8 ring-green-50">
+                <CheckCircle2 className="h-12 w-12 text-green-600" />
+            </div>
+            <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-zinc-900">Pembayaran Diterima!</h3>
+                <p className="text-zinc-500 max-w-xs mx-auto">
+                    Terima kasih! Pesanan <span className="font-mono font-bold text-zinc-900">#{order.id.slice(0, 8)}</span> sedang diproses oleh penjual.
+                </p>
+            </div>
+            <div className="pt-4 space-y-3">
+                <Button className="w-full h-11" onClick={() => navigate('/marketplace/my-orders')}>
+                    Lihat Status Pesanan
+                </Button>
+                <Button variant="outline" className="w-full h-11" onClick={() => navigate('/marketplace')}>
+                    Kembali ke Beranda
+                </Button>
+            </div>
+        </div>
+    );
 }
 
-function MessageCircleIcon(props: any) {
-    return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></svg>;
+function ExpiredView({ navigate }: { navigate: any }) {
+    return (
+        <div className="py-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 bg-zinc-100 rounded-full flex items-center justify-center mx-auto">
+                <Clock className="h-10 w-10 text-zinc-400" />
+            </div>
+            <div className="space-y-2">
+                <h3 className="text-xl font-bold text-zinc-900">Pembayaran Kedaluwarsa</h3>
+                <p className="text-zinc-500 max-w-xs mx-auto text-sm">
+                    Batas waktu pembayaran telah habis. Silakan lakukan pemesanan ulang.
+                </p>
+            </div>
+            <Button className="w-full" variant="default" onClick={() => navigate('/marketplace')}>
+                Buat Pesanan Baru
+            </Button>
+        </div>
+    );
+}
+
+function FailedView({ navigate }: { navigate: any }) {
+    return (
+        <div className="py-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                <Ban className="h-10 w-10 text-red-500" />
+            </div>
+            <div className="space-y-2">
+                <h3 className="text-xl font-bold text-zinc-900">Pembayaran Gagal</h3>
+                <p className="text-zinc-500 max-w-xs mx-auto text-sm">
+                    Terjadi masalah saat memproses pembayaran. Silakan coba metode lain.
+                </p>
+            </div>
+            <Button className="w-full" variant="outline" onClick={() => navigate(-1)}>
+                Coba Metode Lain
+            </Button>
+        </div>
+    );
 }

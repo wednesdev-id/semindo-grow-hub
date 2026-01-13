@@ -8,46 +8,54 @@ datasource db {
 }
 
 model User {
-  id                    String                 @id @default(uuid())
-  email                 String                 @unique
-  passwordHash          String                 @map("password_hash")
-  fullName              String                 @map("full_name")
-  phone                 String?
-  businessName          String?                @map("business_name")
-  emailVerified         Boolean                @default(false) @map("email_verified")
-  isActive              Boolean                @default(true) @map("is_active")
-  createdAt             DateTime               @default(now()) @map("created_at")
-  updatedAt             DateTime               @updatedAt @map("updated_at")
-  profilePictureUrl     String?                @map("profile_picture_url")
-  assessments           Assessment[]
-  auditLogs             AuditLog[]
-  cart                  Cart?
-  chatMessages          ChatMessage[]
+  id                String   @id @default(uuid())
+  email             String   @unique
+  passwordHash      String   @map("password_hash")
+  fullName          String   @map("full_name")
+  phone             String?
+  businessName      String?  @map("business_name")
+  profilePictureUrl String?  @map("profile_picture_url")
+  emailVerified     Boolean  @default(false) @map("email_verified")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  userRoles        UserRole[]
+  assessments      Assessment[]
+  umkmProfiles     UMKMProfile[] // Changed from UMKMProfile? to allow 1:N
+  mentorProfile    MentorProfile?
+  auditLogs        AuditLog[]
+  authoredCourses  Course[]
+  enrollments      Enrollment[]
+  products         Product[]
+  orders           Order[]
+  loanApplications LoanApplication[]
+
+  // Marketplace Relations
+  store   Store?
+  cart    Cart?
+  reviews Review[]
+
+  // Community Relations
+  forumThreads       ForumThread[]
+  forumPosts         ForumPost[]
+  forumUpvotes       ForumUpvote[]
+  organizedEvents    Event[]
+  eventRegistrations EventRegistration[]
+
+  // Program Relations
+  organizedPrograms     Program[]
+  programParticipations ProgramParticipant[]
+  quizAttempts          QuizAttempt[]
+  assignmentSubmissions AssignmentSubmission[]
+  sessionFiles          SessionFile[]
+  createdExpertise      ExpertiseCategory[]
+  expertiseAuditLogs    ExpertiseAuditLog[]
   consultantProfile     ConsultantProfile?
   consultationRequests  ConsultationRequest[]
   consultationReviews   ConsultationReview[]
-  authoredCourses       Course[]
-  enrollments           Enrollment[]
-  eventRegistrations    EventRegistration[]
-  organizedEvents       Event[]
-  forumPosts            ForumPost[]
-  forumThreads          ForumThread[]
-  forumUpvotes          ForumUpvote[]
-  assignmentSubmissions AssignmentSubmission[]
-  quizAttempts          QuizAttempt[]
-  loanApplications      LoanApplication[]
-  mentorProfile         MentorProfile?
-  orders                Order[]
-  products              Product[]
-  programParticipations ProgramParticipant[]
-  organizedPrograms     Program[]
-  reviews               Review[]
-  sessionFiles          SessionFile[]
-  store                 Store?
-  umkmProfiles          UMKMProfile[]  // 1:N relation - one user can have many UMKM
-  userRoles             UserRole[]
-  createdExpertise      ExpertiseCategory[]
-  expertiseAuditLogs    ExpertiseAuditLog[]
+  sentMessages          ChatMessage[]
 
   @@map("users")
 }
@@ -218,46 +226,61 @@ model AssessmentRecommendation {
 }
 
 model UMKMProfile {
-  id                  String             @id @default(uuid())
-  userId              String             @unique @map("user_id")
-  businessName        String             @map("business_name")
-  ownerName           String             @map("owner_name")
-  address             String?
-  city                String?
-  province            String?
-  postalCode          String?            @map("postal_code")
-  phone               String?
-  email               String?
-  website             String?
-  sector              String?
-  turnover            Decimal?           @db.Decimal(15, 2)
-  assets              Decimal?           @db.Decimal(15, 2)
-  employees           Int?
-  foundedYear         Int?               @map("founded_year")
-  level               String?
-  createdAt           DateTime           @default(now()) @map("created_at")
-  updatedAt           DateTime           @updatedAt @map("updated_at")
-  categoryId          String?            @map("category_id")
-  legalStatus         Json?              @map("legal_status")
-  omzetMonthly        Decimal?           @map("omzet_monthly") @db.Decimal(15, 2)
-  productionCapacity  String?            @map("production_capacity")
-  salesChannels       Json?              @map("sales_channels")
-  socialMedia         Json?              @map("social_media")
-  status              String             @default("unverified")
-  district            String?
-  location            Json?
-  nib                 String?
-  npwp                String?
-  readinessIndex      Json?              @map("readiness_index")
-  segmentation        String?
-  segmentationReason  String?            @map("segmentation_reason")
-  selfAssessmentScore Decimal?           @map("self_assessment_score") @db.Decimal(5, 2)
-  village             String?
-  documents           Document[]
-  mentoringSessions   MentoringSession[]
-  category            UMKMCategory?      @relation(fields: [categoryId], references: [id])
-  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags                UMKMTag[]          @relation("UMKMProfileToUMKMTag")
+  id     String @id @default(uuid())
+  userId String @map("user_id") // Removed @unique to allow 1 user -> many UMKM
+
+  // Business Details
+  businessName String  @map("business_name")
+  ownerName    String  @map("owner_name")
+  nib          String? // Nomor Induk Berusaha
+  npwp         String? // Nomor Pokok Wajib Pajak
+  address      String?
+  province     String?
+  city         String?
+  district     String? // Kecamatan
+  village      String? // Kelurahan/Desa
+  postalCode   String? @map("postal_code")
+  location     Json? // { lat: number, lng: number }
+  phone        String?
+  email        String?
+  website      String?
+
+  // Business Metrics
+  sector      String? // Kuliner, Fashion, etc. (To be deprecated in favor of categoryId)
+  turnover    Decimal? @db.Decimal(15, 2) // Omzet per tahun
+  assets      Decimal? @db.Decimal(15, 2) // Total aset
+  employees   Int?
+  foundedYear Int?     @map("founded_year")
+
+  // New Fields for Detailed Profile
+  productionCapacity String?  @map("production_capacity")
+  salesChannels      Json?    @map("sales_channels") // Array of strings
+  socialMedia        Json?    @map("social_media") // Object
+  omzetMonthly       Decimal? @map("omzet_monthly") @db.Decimal(15, 2)
+  legalStatus        Json?    @map("legal_status") // Object { nib: true, etc }
+
+  // Status & Segmentation
+  level              String? // Mikro, Kecil, Menengah (Calculated)
+  segmentation       String? // Pemula, Madya, Utama
+  segmentationReason String? @map("segmentation_reason")
+  status             String  @default("unverified") // unverified, submitted, in_review, verified, rejected
+
+  // Scores
+  selfAssessmentScore Decimal? @map("self_assessment_score") @db.Decimal(5, 2)
+  readinessIndex      Json?    @map("readiness_index") // { finance: 80, digital: 50, ... }
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents         Document[]
+  mentoringSessions MentoringSession[]
+  eventAttendances  MentorEventAttendee[]
+
+  categoryId String?       @map("category_id")
+  category   UMKMCategory? @relation(fields: [categoryId], references: [id])
+  tags       UMKMTag[]     @relation("UMKMProfileToUMKMTag")
 
   @@map("umkm_profiles")
 }
@@ -296,10 +319,13 @@ model MentorProfile {
   rating            Decimal            @default(0) @db.Decimal(3, 2)
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
-  courses           Course[]           @relation("MentorCourses")
+
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   mentoringSessions MentoringSession[]
+  events            MentorEvent[]
 
+
+  courses           Course[]           @relation("MentorCourses")
   @@map("mentor_profiles")
 }
 
@@ -343,6 +369,78 @@ model MentoringSession {
   @@map("mentoring_sessions")
 }
 
+model MentorEvent {
+  id          String   @id @default(uuid())
+  mentorId    String   @map("mentor_id")
+
+  // Basic Info
+  title       String
+  slug        String   @unique
+  description String   @db.Text
+  thumbnail   String?
+
+  // Location
+  province    String
+  city        String
+  venue       String?
+  address     String?  @db.Text
+  latitude    Decimal? @db.Decimal(10, 8)
+  longitude   Decimal? @db.Decimal(11, 8)
+
+  // Schedule
+  startDate   DateTime @map("start_date")
+  endDate     DateTime @map("end_date")
+  timezone    String   @default("Asia/Jakarta")
+
+  // Capacity & Registration
+  maxAttendees    Int       @default(50) @map("max_attendees")
+  registrationEnd DateTime? @map("registration_end")
+
+  // Status & Metadata
+  type        String   @default("workshop") // workshop, gathering, training
+  status      String   @default("draft") // draft, published, cancelled, completed
+  tags        String[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  mentor      MentorProfile           @relation(fields: [mentorId], references: [id])
+  attendees   MentorEventAttendee[]
+
+  @@index([mentorId])
+  @@index([province, city])
+  @@index([startDate])
+  @@map("mentor_events")
+}
+
+model MentorEventAttendee {
+  id            String   @id @default(uuid())
+  eventId       String   @map("event_id")
+  umkmProfileId String   @map("umkm_profile_id")
+
+  status        String   @default("registered") // registered, confirmed, attended, cancelled, no_show
+  notes         String?  @db.Text
+
+  registeredAt  DateTime @default(now()) @map("registered_at")
+  confirmedAt   DateTime? @map("confirmed_at")
+  attendedAt    DateTime? @map("attended_at")
+  cancelledAt   DateTime? @map("cancelled_at")
+
+  // Relations
+  event       MentorEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  umkmProfile UMKMProfile @relation(fields: [umkmProfileId], references: [id])
+
+  @@unique([eventId, umkmProfileId])
+  @@index([eventId])
+  @@index([umkmProfileId])
+  @@map("mentor_event_attendees")
+}
+
+// ============================================
+// SYSTEM & LOGS
+// ============================================
+
 model AuditLog {
   id         String   @id @default(uuid())
   userId     String?  @map("user_id")
@@ -362,38 +460,49 @@ model AuditLog {
 }
 
 model Course {
-  id                     String             @id @default(uuid())
-  title                  String
-  slug                   String             @unique
-  description            String
-  level                  String
-  category               String
-  price                  Decimal            @default(0) @db.Decimal(10, 2)
-  isPublished            Boolean            @default(false) @map("is_published")
-  authorId               String             @map("author_id")
-  createdAt              DateTime           @default(now()) @map("created_at")
-  updatedAt              DateTime           @updatedAt @map("updated_at")
-  courseCategoryId       String?
-  duration               Int                @default(0)
-  enrollmentCount        Int                @default(0) @map("enrollment_count")
-  isFeatured             Boolean            @default(false) @map("is_featured")
-  isPaid                 Boolean            @default(false) @map("is_paid")
-  language               String             @default("Indonesian")
-  learningOutcomes       String?            @map("learning_outcomes")
-  rating                 Float              @default(0)
-  requirements           String?
-  reviewCount            Int                @default(0) @map("review_count")
-  targetAudience         String?            @map("target_audience")
-  thumbnail              String?
-  consultantInstructorId String?            @map("consultant_instructor_id")
-  mentorInstructorId     String?            @map("mentor_instructor_id")
-  author                 User               @relation(fields: [authorId], references: [id])
-  consultantInstructor   ConsultantProfile? @relation("ConsultantCourses", fields: [consultantInstructorId], references: [id])
-  CourseCategory         CourseCategory?    @relation(fields: [courseCategoryId], references: [id])
-  mentorInstructor       MentorProfile?     @relation("MentorCourses", fields: [mentorInstructorId], references: [id])
-  enrollments            Enrollment[]
-  modules                Module[]
+  id               String  @id @default(uuid())
+  title            String
+  slug             String  @unique
+  description      String  @db.Text
+  thumbnail        String?
+  level            String // Beginner, Intermediate, Advanced
+  category         String
+  price            Decimal @default(0) @db.Decimal(10, 2)
+  isPaid           Boolean @default(false) @map("is_paid")
+  isPublished      Boolean @default(false) @map("is_published")
+  isFeatured       Boolean @default(false) @map("is_featured")
+  duration         Int      @default(0) // in minutes
+  language         String  @default("Indonesian")
+  requirements     String? @db.Text
+  learningOutcomes String? @map("learning_outcomes") @db.Text
+  targetAudience   String? @map("target_audience") @db.Text
+  authorId         String  @map("author_id")
 
+  // Link to Consultant Instructor
+  instructorId String? @map("instructor_id")
+
+  // Link to Mentor
+  mentorId     String?  @map("mentor_id")
+
+  // Access restriction
+  isUMKMOnly   Boolean  @default(false) @map("is_umkm_only")
+
+  enrollmentCount Int      @default(0) @map("enrollment_count")
+  rating          Float    @default(0)
+  reviewCount     Int      @default(0) @map("review_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  author           User               @relation(fields: [authorId], references: [id])
+  instructor       ConsultantProfile? @relation("InstructorCourses", fields: [instructorId], references: [id])
+  mentor           MentorProfile?     @relation("MentorCourses", fields: [mentorId], references: [id])
+  modules          Module[]
+  enrollments      Enrollment[]
+  CourseCategory   CourseCategory?    @relation(fields: [courseCategoryId], references: [id])
+  courseCategoryId String?
+
+  @@index([mentorId])
   @@map("courses")
 }
 
@@ -1072,7 +1181,7 @@ model ConsultantProfile {
   user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   consultationRequests  ConsultationRequest[]
   reviews               ConsultationReview[]
-  courses               Course[]                 @relation("ConsultantCourses")
+  courses               Course[]                 @relation("InstructorCourses")
   expertise             ConsultantExpertise[]
   packages              ConsultationPackage[]
 
