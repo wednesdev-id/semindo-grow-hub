@@ -102,9 +102,9 @@ class MarketplaceController {
     async createOrder(req: Request, res: Response) {
         try {
             const userId = (req as any).user.id;
-            const { items, shippingAddress, shippingCost } = req.body;
+            const { items, shippingAddress, shippingCost, paymentMethod } = req.body;
             const courier = shippingAddress?.courier;
-            const order = await marketplaceService.createOrder(userId, items, shippingAddress, courier, shippingCost);
+            const order = await marketplaceService.createOrder(userId, items, shippingAddress, courier, shippingCost, paymentMethod);
             res.status(201).json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -242,6 +242,18 @@ class MarketplaceController {
         }
     }
 
+    async updateShipmentStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { status, location } = req.body;
+            // In real app: Verify admin/seller or system role
+            const order = await marketplaceService.updateShipmentStatus(id, status, location);
+            res.json({ data: order });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
     async syncStock(req: Request, res: Response) {
         try {
             const { id } = req.params;
@@ -267,6 +279,31 @@ class MarketplaceController {
             // In a real app, check for admin role here
             const data = await marketplaceService.getAdminAnalytics();
             res.json({ data });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+
+
+    async approveProduct(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const product = await marketplaceService.approveProduct(id);
+            res.json({ data: product });
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async rejectProduct(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { reason } = req.body;
+            if (!reason) throw new Error("Rejection reason is required");
+
+            const product = await marketplaceService.rejectProduct(id, reason);
+            res.json({ data: product });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
@@ -460,6 +497,28 @@ class MarketplaceController {
 
             const result = await marketplaceService.getFinancingCandidates(params);
             res.json(result);
+        } catch (error: any) {
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async processPayment(req: Request, res: Response) {
+        try {
+            const { orderId, status } = req.body;
+            // Validate status enum if needed: 'success' | 'failed' | 'expired'
+            const result = await marketplaceService.processPayment(orderId, status);
+            res.json({ data: result });
+        } catch (error: any) {
+            console.error('[MarketplaceController] processPayment error:', error);
+            res.status(400).json({ error: error.message });
+        }
+    }
+
+    async checkPaymentStatus(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const order = await marketplaceService.checkPaymentStatus(id);
+            res.json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }

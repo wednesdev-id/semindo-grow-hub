@@ -590,6 +590,7 @@ model Product {
   status        String @default("draft") // draft, active, suspended, rejected
   images        Json? // Array of strings
   externalLinks Json?  @map("external_links") // { shopee: "url", tokopedia: "url" }
+  rejectionReason String? @map("rejection_reason")
 
   // Legacy field to be migrated
   sellerId String? @map("seller_id")
@@ -638,27 +639,50 @@ model CartItem {
 }
 
 model Order {
-  id              String      @id @default(uuid())
-  userId          String      @map("user_id")
-  status          String      @default("pending")
-  totalAmount     Decimal     @map("total_amount") @db.Decimal(15, 2)
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
-  paymentLink     String?     @map("payment_link")
-  paymentStatus   String      @default("unpaid") @map("payment_status")
+  id      String  @id @default(uuid())
+  userId  String  @map("user_id")
+  storeId String? @map("store_id") // Optional for migration
+
+  // Status
+  status String @default("pending")
+  // pending, awaiting_payment, paid, processing, shipped, completed, cancelled, refund_requested, refunded
+
+  // Financials
+  totalAmount    Decimal @map("total_amount") @db.Decimal(15, 2)
+  shippingCost   Decimal @default(0) @map("shipping_cost") @db.Decimal(15, 2)
+  platformFee    Decimal @default(0) @map("platform_fee") @db.Decimal(15, 2)
+  discountAmount Decimal @default(0) @map("discount_amount") @db.Decimal(15, 2)
+
+  paymentLink    String? @map("payment_link")
+  paymentStatus  String  @default("unpaid") @map("payment_status") // unpaid, pending, paid, failed, expired, refunded
+  paymentMethod  String? @map("payment_method")
+  paymentToken   String? @map("payment_token")      // Midtrans Snap Token or Core API Order ID ref
+  paymentGateway String  @default("mock") @map("payment_gateway") // mock, midtrans, xendit
+  paymentData    Json?   @map("payment_data")       // Full response from Gateway (VA numbers, etc)
+
+  // Shipping
+  shippingAddress Json? // Snapshot of address
   courier         String?
-  discountAmount  Decimal     @default(0) @map("discount_amount") @db.Decimal(15, 2)
-  platformFee     Decimal     @default(0) @map("platform_fee") @db.Decimal(15, 2)
-  shippingAddress Json?
-  shippingCost    Decimal     @default(0) @map("shipping_cost") @db.Decimal(15, 2)
-  storeId         String?     @map("store_id")
-  trackingNumber  String?     @map("tracking_number")
-  items           OrderItem[]
-  store           Store?      @relation(fields: [storeId], references: [id])
-  user            User        @relation(fields: [userId], references: [id])
-  payment         Payment?
-  reviews         Review[]
-  shipment        Shipment?
+  trackingNumber  String? @map("tracking_number")
+  shipmentStatus  String  @default("processed") @map("shipment_status") // processed, packed, shipped, in_transit, near_destination, delivered
+  shipmentHistory Json?   @map("shipment_history") // Array of { status, timestamp, location?, note? }
+
+  // Cancellation Information
+  cancellationReason String?   @map("cancellation_reason")
+  cancelledAt        DateTime? @map("cancelled_at")
+  cancelledBy        String?   @map("cancelled_by") // buyer, seller, system
+
+  expiryTime         DateTime? @map("expiry_time")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User        @relation(fields: [userId], references: [id])
+  store    Store?      @relation(fields: [storeId], references: [id])
+  items    OrderItem[]
+  payment  Payment?
+  shipment Shipment?
+  reviews  Review[]
 
   @@map("orders")
 }

@@ -65,6 +65,17 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
         }
     }, [orderId, open]);
 
+    // Poll for status updates if order is pending
+    useEffect(() => {
+        if (!open || !order || order.status !== 'pending' || order.paymentStatus === 'paid' || showCancelConfirm) return;
+
+        const intervalId = setInterval(() => {
+            onOrderUpdated?.();
+        }, 5000); // Poll every 5 seconds
+
+        return () => clearInterval(intervalId);
+    }, [open, order?.status, order?.paymentStatus, onOrderUpdated, showCancelConfirm]);
+
     const fetchOrderDetails = async () => {
         if (!orderId) return;
         try {
@@ -138,6 +149,22 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
         }
     };
 
+    const handlePayment = () => {
+        if (!order) return;
+
+        if (order.paymentLink) {
+            window.open(order.paymentLink, '_blank');
+        } else {
+            toast.info('Silakan lakukan pembayaran manual sesuai instruksi pada saat checkout.', {
+                description: 'Hubungi admin jika Anda membutuhkan bantuan.',
+                action: {
+                    label: 'Tutup',
+                    onClick: () => { }
+                }
+            });
+        }
+    };
+
     const getStatusIcon = (status: string) => {
         switch (status.toLowerCase()) {
             case 'pending': return <CreditCard className="h-5 w-5 text-yellow-500" />;
@@ -194,20 +221,20 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
 
                         <ScrollArea className="max-h-[70vh] bg-white dark:bg-zinc-950">
                             <div className="p-6 space-y-8">
-                                {/* Status Overview */}
+                                {/* Status Overview - FORCE RENDER */}
                                 <div className="flex items-center gap-4 bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
                                     <div className="p-3 bg-white dark:bg-zinc-900 rounded-full shadow-sm border border-zinc-100 dark:border-zinc-800">
-                                        {getStatusIcon(order.status)}
+                                        {getStatusIcon(order.status || 'unknown')}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex flex-wrap justify-between items-center gap-2">
-                                            <p className="font-semibold text-lg">{getStatusLabel(order.status)}</p>
-                                            <Badge className={order.paymentStatus === 'paid' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400'}>
-                                                {order.paymentStatus === 'paid' ? 'Pembayaran Berhasil' : 'Belum Dibayar'}
+                                            <p className="font-semibold text-lg">{getStatusLabel(order.status || 'unknown')}</p>
+                                            <Badge className={['paid', 'success'].includes((order.paymentStatus || '').toLowerCase()) ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400'}>
+                                                {['paid', 'success'].includes((order.paymentStatus || '').toLowerCase()) ? 'Pembayaran Berhasil' : 'Belum Dibayar'}
                                             </Badge>
                                         </div>
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                            {order.status === 'pending' ? 'Selesaikan pembayaran sebelum batas waktu.' :
+                                            {(!order.status || order.status === 'pending') ? 'Selesaikan pembayaran sebelum batas waktu.' :
                                                 order.status === 'processing' ? 'Penjual sedang menyiapkan barang Anda.' :
                                                     order.status === 'shipped' ? 'Pesanan sedang dalam perjalanan.' :
                                                         order.status === 'delivered' ? 'Pesanan telah sampai di tujuan.' :
@@ -331,7 +358,7 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
                                     </div>
                                 </div>
 
-                                {/* Cancellation Dialog UI */}
+                                {/* Cancellation Dialog UI / Buttons */}
                                 {showCancelConfirm ? (
                                     <div className="p-6 bg-red-50 dark:bg-red-950/20 rounded-2xl border border-red-100 dark:border-red-900/30 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
                                         <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
@@ -388,7 +415,8 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
                                     </div>
                                 ) : (
                                     <div className="flex flex-col sm:flex-row gap-4 pt-4 pb-2">
-                                        {canCancel && (
+                                        {/* Fallback: Always show Cancel if status is pending/paid/processing OR if status is missing */}
+                                        {(canCancel || !order.status) && (
                                             <Button
                                                 variant="outline"
                                                 className="flex-1 border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 font-bold py-6 text-base"
@@ -397,13 +425,22 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
                                                 Batalkan Pesanan
                                             </Button>
                                         )}
-                                        {isBuyer && order.status === 'pending' && order.paymentStatus === 'unpaid' && (
-                                            <Button className="flex-1 font-bold py-6 text-base group shadow-xl shadow-primary/20">
-                                                Bayar Sekarang
-                                                <ChevronRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                                            </Button>
+                                        {/* Payment Button */}
+                                        {isBuyer && ['pending', 'unpaid'].includes((order.status || '').toLowerCase()) && ['unpaid', 'pending'].includes((order.paymentStatus || '').toLowerCase()) && (
+                                            <div className="flex-1">
+                                                <CountdownTimer expiryTime={order.expiryTime} onExpire={() => onOrderUpdated?.()} />
+                                                <Button
+                                                    className="w-full font-bold py-6 text-base group shadow-xl shadow-primary/20 mt-2"
+                                                    onClick={handlePayment}
+                                                    disabled={new Date(order.expiryTime || '') < new Date()}
+                                                >
+                                                    Bayar Sekarang
+                                                    <ChevronRight className="ml-1 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                                                </Button>
+                                            </div>
                                         )}
-                                        {['processing', 'shipped'].includes(order.status.toLowerCase()) && (
+                                        {/* Contact Button */}
+                                        {['processing', 'shipped'].includes((order.status || '').toLowerCase()) && (
                                             <Button variant="outline" className="flex-1 font-bold gap-2 py-6 text-base border-zinc-200 dark:border-zinc-800">
                                                 <MessageCircle className="h-5 w-5 text-primary" />
                                                 {isBuyer ? 'Hubungi Penjual' : 'Hubungi Pembeli'}
@@ -417,5 +454,56 @@ export function OrderDetailsDialog({ orderId, open, onOpenChange, onOrderUpdated
                 ) : null}
             </DialogContent>
         </Dialog>
+    );
+}
+
+function CountdownTimer({ expiryTime, onExpire }: { expiryTime?: string, onExpire?: () => void }) {
+    const [timeLeft, setTimeLeft] = useState<{ hours: number, minutes: number, seconds: number } | null>(null);
+
+    useEffect(() => {
+        if (!expiryTime) return;
+
+        const calculateTimeLeft = () => {
+            const difference = +new Date(expiryTime) - +new Date();
+            if (difference > 0) {
+                return {
+                    hours: Math.floor((difference / (1000 * 60 * 60))),
+                    minutes: Math.floor((difference / 1000 / 60) % 60),
+                    seconds: Math.floor((difference / 1000) % 60),
+                };
+            } else {
+                return null;
+            }
+        };
+
+        setTimeLeft(calculateTimeLeft());
+
+        const timer = setInterval(() => {
+            const tl = calculateTimeLeft();
+            setTimeLeft(tl);
+            if (!tl) {
+                clearInterval(timer);
+                onExpire?.();
+            }
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [expiryTime]);
+
+    if (!timeLeft) {
+        return (
+            <div className="w-full bg-red-100 text-red-800 text-center py-2 rounded-lg font-bold mb-2">
+                Waktu Pembayaran Habis
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-400 py-2 rounded-lg font-medium text-sm mb-2 border border-amber-200 dark:border-amber-900/50">
+            <span>Sisa Waktu Pembayaran:</span>
+            <span className="font-bold font-mono text-base">
+                {String(timeLeft.hours).padStart(2, '0')}:{String(timeLeft.minutes).padStart(2, '0')}:{String(timeLeft.seconds).padStart(2, '0')}
+            </span>
+        </div>
     );
 }

@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/core/auth/hooks/useAuth';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, type CarouselApi } from "@/components/ui/carousel";
 
 export default function ProductDetail() {
     const { slug } = useParams<{ slug: string }>();
@@ -25,6 +26,7 @@ export default function ProductDetail() {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [selectedImage, setSelectedImage] = useState(0);
+    const [api, setApi] = useState<CarouselApi>();
     const [addingToCart, setAddingToCart] = useState(false);
 
     // Mock variants for demo
@@ -50,6 +52,16 @@ export default function ProductDetail() {
     useEffect(() => {
         loadProduct();
     }, [slug]);
+
+    useEffect(() => {
+        if (!api) {
+            return;
+        }
+
+        api.on("select", () => {
+            setSelectedImage(api.selectedScrollSnap());
+        });
+    }, [api]);
 
     const loadProduct = async () => {
         if (!slug) return;
@@ -162,6 +174,16 @@ export default function ProductDetail() {
             <Navigation />
 
             <div className="max-w-7xl mx-auto px-4 pt-24 pb-12">
+                {/* Back Button */}
+                <Button
+                    variant="ghost"
+                    className="mb-4 pl-0 hover:bg-transparent hover:text-primary"
+                    onClick={() => navigate(-1)}
+                >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Kembali
+                </Button>
+
                 {/* Breadcrumbs */}
                 <div className="flex items-center text-sm text-muted-foreground mb-8">
                     <Link to="/marketplace" className="hover:text-primary transition-colors">Marketplace</Link>
@@ -176,20 +198,36 @@ export default function ProductDetail() {
                     <div className="lg:col-span-5 space-y-6">
                         {/* 1. Display Foto Produk */}
                         <div className="space-y-4">
-                            <div className="aspect-square bg-muted rounded-xl overflow-hidden border">
-                                <img
-                                    src={typeof images[selectedImage] === 'string' ? images[selectedImage] : (images[selectedImage] as any)?.url}
-                                    alt={product.name}
-                                    className="w-full h-full object-cover"
-                                />
+                            <div className="aspect-square bg-muted rounded-xl overflow-hidden border relative group">
+                                <Carousel setApi={setApi} className="w-full h-full">
+                                    <CarouselContent>
+                                        {images.map((img, idx) => (
+                                            <CarouselItem key={idx}>
+                                                <div className="aspect-square w-full h-full flex items-center justify-center bg-white dark:bg-zinc-900">
+                                                    <img
+                                                        src={typeof img === 'string' ? img : (img as any)?.url}
+                                                        alt={`${product.name} - View ${idx + 1}`}
+                                                        className="w-full h-full object-contain"
+                                                    />
+                                                </div>
+                                            </CarouselItem>
+                                        ))}
+                                    </CarouselContent>
+                                    {images.length > 1 && (
+                                        <>
+                                            <CarouselPrevious className="left-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <CarouselNext className="right-4 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </>
+                                    )}
+                                </Carousel>
                             </div>
                             {images.length > 1 && (
-                                <div className="flex gap-4 overflow-x-auto pb-2">
+                                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
                                     {images.map((img, idx) => (
                                         <button
                                             key={idx}
-                                            onClick={() => setSelectedImage(idx)}
-                                            className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${selectedImage === idx ? 'border-primary' : 'border-transparent hover:border-slate-300'
+                                            onClick={() => api?.scrollTo(idx)}
+                                            className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${selectedImage === idx ? 'border-primary shadow-sm' : 'border-transparent hover:border-slate-300'
                                                 }`}
                                         >
                                             <img

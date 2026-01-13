@@ -29,6 +29,8 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
     fullName: z.string().min(3, 'Nama lengkap minimal 3 karakter'),
@@ -53,8 +55,7 @@ export default function CheckoutPage() {
     const navigate = useNavigate();
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [paymentLink, setPaymentLink] = useState<string | null>(null);
-    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('ewallet');
 
     useEffect(() => {
         const fetchCart = async () => {
@@ -105,17 +106,34 @@ export default function CheckoutPage() {
                 variantId: item.variantId
             }));
 
-            const response: any = await marketplaceService.createOrder(orderItems);
+            const response: any = await marketplaceService.createOrder(orderItems, paymentMethod);
 
             // In a real app, we would save the shipping address too.
             // For this MVP, we just create the order and show payment link.
 
             if (response.data && response.data.paymentLink) {
-                setPaymentLink(response.data.paymentLink);
-                setShowSuccessDialog(true);
-                // Cart is cleared on backend or we can call clearCart
+                // Clear cart immediately
                 await marketplaceService.clearCart();
                 window.dispatchEvent(new Event('storage'));
+                toast.success('Pesanan berhasil dibuat! Mengalihkan ke halaman pembayaran...');
+
+                // Redirect immediately to payment page
+                let link = response.data.paymentLink;
+
+                // Append payment method
+                link += (link.includes('?') ? '&' : '?') + `method=${paymentMethod}`;
+
+                if (link.includes(window.location.origin) || link.includes('localhost')) {
+                    // Handle internal or localhost links
+                    if (link.includes(window.location.origin)) {
+                        const relativePath = link.replace(window.location.origin, '');
+                        navigate(relativePath);
+                    } else {
+                        window.location.href = link;
+                    }
+                } else {
+                    window.location.href = link;
+                }
             } else {
                 toast.error('Gagal membuat pesanan: Link pembayaran tidak ditemukan');
             }
@@ -135,14 +153,14 @@ export default function CheckoutPage() {
                 <h1 className="text-3xl font-bold mb-8">Checkout</h1>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2">
+                    <div className="lg:col-span-2 space-y-8">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Informasi Pengiriman</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <Form {...form}>
-                                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                    <form id="checkout-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                         <FormField
                                             control={form.control}
                                             name="fullName"
@@ -217,6 +235,48 @@ export default function CheckoutPage() {
                                 </Form>
                             </CardContent>
                         </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Metode Pembayaran</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="grid grid-cols-1 gap-4">
+                                    <Label htmlFor="ewallet" className="flex items-center justify-between border rounded-lg p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 [&:has(:checked)]:border-primary [&:has(:checked)]:bg-primary/5">
+                                        <div className="flex items-center gap-2">
+                                            <RadioGroupItem value="ewallet" id="ewallet" />
+                                            <div>
+                                                <div className="font-semibold">E-Wallet / QRIS</div>
+                                                <div className="text-sm text-muted-foreground">GoPay, OVO, ShopeePay, Dana</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-primary font-bold text-xs uppercase bg-primary/10 px-2 py-1 rounded">Instant</div>
+                                    </Label>
+
+                                    <Label htmlFor="va" className="flex items-center justify-between border rounded-lg p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 [&:has(:checked)]:border-primary [&:has(:checked)]:bg-primary/5">
+                                        <div className="flex items-center gap-2">
+                                            <RadioGroupItem value="va" id="va" />
+                                            <div>
+                                                <div className="font-semibold">Virtual Account</div>
+                                                <div className="text-sm text-muted-foreground">BCA, Mandiri, BNI, BRI</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-primary font-bold text-xs uppercase bg-primary/10 px-2 py-1 rounded">Auto</div>
+                                    </Label>
+
+                                    <Label htmlFor="manual" className="flex items-center justify-between border rounded-lg p-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900 [&:has(:checked)]:border-primary [&:has(:checked)]:bg-primary/5">
+                                        <div className="flex items-center gap-2">
+                                            <RadioGroupItem value="manual" id="manual" />
+                                            <div>
+                                                <div className="font-semibold">Transfer Manual</div>
+                                                <div className="text-sm text-muted-foreground">Cek Manual oleh Admin</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-zinc-500 font-bold text-xs uppercase bg-zinc-100 px-2 py-1 rounded">24 Jam</div>
+                                    </Label>
+                                </RadioGroup>
+                            </CardContent>
+                        </Card>
                     </div>
 
                     <div className="lg:col-span-1">
@@ -243,7 +303,11 @@ export default function CheckoutPage() {
                                 <Button
                                     className="w-full"
                                     size="lg"
-                                    onClick={form.handleSubmit(onSubmit)}
+                                    onClick={() => {
+                                        // Trigger form submission externally
+                                        const formElement = document.getElementById('checkout-form') as HTMLFormElement;
+                                        if (formElement) formElement.requestSubmit();
+                                    }}
                                     disabled={isLoading}
                                 >
                                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -257,50 +321,7 @@ export default function CheckoutPage() {
 
             <Footer />
 
-            <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <CheckCircle className="h-6 w-6 text-green-500" />
-                            Pesanan Berhasil Dibuat!
-                        </DialogTitle>
-                        <DialogDescription>
-                            Silakan selesaikan pembayaran anda melalui link berikut.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex items-center space-x-2">
-                        <div className="grid flex-1 gap-2">
-                            <Input
-                                id="link"
-                                defaultValue={paymentLink || ''}
-                                readOnly
-                            />
-                        </div>
-                        <Button type="submit" size="sm" className="px-3" onClick={() => {
-                            navigator.clipboard.writeText(paymentLink || '');
-                            toast.success('Link disalin!');
-                        }}>
-                            <span className="sr-only">Copy</span>
-                            Salin
-                        </Button>
-                    </div>
-                    <DialogFooter className="sm:justify-start">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() => navigate('/marketplace')}
-                        >
-                            Kembali ke Marketplace
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={() => window.open(paymentLink || '', '_blank')}
-                        >
-                            Buka Link Pembayaran
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Success Dialog Removed for direct redirection */}
         </div>
     );
 }

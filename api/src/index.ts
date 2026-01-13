@@ -1,4 +1,5 @@
 import 'dotenv/config'
+
 import { createServer as createHTTPServer } from 'http'
 import { createServer } from './server'
 import { ConsultationChatGateway } from './systems/consultation/gateway/chat.gateway'
