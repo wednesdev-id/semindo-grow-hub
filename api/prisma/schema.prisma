@@ -827,15 +827,16 @@ model Payment {
 }
 
 model Shipment {
-  id             String    @id @default(uuid())
-  orderId        String    @unique @map("order_id")
-  courier        String
-  service        String
-  trackingNumber String?   @map("tracking_number")
-  status         String
-  shippedAt      DateTime? @map("shipped_at")
-  deliveredAt    DateTime? @map("delivered_at")
-  order          Order     @relation(fields: [orderId], references: [id])
+  id              String    @id @default(uuid())
+  orderId         String    @unique @map("order_id")
+  courier         String
+  service         String
+  trackingNumber  String?   @map("tracking_number")
+  status          String
+  currentLocation String?   @map("current_location")
+  shippedAt       DateTime? @map("shipped_at")
+  deliveredAt     DateTime? @map("delivered_at")
+  order           Order     @relation(fields: [orderId], references: [id])
 
   @@map("shipments")
 }

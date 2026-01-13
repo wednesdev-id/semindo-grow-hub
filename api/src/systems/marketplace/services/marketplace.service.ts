@@ -911,6 +911,51 @@ export class MarketplaceService {
         });
     }
 
+    /**
+     * Update shipment status and current location
+     */
+    async updateShipmentStatus(orderId: string, status: string, location?: string): Promise<Order> {
+        return prisma.$transaction(async (tx) => {
+            const order = await tx.order.findUnique({
+                where: { id: orderId },
+                include: { shipment: true }
+            });
+            if (!order) throw new Error('Order not found');
+            if (!order.shipment) throw new Error('Shipment not found for this order');
+
+            // Update shipment status and location
+            await tx.shipment.update({
+                where: { orderId },
+                data: {
+                    status,
+                    currentLocation: location,
+                    ...(status === 'delivered' ? { deliveredAt: new Date() } : {})
+                }
+            });
+
+            // Update order status if shipment is delivered
+            const orderData: any = {};
+            if (status === 'delivered') {
+                orderData.status = 'completed';
+            } else if (status === 'in_transit') {
+                orderData.status = 'shipped';
+            }
+
+            if (Object.keys(orderData).length > 0) {
+                return tx.order.update({
+                    where: { id: orderId },
+                    data: orderData,
+                    include: { shipment: true }
+                });
+            }
+
+            return tx.order.findUnique({
+                where: { id: orderId },
+                include: { shipment: true }
+            }) as Promise<Order>;
+        });
+    }
+
     async cancelOrder(id: string, userId: string, reason: string): Promise<Order> {
         const order = await prisma.order.findUnique({
             where: { id },
