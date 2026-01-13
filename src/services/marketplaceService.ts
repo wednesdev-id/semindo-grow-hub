@@ -97,6 +97,60 @@ export interface Order {
     expiryTime?: string;
 }
 
+// Helper: Map Backend Product to Frontend Product
+const mapProductResponse = (p: any): Product => {
+    const firstImage = p.images?.[0];
+    const imageUrl = typeof firstImage === 'string'
+        ? firstImage
+        : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
+
+    let sellerName = 'Unknown Seller';
+    if (p.store) {
+        sellerName = p.store.name;
+        if (p.store.user?.fullName) {
+            sellerName += ` (${p.store.user.fullName})`;
+        }
+    } else if (p.seller) {
+        sellerName = p.seller.businessName || p.seller.fullName || 'Unknown Seller';
+    }
+
+    // Location (Try store user profile, then direct seller profile, then default)
+    let location = 'Indonesia';
+    if (p.store?.user?.umkmProfile?.city) location = p.store.user.umkmProfile.city;
+    else if (p.seller?.umkmProfile?.city) location = p.seller.umkmProfile.city;
+    else if (p.location) location = p.location;
+
+    // Determine correct status based on isPublished
+    let displayStatus = p.status;
+    if (p.isPublished && (!p.status || p.status === 'draft')) {
+        displayStatus = 'active';
+    } else if (!p.isPublished && p.status === 'active') {
+        displayStatus = 'draft';
+    } else if (!p.status) {
+        displayStatus = p.isPublished ? 'active' : 'draft';
+    }
+
+    return {
+        id: p.id,
+        name: p.title || p.name,
+        slug: p.slug,
+        seller: sellerName,
+        location,
+        price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+        rating: p.store?.rating || p.rating || 0,
+        reviews: p.reviews || 0,
+        image: imageUrl,
+        images: Array.isArray(p.images) ? p.images : [],
+        category: p.category,
+        badges: p.badges || [],
+        description: p.description || '',
+        stock: p.stock,
+        status: displayStatus,
+        isPublished: p.isPublished,
+        externalLinks: p.externalLinks
+    };
+};
+
 export const marketplaceService = {
     getCategories: async (): Promise<Category[]> => {
         const response = await api.get<{ data: Category[] }>('/marketplace/products/categories');
@@ -105,31 +159,7 @@ export const marketplaceService = {
 
     getFeaturedProducts: async (): Promise<Product[]> => {
         const response = await api.get<{ data: any[] }>('/marketplace/products');
-        return response.data.map((p: any) => {
-            const firstImage = p.images?.[0];
-            const imageUrl = typeof firstImage === 'string'
-                ? firstImage
-                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
-
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-                location: p.seller?.umkmProfile?.city || 'Indonesia',
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: 0,
-                reviews: 0,
-                image: imageUrl,
-                images: Array.isArray(p.images) ? p.images : [],
-                category: p.category,
-                badges: [],
-                description: p.description || '',
-                stock: p.stock,
-                status: p.status,
-                externalLinks: p.externalLinks
-            };
-        });
+        return response.data.map(mapProductResponse);
     },
 
     // Admin: Get ALL products from all sellers (including drafts and unpublished)
@@ -153,44 +183,8 @@ export const marketplaceService = {
 
         const response = await api.get<{ products: any[]; pagination: any }>(`/marketplace/admin/products?${queryParams.toString()}`);
 
-        const products = response.products.map((p: any) => {
-            const firstImage = p.images?.[0];
-            const imageUrl = typeof firstImage === 'string'
-                ? firstImage
-                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
-
-            // Map store/user to seller name
-            let sellerName = 'Unknown Seller';
-            if (p.store) {
-                sellerName = p.store.name;
-                if (p.store.user?.fullName) {
-                    sellerName += ` (${p.store.user.fullName})`;
-                }
-            }
-
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: sellerName,
-                location: p.seller?.umkmProfile?.city || 'Indonesia', // This might need update if we want location from store
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: 0,
-                reviews: 0,
-                image: imageUrl,
-                images: Array.isArray(p.images) ? p.images : [],
-                category: p.category,
-                badges: [],
-                description: p.description || '',
-                stock: p.stock,
-                status: p.status, // Should use the status from backend
-                isPublished: p.isPublished,
-                externalLinks: p.externalLinks
-            };
-        });
-
         return {
-            products,
+            products: response.products.map(mapProductResponse),
             pagination: response.pagination
         };
     },
@@ -213,43 +207,8 @@ export const marketplaceService = {
 
         const response = await api.get<{ products: any[]; pagination: any }>(`/marketplace/consultant/clients/products?${queryParams.toString()}`);
 
-        const products = response.products.map((p: any) => {
-            const firstImage = p.images?.[0];
-            const imageUrl = typeof firstImage === 'string'
-                ? firstImage
-                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
-
-            let sellerName = 'Unknown Seller';
-            if (p.store) {
-                sellerName = p.store.name;
-                if (p.store.user?.fullName) {
-                    sellerName += ` (${p.store.user.fullName})`;
-                }
-            }
-
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: sellerName,
-                location: p.seller?.umkmProfile?.city || 'Indonesia',
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: 0,
-                reviews: 0,
-                image: imageUrl,
-                images: Array.isArray(p.images) ? p.images : [],
-                category: p.category,
-                badges: [],
-                description: p.description || '',
-                stock: p.stock,
-                status: p.status,
-                isPublished: p.isPublished,
-                externalLinks: p.externalLinks
-            };
-        });
-
         return {
-            products,
+            products: response.products.map(mapProductResponse),
             pagination: response.pagination
         };
     },
@@ -294,34 +253,8 @@ export const marketplaceService = {
             };
         }>(`/marketplace/search?${queryParams.toString()}`);
 
-        const products = response.products.map((p: any) => {
-            const firstImage = p.images?.[0];
-            const imageUrl = typeof firstImage === 'string'
-                ? firstImage
-                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
-
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: p.store?.name || 'Unknown Seller',
-                location: 'Indonesia',
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: p.store?.rating || 0,
-                reviews: 0,
-                image: imageUrl,
-                images: Array.isArray(p.images) ? p.images : [],
-                category: p.category,
-                badges: [],
-                description: p.description || '',
-                stock: p.stock,
-                status: p.status,
-                externalLinks: p.externalLinks
-            };
-        });
-
         return {
-            products,
+            products: response.products.map(mapProductResponse),
             pagination: response.pagination
         };
     },
@@ -329,30 +262,7 @@ export const marketplaceService = {
     getProductBySlug: async (slug: string): Promise<Product | undefined> => {
         try {
             const response = await api.get<{ data: any }>(`/marketplace/products/${slug}`);
-            const p = response.data;
-            const firstImage = p.images?.[0];
-            const imageUrl = typeof firstImage === 'string'
-                ? firstImage
-                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
-
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-                location: p.seller?.umkmProfile?.city || 'Indonesia',
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: 0,
-                reviews: 0,
-                image: imageUrl,
-                images: Array.isArray(p.images) ? p.images : [],
-                category: p.category,
-                badges: [],
-                description: p.description || '',
-                stock: p.stock,
-                status: p.status,
-                externalLinks: p.externalLinks
-            };
+            return mapProductResponse(response.data);
         } catch (error) {
             return undefined;
         }
@@ -473,45 +383,7 @@ export const marketplaceService = {
         if (filters?.maxPrice) queryParams.append('maxPrice', filters.maxPrice.toString());
 
         const response = await api.get<{ data: any[] }>(`/marketplace/my-products?${queryParams.toString()}`);
-        return response.data.map((p: any) => {
-            // Determine correct status based on isPublished
-            let displayStatus = p.status;
-
-            // If status is missing or inconsistent with isPublished, fix it
-            if (p.isPublished && (!p.status || p.status === 'draft')) {
-                displayStatus = 'active';
-            } else if (!p.isPublished && p.status === 'active') {
-                displayStatus = 'draft';
-            } else if (!p.status) {
-                // Fallback if status is completely missing
-                displayStatus = p.isPublished ? 'active' : 'draft';
-            }
-
-            const firstImage = p.images?.[0];
-            const imageUrl = typeof firstImage === 'string'
-                ? firstImage
-                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
-
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: p.seller?.businessName || p.seller?.fullName || 'Unknown Seller',
-                location: p.seller?.umkmProfile?.city || 'Indonesia',
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: 0,
-                reviews: 0,
-                image: imageUrl,
-                images: Array.isArray(p.images) ? p.images : [],
-                category: p.category,
-                badges: [],
-                description: p.description || '',
-                stock: p.stock,
-                status: displayStatus,
-                isPublished: p.isPublished,
-                externalLinks: p.externalLinks
-            };
-        });
+        return response.data.map(mapProductResponse);
     },
 
     deleteProduct: async (id: string) => {
@@ -591,6 +463,11 @@ export const marketplaceService = {
         return response.data;
     },
 
+    async updateShipmentStatus(orderId: string, status: string, location?: string) {
+        const response = await api.post<{ data: any }>(`/marketplace/orders/${orderId}/shipment/status`, { status, location });
+        return response.data;
+    },
+
     async getSellerAnalytics(userId?: string) {
         const response = await api.get<{ data: any }>('/marketplace/analytics/seller');
         return response.data;
@@ -627,39 +504,10 @@ export const marketplaceService = {
         const response = await api.get<{ products: any[]; pagination: any }>(`/marketplace/partner/opportunities?${queryParams.toString()}`);
 
         // Map response to Product interface
-        const products = response.products.map((p: any) => {
-            const firstImage = p.images?.[0];
-            const imageUrl = typeof firstImage === 'string'
-                ? firstImage
-                : (firstImage?.thumbnail || firstImage?.url || "/api/placeholder/300/200");
-
-            let sellerName = 'Unknown Seller';
-            if (p.store) {
-                sellerName = p.store.name;
-                if (p.store.user?.fullName) {
-                    sellerName += ` (${p.store.user.fullName})`;
-                }
-            }
-
-            return {
-                id: p.id,
-                name: p.title,
-                slug: p.slug,
-                seller: sellerName,
-                location: p.store?.user?.umkmProfile?.city || 'Indonesia',
-                price: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
-                rating: 0,
-                reviews: 0,
-                image: imageUrl,
-                images: Array.isArray(p.images) ? p.images : [],
-                category: p.category,
-                badges: ['Export Ready'],
-                description: p.description || '',
-                stock: p.stock,
-                status: p.status,
-                isPublished: p.isPublished
-            };
-        });
+        const products = response.products.map((p: any) => ({
+            ...mapProductResponse(p),
+            badges: ['Export Ready']
+        }));
 
         return { products, pagination: response.pagination };
     },

@@ -1,8 +1,6 @@
 import { Product, Order, Prisma } from '@prisma/client';
 import { prisma } from '../../../lib/prisma';
 import { paymentService } from './payment.service';
-import { shopeeAdapter, tokopediaAdapter } from '../adapters/mock.adapter';
-import { options } from 'pdfkit';
 import { ProductSearchDto, ProductSearchResponse } from '../dto';
 
 // Order Status Enum
@@ -33,15 +31,13 @@ export class MarketplaceService {
         const store = await prisma.store.findUnique({ where: { userId } });
         if (!store) throw new Error('User does not have a store. Please create a store first.');
 
-        const productData = data;
-
         // Generate slug
-        const baseSlug = productData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        const baseSlug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         const slug = `${baseSlug}-${Date.now()}`;
 
         return prisma.product.create({
             data: {
-                ...productData,
+                ...data,
                 slug,
                 storeId: store.id,
                 sellerId: userId, // Keep for legacy compatibility
@@ -616,6 +612,39 @@ export class MarketplaceService {
         return order; // Still pending
     }
 
+    async updateShipmentStatus(orderId: string, status: string, location?: string): Promise<Order> {
+        const order = await prisma.order.findUnique({ where: { id: orderId } });
+        if (!order) throw new Error('Order not found');
+
+        // Append to history
+        const history = (order.shipmentHistory as any[]) || [];
+        history.push({
+            status,
+            timestamp: new Date(),
+            location: location || 'Warehouse',
+            note: `Status updated to ${status}`
+        });
+
+        // State Machine logic for shipment
+        const data: any = {
+            shipmentStatus: status,
+            shipmentHistory: history,
+            updatedAt: new Date()
+        };
+
+        // Sync main Order Status if relevant
+        if (status === 'shipped') {
+            data.status = 'shipped';
+        } else if (status === 'delivered') {
+            data.status = 'delivered';
+        }
+
+        return prisma.order.update({
+            where: { id: orderId },
+            data
+        });
+    }
+
     async getMyOrders(userId: string): Promise<Order[]> {
         return prisma.order.findMany({
             where: { userId },
@@ -990,8 +1019,8 @@ export class MarketplaceService {
         // In a real scenario, we would iterate over connected channels for this product/store
         // For now, we simulate syncing with both adapters
 
-        await shopeeAdapter.syncStock(productId, product.stock);
-        await tokopediaAdapter.syncStock(productId, product.stock);
+        // await shopeeAdapter.syncStock(productId, product.stock);
+        // await tokopediaAdapter.syncStock(productId, product.stock);
 
         return {
             success: true,

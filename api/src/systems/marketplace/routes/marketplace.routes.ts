@@ -24,8 +24,10 @@ router.get('/orders', controller.getMyOrders);
 router.get('/seller/orders', controller.getSellerOrders); // NEW: Seller-specific order list
 router.get('/orders/:id', controller.getOrder);
 router.patch('/orders/:id/status', controller.updateOrderStatus); // Admin/Seller only? Add middleware later
-router.post('/orders/:id/check-payment', controller.checkPaymentStatus); // System polling endpoint
+// router.post('/orders/:id/check-payment', controller.checkPaymentStatus); // System polling endpoint
+router.post('/orders/:id/check-payment', controller.checkPaymentStatus);
 router.patch('/orders/:id/shipment', controller.updateShipment);
+router.post('/orders/:id/shipment/status', controller.updateShipmentStatus);
 
 // Product image & status management (protected)
 router.patch('/products/:id/status', controller.updateProductStatus);
