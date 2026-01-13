@@ -1,3 +1,4 @@
+/// <reference path="../../../types/midtrans-client.d.ts" />
 import { CoreApi } from 'midtrans-client';
 import { Order } from '@prisma/client';
 
