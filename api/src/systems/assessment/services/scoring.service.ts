@@ -1,5 +1,5 @@
 
-import { AssessmentResponse, AssessmentQuestion, AssessmentCategory } from '@prisma/client';
+import { AssessmentResponse, AssessmentQuestion, AssessmentCategory } from '../../../../prisma/generated/client';
 
 type ResponseWithQuestion = AssessmentResponse & {
     question: AssessmentQuestion & {

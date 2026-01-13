@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { AssessmentScore, AssessmentRecommendation, Assessment, User, UMKMProfile } from '@prisma/client';
+import { AssessmentScore, AssessmentRecommendation, Assessment, User, UMKMProfile } from '../../../../prisma/generated/client';
 import QuickChart from 'quickchart-js';
 import NodeCache from 'node-cache';
 

@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { CoursesService } from '../services/courses.service';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../../prisma/generated/client';
 
 const coursesService = new CoursesService();
 

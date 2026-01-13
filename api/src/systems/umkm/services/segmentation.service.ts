@@ -1,5 +1,5 @@
 import { prisma } from '../../../lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../../prisma/generated/client';
 
 /**
  * Segmentation thresholds based on Indonesian UMKM classification

@@ -1,5 +1,5 @@
 
-import { Assessment, AssessmentScore, AssessmentResponse } from '@prisma/client';
+import { Assessment, AssessmentScore, AssessmentResponse } from '../../../../prisma/generated/client';
 
 export interface IdentifiedProblem {
     id: string;

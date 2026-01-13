@@ -1,6 +1,6 @@
 /// <reference path="../../../types/midtrans-client.d.ts" />
 import { CoreApi } from 'midtrans-client';
-import { Order } from '@prisma/client';
+import { Order } from '../../../../prisma/generated/client';
 
 export class MidtransService {
     private core: any;

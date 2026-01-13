@@ -1,5 +1,5 @@
 import { db } from '../../utils/db';
-import { Document } from '@prisma/client';
+import { Document } from '../../../../prisma/generated/client';
 
 export class DocumentService {
     async uploadDocument(

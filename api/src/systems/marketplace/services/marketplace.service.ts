@@ -1,4 +1,4 @@
-import { Product, Order, Prisma } from '@prisma/client';
+import { Product, Order, Prisma } from '../../../../prisma/generated/client';
 import { prisma } from '../../../lib/prisma';
 import { paymentService } from './payment.service';
 import { ProductSearchDto, ProductSearchResponse } from '../dto';

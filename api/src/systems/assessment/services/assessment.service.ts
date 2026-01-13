@@ -1,5 +1,5 @@
 import { db } from '../../utils/db';
-import { PrismaClient, Assessment, AssessmentQuestion, AssessmentResponse, AssessmentScore } from '@prisma/client';
+import { PrismaClient, Assessment, AssessmentQuestion, AssessmentResponse, AssessmentScore } from '../../../../prisma/generated/client';
 import { RecommendationService } from './recommendation.service'
 import { ScoringEngine } from './scoring.service'
 import { LevelDeterminationService } from './level.service'

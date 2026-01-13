@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import { MarketplaceService } from '../services/marketplace.service';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../../prisma/generated/client';
 
 const marketplaceService = new MarketplaceService();
 

@@ -1,4 +1,4 @@
-import { PrismaClient, Order } from '@prisma/client';
+import { PrismaClient, Order } from '../../../../prisma/generated/client';
 import { MidtransService } from './midtrans.service';
 
 const prisma = new PrismaClient();

@@ -1,4 +1,4 @@
-import { Prisma, Assignment, AssignmentSubmission } from '@prisma/client';
+import { Prisma, Assignment, AssignmentSubmission } from '../../../../prisma/generated/client';
 import { prisma } from '../../../lib/prisma';
 import { CoursesService } from './courses.service';
 

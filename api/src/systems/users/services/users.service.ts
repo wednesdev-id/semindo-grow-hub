@@ -1,6 +1,6 @@
 import { db } from '../../utils/db';
 import { hashPassword } from '../../utils/password';
-import { PrismaClient, User, Prisma } from '@prisma/client';
+import { PrismaClient, User, Prisma } from '../../../../prisma/generated/client';
 import { CreateUserDto, UpdateUserDto, UserQueryDto } from '../types/users.types';
 import { AuditService } from '../../audit/services/audit.service';
 

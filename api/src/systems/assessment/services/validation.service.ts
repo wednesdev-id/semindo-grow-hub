@@ -1,5 +1,5 @@
 
-import { AssessmentQuestion } from '@prisma/client';
+import { AssessmentQuestion } from '../../../../prisma/generated/client';
 import { AnswerValue, QuestionType } from '../types';
 
 export interface ValidationError {

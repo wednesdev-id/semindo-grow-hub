@@ -1,5 +1,5 @@
 import { prisma } from '../../../lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../../prisma/generated/client';
 
 export class ProgramService {
     async getPrograms(filter?: { type?: string; status?: string; organizerId?: string }) {

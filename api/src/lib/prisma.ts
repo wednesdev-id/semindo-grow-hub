@@ -6,11 +6,9 @@ const prismaClientSingleton = () => {
         ? { log: ['query', 'info', 'warn', 'error'] as ('query' | 'info' | 'warn' | 'error')[] }
         : { log: ['warn', 'error'] as ('warn' | 'error')[] };
 
-    // Prisma 7 requires datasourceUrl to be passed to PrismaClient constructor
-    return new PrismaClient({
-        ...logOptions,
-        datasourceUrl: process.env.DATABASE_URL,
-    }).$extends({
+    // Prisma 7: Database URL is configured in prisma.config.ts for CLI
+    // and read from DATABASE_URL env var at runtime automatically
+    return new PrismaClient(logOptions).$extends({
         query: {
             $allModels: {
                 async create({ args, query, model }) {

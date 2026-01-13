@@ -1,4 +1,4 @@
-import { Prisma, Quiz, QuizAttempt, QuizQuestion } from '@prisma/client';
+import { Prisma, Quiz, QuizAttempt, QuizQuestion } from '../../../../prisma/generated/client';
 import { prisma } from '../../../lib/prisma';
 import { CoursesService } from './courses.service';
 

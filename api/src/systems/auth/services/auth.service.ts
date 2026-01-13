@@ -1,5 +1,5 @@
 import { db } from '../../utils/db';
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, User } from '../../../../prisma/generated/client';
 import { hashPassword, comparePassword } from '../../utils/password';
 import { signToken } from '../../utils/jwt';
 import { LoginDto, RegisterDto, AuthResponse } from '../types/auth.types';

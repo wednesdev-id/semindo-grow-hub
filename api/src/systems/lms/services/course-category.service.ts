@@ -1,4 +1,4 @@
-import { PrismaClient, CourseCategory } from '@prisma/client';
+import { PrismaClient, CourseCategory } from '../../../../prisma/generated/client';
 
 const prisma = new PrismaClient();
 
