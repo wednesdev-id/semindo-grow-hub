@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
-import type { ConsultantProfile, BookingSlot } from '../../types/consultation';
-import { Star, Clock, Calendar } from 'lucide-react';
-import type { ConsultantProfile } from '../../types/consultation';
-import { Star, Clock, Calendar, ArrowLeft } from 'lucide-react';
+import type { ConsultantProfile as ConsultantProfileType, BookingSlot } from '../../types/consultation';
+import { Star, ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
 import { BookingForm } from '@/components/consultation/BookingForm';
 import ReviewList from '@/components/consultation/ReviewList';
 import ReviewForm from '@/components/consultation/ReviewForm';
-import { useToast } from '@/components/ui/use-toast';
 
 export default function ConsultantProfile() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [consultant, setConsultant] = useState<ConsultantProfile | null>(null);
+    const [consultant, setConsultant] = useState<ConsultantProfileType | null>(null);
     const [loading, setLoading] = useState(true);
     const [showBookingModal, setShowBookingModal] = useState(false);
 
@@ -197,19 +194,10 @@ export default function ConsultantProfile() {
     );
 }
 
-// Booking Modal Component
-function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }) {
-    const navigate = useNavigate();
-    const [selectedDate, setSelectedDate] = useState('');
-    const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
-    const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
-    const [loadingSlots, setLoadingSlots] = useState(false);
-
-    const [formData, setFormData] = useState({
-        topic: '',
-        description: '',
-    });
-    const [submitting, setSubmitting] = useState(false);
+// Review Modal Controller - handles ?action=review URL param
+function ReviewModalController({ consultant }: { consultant: ConsultantProfileType }) {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('action') === 'review') {
@@ -226,10 +214,6 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
 
     if (!isOpen || !consultant) return null;
 
-            // Calculate duration in minutes
-            const start = new Date(`${selectedSlot.date}T${selectedSlot.startTime}`);
-            const end = new Date(`${selectedSlot.date}T${selectedSlot.endTime}`);
-            const durationMinutes = (end.getTime() - start.getTime()) / 60000;
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-lg p-6 max-w-lg w-full">
@@ -249,11 +233,11 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                 />
             </div>
         </div>
-    )
+    );
 }
 
 // Booking Modal Component
-function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }): JSX.Element {
+function BookingModal({ consultant, onClose }: { consultant: ConsultantProfileType; onClose: () => void }): JSX.Element {
     const navigate = useNavigate();
 
     return (
