@@ -8,7 +8,7 @@ const pdfCache = new NodeCache({ stdTTL: 3600 });
 
 interface PDFData {
     assessment: Assessment & {
-        user: User & { umkmProfile: UMKMProfile | null };
+        user: User & { umkmProfiles: UMKMProfile | null };
         score: AssessmentScore | null;
         recommendations: AssessmentRecommendation[];
     };
@@ -84,7 +84,7 @@ export class PdfService {
 
     private generateUserInfo(doc: PDFKit.PDFDocument, data: PDFData) {
         const { user } = data.assessment;
-        const umkm = user.umkmProfile;
+        const umkm = user.umkmProfiles;
 
         doc.fontSize(14).font('Helvetica-Bold').text('Informasi Bisnis', { underline: true }).moveDown(0.5);
         doc.font('Helvetica');

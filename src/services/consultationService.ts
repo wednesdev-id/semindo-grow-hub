@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot } from '../types/consultation';
+import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot, ConsultationReview } from '../types/consultation';
 
 const BASE_URL = '/consultation';
 
@@ -33,7 +33,7 @@ export const consultationService = {
         return response.data;
     },
 
-    async createProfile(data: Partial<ConsultantProfile>) {
+    async createProfile(data: Partial<ConsultantProfile> & { expertiseIds?: string[] }) {
         const response = await api.post<{ success: boolean; data: ConsultantProfile }>(
             `${BASE_URL}/consultants/profile`,
             data
@@ -41,7 +41,7 @@ export const consultationService = {
         return response.data;
     },
 
-    async updateProfile(data: Partial<ConsultantProfile>) {
+    async updateProfile(data: Partial<ConsultantProfile> & { expertiseIds?: string[] }) {
         const response = await api.patch<{ success: boolean; data: ConsultantProfile }>(
             `${BASE_URL}/consultants/profile`,
             data
@@ -121,9 +121,17 @@ export const consultationService = {
     },
 
     async rejectRequest(id: string, reason?: string) {
-        const response = await api.patch<{ success: boolean; data: ConsultationRequest }>(
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
             `${BASE_URL}/requests/${id}/reject`,
             { reason }
+        );
+        return response.data;
+    },
+
+    async completeSession(id: string, data: { sessionNotes: string; recommendations?: string }) {
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/complete`,
+            data
         );
         return response.data;
     },
@@ -184,25 +192,23 @@ export const consultationService = {
     },
 
     // Chat
-    async getChannel(requestId: string) {
-        const response = await api.get<{ success: boolean; data: ChatChannel }>(
+    async getChatDetails(requestId: string) {
+        const response = await api.get<{ success: boolean; data: { channel: ChatChannel; requestStatus: string; canChat: boolean } }>(
             `${BASE_URL}/requests/${requestId}/chat`
         );
         return response.data;
     },
 
-    async getChatHistory(channelId: string, limit = 50) {
-        const response = await api.get<{ success: boolean; data: ChatMessage[] }>(
-            `${BASE_URL}/chat/${channelId}/messages?limit=${limit}`
+    async sendMessage(requestId: string, content?: string, fileUrl?: string) {
+        const response = await api.post<{ success: boolean; data: ChatMessage }>(
+            `${BASE_URL}/requests/${requestId}/chat/messages`,
+            { content, fileUrl }
         );
         return response.data;
     },
 
-    async getUnreadCount(channelId: string) {
-        const response = await api.get<{ success: boolean; data: { count: number } }>(
-            `${BASE_URL}/chat/${channelId}/unread`
-        );
-        return response.data.count;
+    async markMessagesAsRead(requestId: string) {
+        await api.put(`${BASE_URL}/requests/${requestId}/chat/read`);
     },
 
     // Admin Chat Monitoring
@@ -218,5 +224,102 @@ export const consultationService = {
             `${BASE_URL}/admin/chat/${channelId}/messages`
         );
         return response.data;
+    },
+
+    // Archive Management
+    async archiveRequest(id: string) {
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/archive`
+        );
+        return response.data;
+    },
+
+    async unarchiveRequest(id: string) {
+        const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
+            `${BASE_URL}/requests/${id}/unarchive`
+        );
+        return response.data;
+    },
+
+    // Reviews
+    async getReviews(consultantId: string, limit = 20, offset = 0) {
+        const response = await api.get<{ success: boolean; data: ConsultationReview[]; meta: { total: number } }>(
+            `${BASE_URL}/reviews/${consultantId}?limit=${limit}&offset=${offset}`
+        );
+        return response.data;
+    },
+
+    async canReview(consultantId: string) {
+        const response = await api.get<{ success: boolean; data: { canReview: boolean; reason?: string } }>(
+            `${BASE_URL}/reviews/${consultantId}/can-review`
+        );
+        return response.data;
+    },
+
+    async createReview(consultantId: string, rating: number, comment?: string) {
+        const response = await api.post<{ success: boolean; data: ConsultationReview }>(
+            `${BASE_URL}/reviews`,
+            { consultantId, rating, comment }
+        );
+        return response.data;
+    },
+
+    async deleteReview(reviewId: string) {
+        const response = await api.delete<{ success: boolean; message: string }>(
+            `${BASE_URL}/reviews/${reviewId}`
+        );
+        return response;
+    },
+
+    // ============================================
+    // PACKAGE MANAGEMENT
+    // ============================================
+
+    async getPackages() {
+        const response = await api.get(`${BASE_URL}/packages`);
+        return response;
+    },
+
+    async getConsultantPackages(consultantId: string) {
+        const response = await api.get(
+            `${BASE_URL}/consultants/${consultantId}/packages`
+        );
+        return response;
+    },
+
+    async createPackage(data: {
+        name: string;
+        durationMinutes: number;
+        price: number;
+        description?: string;
+        isActive?: boolean;
+    }) {
+        const response = await api.post(`${BASE_URL}/packages`, data);
+        return response;
+    },
+
+    async updatePackage(id: string, data: {
+        name?: string;
+        durationMinutes?: number;
+        price?: number;
+        description?: string;
+        isActive?: boolean;
+        sortOrder?: number;
+    }) {
+        const response = await api.put(`${BASE_URL}/packages/${id}`, data);
+        return response;
+    },
+
+    async deletePackage(id: string) {
+        const response = await api.delete(`${BASE_URL}/packages/${id}`);
+        return response;
+    },
+
+    async reorderPackages(packageIds: string[]) {
+        const response = await api.put(
+            `${BASE_URL}/packages/reorder`,
+            { packageIds }
+        );
+        return response;
     },
 };

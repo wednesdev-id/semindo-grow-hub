@@ -113,7 +113,7 @@ export default function ConsultantList() {
                         {consultants.map((consultant) => (
                             <Link
                                 key={consultant.id}
-                                to={`/consultation/consultants/${consultant.id}`}
+                                to={`/consultation/consultant/${consultant.id}`}
                                 className="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden"
                             >
                                 <div className="p-6">
@@ -139,7 +139,10 @@ export default function ConsultantList() {
 
                                     {/* Expertise Tags */}
                                     <div className="flex flex-wrap gap-2 mb-4">
-                                        {consultant.expertiseAreas.slice(0, 3).map((area, idx) => (
+                                        {(consultant.expertise?.length
+                                            ? consultant.expertise.map(e => e.expertise.name)
+                                            : consultant.expertiseAreas || []
+                                        ).slice(0, 3).map((area, idx) => (
                                             <span
                                                 key={idx}
                                                 className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full"
@@ -159,7 +162,13 @@ export default function ConsultantList() {
                                         <div className="flex items-center">
                                             <DollarSign className="w-4 h-4 mr-1" />
                                             <span>
-                                                Rp {consultant.hourlyRate?.toLocaleString() || 'N/A'}/hr
+                                                {consultant.packages?.length ? (
+                                                    <>Mulai Rp {Math.min(...consultant.packages.map((p: any) => p.price)).toLocaleString()}</>
+                                                ) : consultant.hourlyRate ? (
+                                                    <>Rp {consultant.hourlyRate.toLocaleString()}/hr</>
+                                                ) : (
+                                                    'Lihat profil'
+                                                )}
                                             </span>
                                         </div>
                                     </div>

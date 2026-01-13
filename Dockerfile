@@ -2,18 +2,20 @@
 ARG NODE_ENV=production
 
 FROM node:20-alpine AS base
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies
 FROM base AS deps
 COPY package*.json ./
-RUN npm ci
+# Use npm install with legacy peer deps to handle cross-platform native binaries
+RUN npm install --legacy-peer-deps --ignore-scripts && npm rebuild
 
 # Development stage
 FROM base AS development
 ENV NODE_ENV=development
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 COPY . .
 EXPOSE 8080
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "8080"]

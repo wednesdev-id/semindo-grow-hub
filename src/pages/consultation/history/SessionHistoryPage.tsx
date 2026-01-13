@@ -12,22 +12,36 @@ import { Calendar, Clock, Loader2, Video, FileText, Search, User } from "lucide-
 import { format } from "date-fns";
 import { consultationService } from "@/services/consultationService";
 import { ConsultationRequest } from "@/types/consultation";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SessionHistoryPage() {
     const navigate = useNavigate();
     const { toast } = useToast();
+    const { hasRole } = useAuth();
+    const isConsultant = hasRole('consultant');
+    const viewRole = isConsultant ? 'consultant' : 'client';
 
     const [loading, setLoading] = useState(true);
     const [sessions, setSessions] = useState<ConsultationRequest[]>([]);
     const [filteredSessions, setFilteredSessions] = useState<ConsultationRequest[]>([]);
 
-    // Filters
-    const [statusFilter, setStatusFilter] = useState<string>("all");
+    const [searchParams] = useSearchParams();
+
+    // Filters - Initialize from URL if present
+    const [statusFilter, setStatusFilter] = useState<string>(searchParams.get('status') || "all");
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         fetchHistory();
     }, []);
+
+    // Update filter if URL changes
+    useEffect(() => {
+        const status = searchParams.get('status');
+        if (status && status !== statusFilter) {
+            setStatusFilter(status);
+        }
+    }, [searchParams]);
 
     useEffect(() => {
         filterSessions();
@@ -36,10 +50,11 @@ export default function SessionHistoryPage() {
     const fetchHistory = async () => {
         try {
             setLoading(true);
-            // Fetch as client by default (backend handles role logic if needed, or we might need a role switcher)
-            // Assuming 'client' role for now as this is "Riwayat Konsultasi Saya"
-            const data = await consultationService.getRequests();
-            setSessions(data);
+            // Fetch based on role
+            const response = await consultationService.getRequests(viewRole);
+            // Extract the data array from response object
+            const sessionsData = Array.isArray(response) ? response : (response as any).data || [];
+            setSessions(sessionsData);
         } catch (error) {
             toast({
                 title: "Error fetching history",
@@ -62,7 +77,9 @@ export default function SessionHistoryPage() {
             const q = searchQuery.toLowerCase();
             filtered = filtered.filter(s =>
                 s.topic.toLowerCase().includes(q) ||
-                s.consultant?.user.fullName.toLowerCase().includes(q)
+                (isConsultant
+                    ? s.client?.fullName.toLowerCase().includes(q)
+                    : s.consultant?.user.fullName.toLowerCase().includes(q))
             );
         }
 
@@ -113,6 +130,7 @@ export default function SessionHistoryPage() {
                                     <SelectItem value="approved">Upcoming</SelectItem>
                                     <SelectItem value="completed">Completed</SelectItem>
                                     <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="rejected">Rejected</SelectItem>
                                     <SelectItem value="cancelled">Cancelled</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -132,8 +150,11 @@ export default function SessionHistoryPage() {
                                 {filteredSessions.map((session) => (
                                     <div key={session.id} className="border rounded-lg p-4 flex flex-col md:flex-row gap-4 items-start md:items-center justify-between bg-white hover:bg-gray-50 transition-colors">
                                         <div className="flex gap-4 items-start">
-                                            <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold">
-                                                {session.consultant?.user.fullName[0] || "C"}
+                                            <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold overflow-hidden">
+                                                {isConsultant
+                                                    ? (session.client?.profilePictureUrl ? <img src={session.client.profilePictureUrl} alt="" className="w-full h-full object-cover" /> : (session.client?.fullName[0] || "C"))
+                                                    : (session.consultant?.user.profilePictureUrl ? <img src={session.consultant.user.profilePictureUrl} alt="" className="w-full h-full object-cover" /> : (session.consultant?.user.fullName[0] || "C"))
+                                                }
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-2">
@@ -141,7 +162,11 @@ export default function SessionHistoryPage() {
                                                     {getStatusBadge(session.status)}
                                                 </div>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                                    <User className="w-3 h-3" /> with {session.consultant?.user.fullName}
+                                                    <User className="w-3 h-3" />
+                                                    {isConsultant
+                                                        ? `Client: ${session.client?.fullName}`
+                                                        : `kpd ${session.consultant?.user.fullName}`
+                                                    }
                                                 </p>
                                                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                                     <span className="flex items-center gap-1">

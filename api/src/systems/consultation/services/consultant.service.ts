@@ -25,9 +25,26 @@ export const listConsultants = async (filters: ListConsultantsFilters) => {
     }
 
     if (filters.expertise) {
-        where.expertiseAreas = {
-            has: filters.expertise
-        };
+        // Filter by junction table OR legacy array
+        where.OR = [
+            {
+                expertise: {
+                    some: {
+                        expertise: {
+                            OR: [
+                                { name: filters.expertise },
+                                { id: filters.expertise }
+                            ]
+                        }
+                    }
+                }
+            },
+            {
+                expertiseAreas: {
+                    has: filters.expertise
+                }
+            }
+        ];
     }
 
     if (filters.minRating) {
@@ -59,6 +76,15 @@ export const listConsultants = async (filters: ListConsultantsFilters) => {
                     businessName: true
                 }
             },
+            expertise: {
+                include: {
+                    expertise: true
+                }
+            },
+            packages: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' }
+            },
             _count: {
                 select: {
                     reviews: true
@@ -87,7 +113,16 @@ export const getConsultantProfile = async (consultantId: string) => {
                     email: true
                 }
             },
+            expertise: {
+                include: {
+                    expertise: true
+                }
+            },
             availability: true,
+            packages: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' }
+            },
             reviews: {
                 where: { isPublished: true },
                 include: {
@@ -120,13 +155,14 @@ export const createConsultantProfile = async (userId: string, data: any) => {
         throw new Error('User already has a consultant profile');
     }
 
-    return await prisma.consultantProfile.create({
+    // Create profile
+    const profile = await prisma.consultantProfile.create({
         data: {
             userId,
             title: data.title,
             tagline: data.tagline,
             bio: data.bio,
-            expertiseAreas: data.expertiseAreas || [],
+            expertiseAreas: data.expertiseAreas || [], // Keep for backward compatibility
             industries: data.industries || [],
             languages: data.languages || ['Indonesian'],
             yearsExperience: data.yearsExperience,
@@ -136,6 +172,18 @@ export const createConsultantProfile = async (userId: string, data: any) => {
             status: 'pending' // Requires admin approval
         }
     });
+
+    // Create expertise associations if provided
+    if (data.expertiseIds && Array.isArray(data.expertiseIds) && data.expertiseIds.length > 0) {
+        await prisma.consultantExpertise.createMany({
+            data: data.expertiseIds.map((expertiseId: string) => ({
+                consultantId: profile.id,
+                expertiseId
+            }))
+        });
+    }
+
+    return profile;
 };
 
 /**
@@ -150,13 +198,14 @@ export const updateConsultantProfile = async (userId: string, updates: any) => {
         throw new Error('Consultant profile not found');
     }
 
-    return await prisma.consultantProfile.update({
+    // Update profile
+    const updatedProfile = await prisma.consultantProfile.update({
         where: { userId },
         data: {
             title: updates.title,
             tagline: updates.tagline,
             bio: updates.bio,
-            expertiseAreas: updates.expertiseAreas,
+            expertiseAreas: updates.expertiseAreas, // Keep for backward compatibility
             industries: updates.industries,
             languages: updates.languages,
             yearsExperience: updates.yearsExperience,
@@ -167,6 +216,26 @@ export const updateConsultantProfile = async (userId: string, updates: any) => {
             cancellationPolicy: updates.cancellationPolicy
         }
     });
+
+    // Handle expertise updates if provided
+    if (updates.expertiseIds && Array.isArray(updates.expertiseIds)) {
+        // Delete all existing expertise associations
+        await prisma.consultantExpertise.deleteMany({
+            where: { consultantId: profile.id }
+        });
+
+        // Create new associations
+        if (updates.expertiseIds.length > 0) {
+            await prisma.consultantExpertise.createMany({
+                data: updates.expertiseIds.map((expertiseId: string) => ({
+                    consultantId: profile.id,
+                    expertiseId
+                }))
+            });
+        }
+    }
+
+    return updatedProfile;
 };
 
 /**
@@ -184,8 +253,16 @@ export const getProfileByUserId = async (userId: string) => {
                     profilePictureUrl: true
                 }
             },
+            expertise: {
+                include: {
+                    expertise: true
+                }
+            },
             consultationType: true,
             availability: true,
+            packages: {
+                orderBy: { sortOrder: 'asc' }
+            },
             _count: {
                 select: {
                     consultationRequests: true
@@ -229,6 +306,7 @@ export const getConsultantAvailability = async (userId: string) => {
         throw new Error('Consultant profile not found');
     }
 
+    console.log(`[Service] Found availability for user ${userId}:`, profile.availability.length, 'slots');
     return profile.availability;
 };
 
@@ -244,18 +322,29 @@ export const addAvailabilitySlot = async (userId: string, slotData: any) => {
         throw new Error('Consultant profile not found');
     }
 
-    return await prisma.consultantAvailability.create({
+    // Convert time strings (HH:mm) to Date objects
+    // Prisma requires a Date object for DateTime fields, even if mapped to @db.Time
+    const today = new Date().toISOString().split('T')[0];
+    const baseDate = slotData.specificDate ? new Date(slotData.specificDate).toISOString().split('T')[0] : today;
+
+    const startTimeDate = new Date(`${baseDate}T${slotData.startTime}:00`);
+    const endTimeDate = new Date(`${baseDate}T${slotData.endTime}:00`);
+
+    const newSlot = await prisma.consultantAvailability.create({
         data: {
             consultantId: profile.id,
             dayOfWeek: slotData.dayOfWeek,
-            startTime: slotData.startTime,
-            endTime: slotData.endTime,
+            startTime: startTimeDate,
+            endTime: endTimeDate,
             isRecurring: slotData.isRecurring ?? true,
-            specificDate: slotData.specificDate,
+            specificDate: slotData.specificDate ? new Date(slotData.specificDate) : null,
             isAvailable: slotData.isAvailable ?? true,
             timezone: slotData.timezone || 'Asia/Jakarta'
         }
     });
+
+    console.log('[Service] Created newly slot:', newSlot);
+    return newSlot;
 };
 
 /**
@@ -311,3 +400,83 @@ export const rejectConsultant = async (consultantId: string, reason: string) => 
         }
     });
 };
+
+/**
+ * Public: Get instructors (mentors + consultants who teach courses)
+ */
+export const getInstructors = async () => {
+    // Get mentors (all mentors can teach)
+    const mentors = await prisma.mentorProfile.findMany({
+        where: {
+            isVerified: true
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    profilePictureUrl: true
+                }
+            },
+            courses: {
+                where: { isPublished: true },
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    thumbnail: true
+                }
+            }
+        },
+        orderBy: {
+            rating: 'desc'
+        }
+    });
+
+    // Get consultants who opted-in to teaching
+    const consultants = await prisma.consultantProfile.findMany({
+        where: {
+            canTeachCourses: true,
+            status: 'approved'
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    fullName: true,
+                    profilePictureUrl: true
+                }
+            },
+            courses: {
+                where: { isPublished: true },
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    thumbnail: true
+                }
+            }
+        },
+        orderBy: {
+            totalCoursesCreated: 'desc'
+        }
+    });
+
+    // Merge and add type indicator
+    return {
+        mentors: mentors.map(m => ({
+            ...m,
+            type: 'mentor' as const,
+            expertise: m.expertise,
+            yearsExperience: m.experience
+        })),
+        consultants: consultants.map(c => ({
+            ...c,
+            type: 'consultant' as const,
+            expertise: c.expertiseAreas,
+            yearsExperience: c.yearsExperience
+        }))
+    };
+};
+
+

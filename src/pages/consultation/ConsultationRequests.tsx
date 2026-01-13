@@ -4,7 +4,10 @@ import { consultationService } from '@/services/consultationService';
 import { ConsultationRequest } from '@/types/consultation';
 import { format } from 'date-fns';
 import { Check, X, Video, MessageSquare, Clock, Calendar, FileText, Upload, Trash2, Download } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { QuickAcceptModal } from '@/components/consultation/QuickAcceptModal';
+import { RejectRequestDialog } from '@/components/consultation/RejectRequestDialog';
+import { useToast } from '@/components/ui/use-toast';
 
 interface SessionFile {
     id: string;
@@ -17,14 +20,49 @@ interface SessionFile {
 
 export default function ConsultationRequests() {
     const { user } = useAuth();
+    const { toast } = useToast();
+    const navigate = useNavigate();
     const [requests, setRequests] = useState<ConsultationRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [accessDenied, setAccessDenied] = useState(false);
 
-    // Modal state for Accept
+    // Check if user has consultant role
+    const userRole = (user as any)?.role || (user as any)?.roles;
+    const hasConsultantRole = Array.isArray(userRole)
+        ? userRole.some((r: any) =>
+            typeof r === 'string'
+                ? ['consultant', 'admin', 'management'].includes(r)
+                : ['consultant', 'admin', 'management'].includes(r.name || r.role?.name)
+        )
+        : ['consultant', 'admin', 'management'].includes(userRole);
+
+    useEffect(() => {
+        if (!hasConsultantRole) {
+            setAccessDenied(true);
+            toast({
+                title: 'Access Denied',
+                description: 'This page is only for consultants. Redirecting to consultation dashboard...',
+                variant: 'destructive'
+            });
+            setTimeout(() => navigate('/consultation/dashboard'), 2000);
+        }
+    }, [hasConsultantRole, navigate, toast]);
+
+    if (accessDenied) {
+        return (
+            <div className="max-w-7xl mx-auto p-6 text-center">
+                <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+                <p className="text-gray-600">This page is only accessible to consultants.</p>
+                <p className="text-gray-500 mt-2">Redirecting to consultation dashboard...</p>
+            </div>
+        );
+    }
+
+    // Modal state for Accept/Reject
     const [showAcceptModal, setShowAcceptModal] = useState(false);
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState<ConsultationRequest | null>(null);
-    const [meetingUrl, setMeetingUrl] = useState('');
 
     // Modal state for Session Management (Notes & Files)
     const [showSessionModal, setShowSessionModal] = useState(false);
@@ -59,43 +97,74 @@ export default function ConsultationRequests() {
 
     const handleAcceptClick = (request: ConsultationRequest) => {
         setSelectedRequest(request);
-        setMeetingUrl('');
         setShowAcceptModal(true);
     };
 
-    const confirmAccept = async () => {
+    const handleConfirmAccept = async (data: { meetingUrl: string; meetingPlatform: string }) => {
         if (!selectedRequest) return;
 
         try {
             setProcessingId(selectedRequest.id);
-            await consultationService.acceptRequest(selectedRequest.id, {
-                meetingUrl: meetingUrl
+            await consultationService.acceptRequest(selectedRequest.id, data);
+            toast({
+                title: 'Success',
+                description: 'Consultation request accepted successfully'
             });
             setShowAcceptModal(false);
+            setSelectedRequest(null);
             fetchRequests(); // Refresh list
-            alert('Request accepted successfully!');
         } catch (error) {
             console.error('Failed to accept request:', error);
-            alert('Failed to accept request.');
+            toast({
+                title: 'Error',
+                description: 'Failed to accept request. Please try again.',
+                variant: 'destructive'
+            });
+            throw error;
         } finally {
             setProcessingId(null);
-            setSelectedRequest(null);
         }
     };
 
-    const handleReject = async (requestId: string) => {
-        if (!confirm('Are you sure you want to reject this request?')) return;
+    const handleRejectClick = (request: ConsultationRequest) => {
+        setSelectedRequest(request);
+        setShowRejectDialog(true);
+    };
+
+    const handleConfirmReject = async (reason: string) => {
+        if (!selectedRequest) return;
 
         try {
-            setProcessingId(requestId);
-            await consultationService.rejectRequest(requestId, 'Consultant is unavailable');
+            setProcessingId(selectedRequest.id);
+            await consultationService.rejectRequest(selectedRequest.id, reason);
+            toast({
+                title: 'Request rejected',
+                description: 'The client has been notified'
+            });
+            setShowRejectDialog(false);
+            setSelectedRequest(null);
             fetchRequests();
         } catch (error) {
             console.error('Failed to reject request:', error);
-            alert('Failed to reject request.');
+            toast({
+                title: 'Error',
+                description: 'Failed to reject request. Please try again.',
+                variant: 'destructive'
+            });
+            throw error;
         } finally {
             setProcessingId(null);
         }
+    };
+
+    const formatTime = (timeValue: string | Date) => {
+        if (!timeValue) return '';
+        const date = typeof timeValue === 'string' ? new Date(timeValue) : timeValue;
+        return date.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
     };
 
     // --- Session Management Handlers ---
@@ -193,7 +262,7 @@ export default function ConsultationRequests() {
                                 key={req.id}
                                 request={req}
                                 onAccept={() => handleAcceptClick(req)}
-                                onReject={() => handleReject(req.id)}
+                                onReject={() => handleRejectClick(req)}
                                 processing={processingId === req.id}
                             />
                         ))}
@@ -226,13 +295,19 @@ export default function ConsultationRequests() {
                 <h2 className="text-xl font-semibold mb-4 bg-gray-50 p-2 rounded-md border-l-4 border-gray-400 inline-block">
                     History ({pastRequests.length})
                 </h2>
-                {pastRequests.map(req => (
-                    <RequestCard
-                        key={req.id}
-                        request={req}
-                        onManage={req.status === 'completed' ? () => openSessionManager(req) : undefined}
-                    />
-                ))}
+                {pastRequests.length === 0 ? (
+                    <p className="text-gray-500">No history yet.</p>
+                ) : (
+                    <div className="grid gap-4">
+                        {pastRequests.map(req => (
+                            <RequestCard
+                                key={req.id}
+                                request={req}
+                                onManage={req.status === 'completed' ? () => openSessionManager(req) : undefined}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Accept Modal */}
@@ -272,6 +347,17 @@ export default function ConsultationRequests() {
                     </div>
                 </div>
             )}
+
+            {/* Reject Dialog */}
+            <RejectRequestDialog
+                open={showRejectDialog}
+                onClose={() => {
+                    setShowRejectDialog(false);
+                    setSelectedRequest(null);
+                }}
+                onConfirm={handleConfirmReject}
+                clientName={selectedRequest?.client?.fullName}
+            />
 
             {/* Session Management Modal */}
             {showSessionModal && manageRequest && (
@@ -409,7 +495,8 @@ function RequestCard({ request, onAccept, onReject, onManage, processing }: any)
                 <div className="flex items-center gap-2 mb-2">
                     <span className={`px-2 py-1 text-xs rounded-full uppercase font-medium ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                         request.status === 'approved' ? 'bg-green-100 text-green-800' :
-                            'bg-gray-100 text-gray-800'
+                            request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
                         }`}>
                         {request.status}
                     </span>
