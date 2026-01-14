@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
 import type { ConsultantProfile, BookingSlot } from '../../types/consultation';
-import { Star, Clock, Calendar } from 'lucide-react';
-import type { ConsultantProfile } from '../../types/consultation';
 import { Star, Clock, Calendar, ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
@@ -12,7 +10,7 @@ import ReviewList from '@/components/consultation/ReviewList';
 import ReviewForm from '@/components/consultation/ReviewForm';
 import { useToast } from '@/components/ui/use-toast';
 
-export default function ConsultantProfile() {
+export default function ConsultantProfilePage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [consultant, setConsultant] = useState<ConsultantProfile | null>(null);
@@ -188,28 +186,15 @@ export default function ConsultantProfile() {
             )}
 
             {/* Review Modal */}
-            {/* Logic for showing review modal from URL param or button */}
-            {/* For now, we rely on deep linking or a future button. 
-                If we want to support ?action=review, we need useEffect logic. 
-                Adding basic support for it. */}
             <ReviewModalController consultant={consultant} />
         </div>
     );
 }
 
-// Booking Modal Component
-function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }) {
-    const navigate = useNavigate();
-    const [selectedDate, setSelectedDate] = useState('');
-    const [availableSlots, setAvailableSlots] = useState<BookingSlot[]>([]);
-    const [selectedSlot, setSelectedSlot] = useState<BookingSlot | null>(null);
-    const [loadingSlots, setLoadingSlots] = useState(false);
-
-    const [formData, setFormData] = useState({
-        topic: '',
-        description: '',
-    });
-    const [submitting, setSubmitting] = useState(false);
+// Review Modal Controller Component
+function ReviewModalController({ consultant }: { consultant: ConsultantProfile }) {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('action') === 'review') {
@@ -226,10 +211,6 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
 
     if (!isOpen || !consultant) return null;
 
-            // Calculate duration in minutes
-            const start = new Date(`${selectedSlot.date}T${selectedSlot.startTime}`);
-            const end = new Date(`${selectedSlot.date}T${selectedSlot.endTime}`);
-            const durationMinutes = (end.getTime() - start.getTime()) / 60000;
     return (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
             <div className="bg-white rounded-lg p-6 max-w-lg w-full">
@@ -249,7 +230,7 @@ function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; 
                 />
             </div>
         </div>
-    )
+    );
 }
 
 // Booking Modal Component

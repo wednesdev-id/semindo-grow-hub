@@ -99,15 +99,37 @@ export class ForumService {
         return thread;
     }
 
-    async createThread(data: { title: string; content: string; categoryId: string; authorId: string }) {
-        return prisma.forumThread.create({
+    async createThread(data: { title: string; content: string; categoryId: string; authorId: string; tags?: string[] }) {
+        const slug = this.generateSlug(data.title);
+        const thread = await prisma.forumThread.create({
             data: {
                 title: data.title,
+                slug,
                 content: data.content,
                 categoryId: data.categoryId,
                 authorId: data.authorId
             }
         });
+
+        // Add tags if provided
+        if (data.tags && data.tags.length > 0) {
+            for (const tagName of data.tags) {
+                let tag = await prisma.forumTag.findUnique({ where: { name: tagName } });
+                if (!tag) {
+                    tag = await prisma.forumTag.create({
+                        data: {
+                            name: tagName,
+                            slug: this.generateSlug(tagName)
+                        }
+                    });
+                }
+                await prisma.forumThreadTag.create({
+                    data: { threadId: thread.id, tagId: tag.id }
+                });
+            }
+        }
+
+        return thread;
     }
 
     async createPost(data: { content: string; threadId: string; authorId: string; parentId?: string }) {
@@ -158,5 +180,73 @@ export class ForumService {
             });
             return { upvoted: true };
         }
+    }
+
+    async updateThread(threadId: string, data: {
+        title?: string;
+        content?: string;
+        categoryId?: string;
+        tags?: string[];
+    }) {
+        const updateData: Prisma.ForumThreadUpdateInput = {};
+
+        if (data.title) {
+            updateData.title = data.title;
+            updateData.slug = this.generateSlug(data.title);
+        }
+        if (data.content) updateData.content = data.content;
+        if (data.categoryId) updateData.category = { connect: { id: data.categoryId } };
+
+        const thread = await prisma.forumThread.update({
+            where: { id: threadId },
+            data: updateData
+        });
+
+        // Update tags if provided
+        if (data.tags) {
+            await prisma.forumThreadTag.deleteMany({ where: { threadId } });
+            if (data.tags.length > 0) {
+                for (const tagName of data.tags) {
+                    let tag = await prisma.forumTag.findUnique({ where: { name: tagName } });
+                    if (!tag) {
+                        tag = await prisma.forumTag.create({
+                            data: {
+                                name: tagName,
+                                slug: this.generateSlug(tagName)
+                            }
+                        });
+                    }
+                    await prisma.forumThreadTag.create({
+                        data: { threadId: thread.id, tagId: tag.id }
+                    });
+                }
+            }
+        }
+
+        return thread;
+    }
+
+    async deleteThread(id: string) {
+        // Soft delete
+        return prisma.forumThread.update({
+            where: { id },
+            data: { status: 'DELETED' }
+        });
+    }
+
+    /**
+     * Generate URL-friendly slug from title
+     */
+    private generateSlug(title: string): string {
+        const slug = title
+            .toLowerCase()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .trim();
+
+        // Add random suffix to ensure uniqueness
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        return `${slug}-${randomSuffix}`;
     }
 }

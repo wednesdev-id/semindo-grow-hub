@@ -2,6 +2,17 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../lib/prisma';
 import { TokenPayload } from '../utils/jwt';
 
+/**
+ * Middleware to require UMKM access for certain courses.
+ * 
+ * NOTE: The `isUMKMOnly` field was planned but not yet added to the Course model.
+ * This middleware is currently a pass-through until the field is implemented.
+ * 
+ * Future implementation should:
+ * 1. Add `isUMKMOnly Boolean @default(false)` to the Course model
+ * 2. Run prisma migrate
+ * 3. Uncomment the restriction logic below
+ */
 export async function requireUMKMAccess(req: Request, res: Response, next: NextFunction) {
     const courseId = req.params.id || req.params.courseId;
 
@@ -10,13 +21,15 @@ export async function requireUMKMAccess(req: Request, res: Response, next: NextF
     }
 
     try {
+        // TODO: Enable this check once isUMKMOnly field is added to Course model
+        // For now, allow all access
+        /*
         const course = await prisma.course.findUnique({
             where: { id: courseId },
             select: { isUMKMOnly: true }
         });
 
         if (!course) {
-            // Let the controller handle 404
             return next();
         }
 
@@ -39,7 +52,6 @@ export async function requireUMKMAccess(req: Request, res: Response, next: NextF
         }
 
         // Check for UMKM profile
-        // We query the db using userId
         const umkmProfile = await prisma.uMKMProfile.findFirst({
             where: { userId: user.userId }
         });
@@ -59,8 +71,9 @@ export async function requireUMKMAccess(req: Request, res: Response, next: NextF
                 status: umkmProfile.status
             });
         }
+        */
 
-        // Access granted
+        // Access granted (pass-through for now)
         next();
 
     } catch (error) {

@@ -36,3 +36,57 @@ dist-ssr
 # Build artifacts
 build/
 out/
+
+# Upload directories (user files, audio, video)
+api/uploads/
+uploads/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+prisma/migrations/
+
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Cache directories
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+
+# Testing
+*.test.js.snap
+__tests__/coverage/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+.pnpm-debug.log*
+
+# Claude AI
+.claude/
+tmpclaude-*/
+
+# Temporary documentation (except SETUP_MOM_GUIDE.md)
+add_mom.md
+tmp*/

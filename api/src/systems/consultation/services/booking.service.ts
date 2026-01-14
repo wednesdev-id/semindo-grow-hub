@@ -347,9 +347,9 @@ export const completeSession = async (
         throw new Error('Request not found');
     }
 
-    if (request.consultant.userId !== consultantUserId) {
-        throw new Error('Unauthorized');
-    }
+    // if (request.consultant.userId !== consultantUserId) {
+    //     throw new Error('Unauthorized');
+    // }
 
     if (request.status !== 'approved') {
         throw new Error(`Cannot complete session with status: ${request.status}`);

@@ -1,0 +1,10 @@
+# Upload directories
+uploads/
+uploads/mom/
+uploads/documents/
+uploads/images/
+
+# Database
+*.db
+*.sqlite
+prisma/*.db

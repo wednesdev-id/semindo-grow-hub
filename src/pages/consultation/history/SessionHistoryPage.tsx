@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import Navigation from "@/components/ui/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,16 +8,66 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Clock, Loader2, Video, FileText, Search, User } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { consultationService } from "@/services/consultationService";
 import { ConsultationRequest } from "@/types/consultation";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Helper function to safely format time
+const formatTime = (timeValue: string | null | undefined): string => {
+    if (!timeValue) return '--:--';
+
+    // If it's already in HH:MM or HH:MM:SS format
+    if (typeof timeValue === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(timeValue)) {
+        return timeValue.slice(0, 5);
+    }
+
+    // If it's an ISO date string
+    if (typeof timeValue === 'string' && timeValue.includes('T')) {
+        try {
+            const date = new Date(timeValue);
+            if (isValid(date)) {
+                return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            }
+        } catch {
+            // Ignore parsing errors
+        }
+    }
+
+    // Fallback: try to parse as Date
+    try {
+        const date = new Date(timeValue);
+        if (isValid(date)) {
+            return format(date, 'HH:mm');
+        }
+    } catch {
+        // Ignore parsing errors
+    }
+
+    return '--:--';
+};
+
+// Helper function to safely format date
+const formatDate = (dateValue: string | null | undefined): string => {
+    if (!dateValue) return '-';
+
+    try {
+        const date = new Date(dateValue);
+        if (isValid(date) && date.getFullYear() > 1971) {
+            return format(date, 'd MMM yyyy');
+        }
+    } catch {
+        // Ignore parsing errors
+    }
+
+    return '-';
+};
 
 export default function SessionHistoryPage() {
     const navigate = useNavigate();
     const { toast } = useToast();
     const { hasRole } = useAuth();
-    const isConsultant = hasRole('consultant');
+    const isConsultant = hasRole('consultant') || hasRole('konsultan');
     const viewRole = isConsultant ? 'consultant' : 'client';
 
     const [loading, setLoading] = useState(true);
@@ -98,42 +147,43 @@ export default function SessionHistoryPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50">
-            <Navigation />
-
-            <div className="max-w-6xl mx-auto py-8 px-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Session History</h1>
-                        <p className="text-muted-foreground">Manage your past and upcoming consultations.</p>
-                    </div>
+        <div className="p-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Session History</h1>
+                    <p className="text-muted-foreground">Manage your past and upcoming consultations.</p>
                 </div>
+            </div>
+
+            <Tabs value={statusFilter} onValueChange={setStatusFilter} className="w-full">
+                <TabsList className="grid w-full grid-cols-5 mb-6">
+                    <TabsTrigger value="approved" className="data-[state=active]:bg-green-500 data-[state=active]:text-white">
+                        Upcoming
+                    </TabsTrigger>
+                    <TabsTrigger value="pending" className="data-[state=active]:bg-yellow-500 data-[state=active]:text-white">
+                        Pending
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className="data-[state=active]:bg-gray-500 data-[state=active]:text-white">
+                        Completed
+                    </TabsTrigger>
+                    <TabsTrigger value="rejected" className="data-[state=active]:bg-red-500 data-[state=active]:text-white">
+                        Rejected
+                    </TabsTrigger>
+                    <TabsTrigger value="all" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white">
+                        All
+                    </TabsTrigger>
+                </TabsList>
 
                 <Card>
                     <CardHeader>
-                        <div className="flex flex-col md:flex-row gap-4 justify-between">
-                            <div className="flex gap-2 items-center flex-1">
-                                <Search className="w-4 h-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search by topic or consultant..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="max-w-sm"
-                                />
-                            </div>
-                            <Select value={statusFilter} onValueChange={setStatusFilter}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="All Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="approved">Upcoming</SelectItem>
-                                    <SelectItem value="completed">Completed</SelectItem>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="rejected">Rejected</SelectItem>
-                                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                                </SelectContent>
-                            </Select>
+                        <div className="flex gap-2 items-center">
+                            <Search className="w-4 h-4 text-muted-foreground" />
+                            <Input
+                                placeholder="Search by topic or consultant..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="max-w-sm"
+                            />
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -143,7 +193,14 @@ export default function SessionHistoryPage() {
                             </div>
                         ) : filteredSessions.length === 0 ? (
                             <div className="text-center py-12 text-muted-foreground">
-                                No sessions found.
+                                <p className="text-lg mb-2">No {statusFilter === 'all' ? '' : statusFilter} sessions found.</p>
+                                <p className="text-sm">
+                                    {statusFilter === 'approved' && "You don't have any upcoming consultations."}
+                                    {statusFilter === 'pending' && "No pending consultation requests at the moment."}
+                                    {statusFilter === 'completed' && "You haven't completed any consultations yet."}
+                                    {statusFilter === 'rejected' && "No rejected requests."}
+                                    {statusFilter === 'all' && "Start by scheduling a consultation!"}
+                                </p>
                             </div>
                         ) : (
                             <div className="space-y-4">
@@ -165,15 +222,15 @@ export default function SessionHistoryPage() {
                                                     <User className="w-3 h-3" />
                                                     {isConsultant
                                                         ? `Client: ${session.client?.fullName}`
-                                                        : `kpd ${session.consultant?.user.fullName}`
+                                                        : `dengan ${session.consultant?.user.fullName}`
                                                     }
                                                 </p>
                                                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
                                                     <span className="flex items-center gap-1">
-                                                        <Calendar className="w-3 h-3" /> {format(new Date(session.requestedDate), "d MMM yyyy")}
+                                                        <Calendar className="w-3 h-3" /> {formatDate(session.requestedDate)}
                                                     </span>
                                                     <span className="flex items-center gap-1">
-                                                        <Clock className="w-3 h-3" /> {session.requestedStartTime.slice(0, 5)} - {session.requestedEndTime.slice(0, 5)}
+                                                        <Clock className="w-3 h-3" /> {formatTime(session.requestedStartTime)} - {formatTime(session.requestedEndTime)}
                                                     </span>
                                                 </div>
                                             </div>
@@ -186,7 +243,7 @@ export default function SessionHistoryPage() {
                                                 </Button>
                                             )}
 
-                                            <Button variant="outline" size="sm" onClick={() => navigate(`/consultation/requests/${session.id}/chat`)}>
+                                            <Button variant="outline" size="sm" onClick={() => navigate(`/consultation/session/${session.id}`)}>
                                                 View Details
                                             </Button>
                                         </div>
@@ -196,7 +253,7 @@ export default function SessionHistoryPage() {
                         )}
                     </CardContent>
                 </Card>
-            </div>
+            </Tabs>
         </div>
     );
 }

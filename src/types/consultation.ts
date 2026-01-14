@@ -154,3 +154,26 @@ export interface ConsultationReview {
         profilePictureUrl?: string;
     };
 }
+
+export interface ConsultationMinutes {
+    id: string;
+    requestId: string;
+    audioFileUrl?: string;
+    audioFileName?: string;
+    audioFileSize?: number;
+    audioDuration?: number;
+    transcript?: string;
+    summary?: string;
+    keyPoints?: string[];
+    actionItems?: Array<{
+        task: string;
+        priority: 'high' | 'medium' | 'low';
+    }>;
+    recommendations?: string;
+    status: 'draft' | 'queued' | 'processing' | 'ready' | 'published';
+    processingError?: string;
+    createdBy: string;
+    publishedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}

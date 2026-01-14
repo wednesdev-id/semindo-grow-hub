@@ -399,16 +399,8 @@ const App = () => {
                         />} />
 
                         {/* Consultation Manager */}
-                        <Route path="/consultation/schedule" element={<FeaturePreviewPage
-                          title="Schedule Consultation"
-                          description="Kalender dan sistem booking konsultasi yang lebih advanced."
-                          features={["Calendar view", "Slot availability", "Automated reminders", "Recurring bookings"]}
-                        />} />
-                        <Route path="/consultation/history" element={<FeaturePreviewPage
-                          title="Consultation History"
-                          description="Riwayat lengkap semua sesi konsultasi yang telah dilakukan."
-                          features={["Session archive", "Notes & feedback", "Rating history", "Export reports"]}
-                        />} />
+                        <Route path="/consultation/schedule" element={<ScheduleConsultationPage />} />
+                        {/* Route moved to line 828 to use SessionHistoryPage */}
                         <Route path="/dashboard/consultation/dashboard" element={<ConsultationManagement />} />
                         <Route path="/dashboard/consultation/consultants/pending" element={<PendingConsultants />} />
                         <Route path="/dashboard/consultation/consultants/active" element={<ActiveConsultants />} />
@@ -592,11 +584,7 @@ const App = () => {
                           description="Penugasan mentor untuk konsultasi."
                           features={["Expert matching", "Workload management", "Assignment history"]}
                         />} />
-                        <Route path="/consultation/history" element={<FeaturePreviewPage
-                          title="Riwayat Konsultasi"
-                          description="Arsip sesi konsultasi."
-                          features={["Session logs", "Recording access", "Outcome notes"]}
-                        />} />
+                        {/* Route moved to line 828 to use SessionHistoryPage */}
                         {/* UMKM Management */}
                         <Route path="/umkm" element={<UMKMListPage />} />
                         <Route path="/umkm/new" element={<UMKMFormPage />} />
@@ -825,9 +813,10 @@ const App = () => {
                         />
                         <Route path="/consultants/:id" element={<ConsultantProfile />} />
                         <Route path="/consultation/book" element={<BookingConfirmationPage />} />
-                        <Route path="/consultation/history" element={<SessionHistoryPage />} /> {/* New History Page */}
+                        <Route path="/consultation/history" element={<SessionHistoryPage />} />
                         <Route path="/consultation/dashboard" element={<ConsultationDashboard />} />
-                        <Route path="/consultation/requests/:requestId/chat" element={<ConsultationChat />} />
+                        <Route path="/consultation/session/:id" element={<SessionDetail />} /> {/* Session Detail with Chat */}
+                        <Route path="/consultation/requests/:requestId/chat" element={<ConsultationChat />} /> {/* Full Chat View */}
                         <Route path="/consultation/requests" element={<ConsultationRequests />} />
 
                         <Route path="/financing" element={<FeaturePreviewPage

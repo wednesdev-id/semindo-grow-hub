@@ -161,7 +161,7 @@ export default function ChatWidget({ requestId, className }: ChatWidgetProps) {
     }
 
     return (
-        <Card className={cn("h-[600px] flex flex-col shadow-md border-0 bg-[#efeae2]", className)}>
+        <Card className={cn("h-[600px] flex flex-col shadow-md border-0 bg-[#e5ddd5]", className)}>
             <CardHeader className="border-b px-4 py-3 bg-white rounded-t-xl z-10 sticky top-0 shadow-sm">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -177,13 +177,13 @@ export default function ChatWidget({ requestId, className }: ChatWidgetProps) {
             </CardHeader>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#efeae2]" ref={scrollRef}>
+            <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-[#e5ddd5]" ref={scrollRef}>
                 {messages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2">
                         <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
                             <Send className="w-5 h-5 text-gray-400" />
                         </div>
-                        <p className="text-xs bg-white/60 px-3 py-1 rounded-full shadow-sm">No messages yet.</p>
+                        <p className="text-xs bg-[#dcf8c6] px-3 py-1 rounded-full shadow-sm text-gray-600">No messages yet.</p>
                         {canChat && <p className="text-xs text-gray-500">Say hello!</p>}
                     </div>
                 ) : (
@@ -193,31 +193,44 @@ export default function ChatWidget({ requestId, className }: ChatWidgetProps) {
 
                         return (
                             <div key={msg.id} className={cn("flex w-full mb-1", isMe ? "justify-end" : "justify-start")}>
-                                <div className={cn("flex max-w-[85%] md:max-w-[70%] relative group", isMe ? "flex-row-reverse" : "flex-row")}>
-
-                                    {/* Tail for specific messages */}
-                                    {isMe ? (
-                                        <div className="absolute right-[-8px] top-0 w-0 h-0 border-t-[10px] border-t-blue-600 border-r-[10px] border-r-transparent rotate-[0deg] drop-shadow-sm filter-none z-0" />
-                                    ) : (
-                                        <div className="absolute left-[-8px] top-0 w-0 h-0 border-t-[10px] border-t-white border-l-[10px] border-l-transparent rotate-[0deg] drop-shadow-sm filter-none z-0" />
-                                    )}
+                                <div className={cn("flex max-w-[85%] md:max-w-[70%] relative group")}>
 
                                     {/* Message Bubble */}
                                     <div className={cn(
-                                        "px-3 py-1.5 shadow-sm text-sm break-words relative z-10 min-w-[100px]",
+                                        "px-2 pl-3 py-1 shadow-sm text-sm break-words relative z-10 min-w-[80px]",
                                         isMe
-                                            ? "bg-blue-600 text-white rounded-lg rounded-tr-none"
-                                            : "bg-white text-gray-800 rounded-lg rounded-tl-none"
-                                    )}>
-                                        {/* Sender Name (Only for others in group context if needed) */}
+                                            ? "bg-[#d9fdd3] text-gray-900 rounded-lg rounded-tr-none"
+                                            : "bg-white text-gray-900 rounded-lg rounded-tl-none"
+                                    )}
+
+                                        style={{
+                                            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)"
+                                        }}
+                                    >
+                                        {/* Tail SVG */}
+                                        {isMe ? (
+                                            <span className="absolute -right-2 top-0 block w-2 h-3 overflow-hidden">
+                                                <svg viewBox="0 0 8 13" width="8" height="13" className="w-full h-full fill-[#d9fdd3]">
+                                                    <path d="M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z"></path>
+                                                </svg>
+                                            </span>
+                                        ) : (
+                                            <span className="absolute -left-2 top-0 block w-2 h-3 overflow-hidden">
+                                                <svg viewBox="0 0 8 13" width="8" height="13" className="w-full h-full fill-white">
+                                                    <path d="M1.533 3.568L8 12.193V1H2.812C1.042 1 0.474 2.156 1.533 3.568z"></path>
+                                                </svg>
+                                            </span>
+                                        )}
+
+                                        {/* Sender Name */}
                                         {!isMe && showAvatar && (
-                                            <p className="text-[10px] font-bold text-orange-600 mb-0.5 cursor-pointer hover:underline">
+                                            <p className="text-[11px] font-bold text-[#e5593f] mb-0.5 cursor-pointer hover:underline leading-tight">
                                                 {msg.sender?.fullName}
                                             </p>
                                         )}
 
                                         {/* Content */}
-                                        <p className="whitespace-pre-wrap leading-relaxed text-[13.5px]">{msg.content}</p>
+                                        <p className="whitespace-pre-wrap leading-[1.3] text-[14px] text-[#111b21] pb-1 pr-16">{msg.content}</p>
 
                                         {/* Attachment */}
                                         {msg.fileUrl && (
@@ -227,23 +240,28 @@ export default function ChatWidget({ requestId, className }: ChatWidgetProps) {
                                                 rel="noreferrer"
                                                 className={cn(
                                                     "flex items-center gap-2 mt-1 p-1.5 rounded-md text-xs transition-colors border max-w-full overflow-hidden",
-                                                    isMe ? "bg-blue-500/20 border-white/20 hover:bg-blue-500/30" : "bg-gray-50 border-gray-100 hover:bg-gray-100"
+                                                    isMe ? "bg-[#c0ebba] border-[#a9db9e]" : "bg-gray-50 border-gray-100"
                                                 )}
                                             >
-                                                <div className="p-1 bg-white/20 rounded shrink-0">
-                                                    <FileIcon className="w-3.5 h-3.5" />
+                                                <div className="p-1 bg-white/40 rounded shrink-0">
+                                                    <FileIcon className="w-3.5 h-3.5 text-gray-600" />
                                                 </div>
-                                                <span className="truncate flex-1">Attachment</span>
+                                                <span className="truncate flex-1 text-gray-700">Attachment</span>
                                             </a>
                                         )}
 
-                                        {/* Timestamp */}
+                                        {/* Timestamp & Status */}
                                         <div className={cn(
-                                            "text-[9px] mt-0.5 text-right select-none flex justify-end items-center gap-0.5 opacity-80",
-                                            isMe ? "text-blue-50" : "text-gray-400"
+                                            "text-[10px] text-gray-500 select-none flex justify-end items-center gap-1 absolute bottom-1 right-2"
                                         )}>
-                                            {formatTime(msg.createdAt)}
-                                            {isMe && <span className="text-[9px]">✓</span>}
+                                            <span>{formatTime(msg.createdAt)}</span>
+                                            {isMe && (
+                                                <span className="text-blue-500">
+                                                    <svg viewBox="0 0 16 11" height="11" width="16" className="w-[14px] h-[10px] fill-current">
+                                                        <path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.473-.018l5.897-7.56a.34.34 0 0 0-.078-.462l-.478-.372zm-4.7 9.153l-1.32-1.266a.418.418 0 0 1-.036-.541l.378-.483a.319.319 0 0 1 .484-.032l.358.325a.32.32 0 0 0 .484-.033l1.86-2.378a.332.332 0 0 1 .458-.06l.54.39c.15.11.173.328.06.467l-2.793 3.593a.355.355 0 0 1-.472.018zM5.522 3.32l-.478-.372a.365.365 0 0 0-.51.063L.548 8.086a.258.258 0 0 0 .041.365l.504.385a.322.322 0 0 0 .42-.047l3.525-4.52a.376.376 0 0 1 .484-.031l.478.371a.365.365 0 0 1 .063.51l-4.708 6.035a.258.258 0 0 1-.365.04l-.504-.384a.322.322 0 0 1-.047-.42l4.897-6.277a.365.365 0 0 1 .51-.064l.478.372a.365.365 0 0 1 .063.51l-1.42 1.82a.376.376 0 0 0 .03 4.84l.478.371a.365.365 0 0 0 .51-.063l1.942-2.49a.365.365 0 0 0-.063-.51z"></path>
+                                                    </svg>
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

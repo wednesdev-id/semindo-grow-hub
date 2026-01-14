@@ -213,28 +213,7 @@ export default function ConsultantDashboard() {
           <p className="text-gray-600">Welcome back, {user?.fullName}</p>
         </div>
 
-        <div className="bg-gray-100 p-1 rounded-lg flex">
-          <button
-            onClick={() => setActiveMode('marketplace')}
-            className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${activeMode === 'marketplace'
-              ? 'bg-white shadow text-blue-600 font-medium'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <DollarSign size={18} />
-            Marketplace
-          </button>
-          <button
-            onClick={() => setActiveMode('lms')}
-            className={`px-4 py-2 rounded-md flex items-center gap-2 transition-all ${activeMode === 'lms'
-              ? 'bg-white shadow text-purple-600 font-medium'
-              : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <BookOpen size={18} />
-            LMS Instructor
-          </button>
-        </div>
+        {/* Mode toggle removed - using single marketplace view */}
 
 
       </div>

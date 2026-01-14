@@ -5,6 +5,7 @@ import * as bookingController from '../controllers/booking.controller';
 import * as reviewController from '../controllers/review.controller';
 import * as expertiseController from '../controllers/expertise.controller';
 import { packageController } from '../controllers/package.controller';
+import minutesRoutes from './minutes.routes';
 
 // Permission check helper (inline for now)
 const requirePermission = (permission: string) => {
@@ -439,5 +440,10 @@ router.post('/admin/expertise/:id/migrate/:targetId',
     requirePermission('consultation.expertise.delete'),
     expertiseController.migrateConsultants
 );
+
+// ============================================
+// MINUTES OF MEETING (MoM)
+// ============================================
+router.use('/minutes', minutesRoutes);
 
 export default router;

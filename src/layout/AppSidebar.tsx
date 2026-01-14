@@ -74,13 +74,11 @@ const getMenuItems = (): {
         { name: "Manajemen Role & Permission", path: "/users/roles", roles: ["admin"] },
         { name: "Kelola UMKM", path: "/users/umkm", roles: ["admin", "management"] },
         { name: "Kelola Mentor", path: "/users/mentors", roles: ["admin", "management"] },
-        { name: "Kelola Konsultan", path: "/users/consultants", roles: ["admin", "management"] }, // Changed from Trainer
+        { name: "Kelola Konsultan", path: "/users/consultants", roles: ["admin", "management"] },
         { name: "Kelola Staf Manajemen", path: "/users/staff", roles: ["admin"] },
         { name: "Kelola Admin", path: "/users/admins", roles: ["admin"] },
         { name: "Import / Export Data User", path: "/users/import-export", roles: ["admin"] },
         { name: "Audit Aktivitas Pengguna", path: "/users/audit", roles: ["admin", "management"] },
-        // Consultant Self-Service
-        { name: "Profil Konsultan Saya", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
       ],
     },
     // 3. UMKM Database
@@ -298,14 +296,17 @@ export default function AppSidebar() {
   const { hasPermission, hasRole } = useAuth();
   const location = useLocation();
 
+  // Use menu name instead of index to avoid mismatch between filtered and original arrays
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "menu" | "support" | "others";
-    index: number;
+    name: string;
   } | null>(null);
   const [subMenuHeight, setSubMenuHeight] = useState<Record<string, number>>(
     {}
   );
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const initialLoadRef = useRef(true); // Track if this is initial load
+  const lastPathnameRef = useRef(location.pathname); // Track last pathname to detect navigation
 
   const { menuItems, supportItems, otherItems } = getMenuItems();
 
@@ -337,39 +338,59 @@ export default function AppSidebar() {
     return true;
   };
 
-  useEffect(() => {
-    let submenuMatched = false;
-    ["menu", "support", "others"].forEach((menuType) => {
-      const items =
-        menuType === "menu"
-          ? menuItems
-          : menuType === "support"
-            ? supportItems
-            : otherItems;
+  // Find matching menu for current path
+  const findMatchingMenu = useCallback(() => {
+    let exactMatch: { type: "menu" | "support" | "others"; name: string } | null = null;
+    let prefixMatch: { type: "menu" | "support" | "others"; name: string } | null = null;
 
-      items.forEach((nav, index) => {
+    const menuSections = [
+      { type: "menu" as const, items: menuItems },
+      { type: "support" as const, items: supportItems },
+      { type: "others" as const, items: otherItems }
+    ];
+
+    for (const { type, items } of menuSections) {
+      for (const nav of items) {
         if (nav.subItems && canViewMenuItem(nav)) {
-          nav.subItems.forEach((subItem) => {
-            if (canViewSubItem(subItem) && isActive(subItem.path)) {
-              setOpenSubmenu({
-                type: menuType as "menu" | "support" | "others",
-                index,
-              });
-              submenuMatched = true;
+          for (const subItem of nav.subItems) {
+            if (canViewSubItem(subItem)) {
+              if (location.pathname === subItem.path) {
+                exactMatch = { type, name: nav.name };
+                break;
+              }
+              if (location.pathname.startsWith(subItem.path + '/')) {
+                if (!prefixMatch) {
+                  prefixMatch = { type, name: nav.name };
+                }
+              }
             }
-          });
+          }
+          if (exactMatch) break;
         }
-      });
-    });
-
-    if (!submenuMatched) {
-      setOpenSubmenu(null);
+      }
+      if (exactMatch) break;
     }
-  }, [location, isActive]);
+
+    return exactMatch || prefixMatch;
+  }, [location.pathname, menuItems, supportItems, otherItems]);
+
+  useEffect(() => {
+    // Only auto-open on initial load OR when navigating to a new page (URL changes)
+    const isNavigation = lastPathnameRef.current !== location.pathname;
+    lastPathnameRef.current = location.pathname;
+
+    if (initialLoadRef.current || isNavigation) {
+      const matchedSubmenu = findMatchingMenu();
+      if (matchedSubmenu) {
+        setOpenSubmenu(matchedSubmenu);
+      }
+      initialLoadRef.current = false;
+    }
+  }, [location.pathname, findMatchingMenu]);
 
   useEffect(() => {
     if (openSubmenu !== null) {
-      const key = `${openSubmenu.type}-${openSubmenu.index}`;
+      const key = `${openSubmenu.type}-${openSubmenu.name}`;
       if (subMenuRefs.current[key]) {
         setSubMenuHeight((prevHeights) => ({
           ...prevHeights,
@@ -380,18 +401,18 @@ export default function AppSidebar() {
   }, [openSubmenu]);
 
   const handleSubmenuToggle = (
-    index: number,
+    name: string,
     menuType: "menu" | "support" | "others"
   ) => {
     setOpenSubmenu((prevOpenSubmenu) => {
       if (
         prevOpenSubmenu &&
         prevOpenSubmenu.type === menuType &&
-        prevOpenSubmenu.index === index
+        prevOpenSubmenu.name === name
       ) {
         return null;
       }
-      return { type: menuType, index };
+      return { type: menuType, name };
     });
   };
 
@@ -403,15 +424,15 @@ export default function AppSidebar() {
 
     return (
       <ul className="flex flex-col gap-2">
-        {filteredItems.map((nav, index) => {
-          const isSubmenuOpen = openSubmenu?.type === menuType && openSubmenu?.index === index;
+        {filteredItems.map((nav) => {
+          const isSubmenuOpen = openSubmenu?.type === menuType && openSubmenu?.name === nav.name;
           const isItemActive = nav.path ? isActive(nav.path) : false;
 
           return (
             <li key={nav.name}>
               {nav.subItems ? (
                 <button
-                  onClick={() => handleSubmenuToggle(index, menuType)}
+                  onClick={() => handleSubmenuToggle(nav.name, menuType)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
                     ${isSubmenuOpen
                       ? "bg-primary/10 text-primary"
@@ -460,12 +481,12 @@ export default function AppSidebar() {
               {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
                 <div
                   ref={(el) => {
-                    subMenuRefs.current[`${menuType}-${index}`] = el;
+                    subMenuRefs.current[`${menuType}-${nav.name}`] = el;
                   }}
                   className="overflow-hidden transition-all duration-300 ease-in-out"
                   style={{
                     height: isSubmenuOpen
-                      ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                      ? `${subMenuHeight[`${menuType}-${nav.name}`]}px`
                       : "0px",
                   }}
                 >

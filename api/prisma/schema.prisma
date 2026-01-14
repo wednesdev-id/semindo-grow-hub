@@ -1275,6 +1275,7 @@ model ConsultationRequest {
   type               ConsultationType? @relation(fields: [typeId], references: [id])
   package            ConsultationPackage? @relation(fields: [packageId], references: [id])
   sessionFiles       SessionFile[]
+  minutes            ConsultationMinutes?
 
   @@map("consultation_requests")
 }
@@ -1387,4 +1388,37 @@ model ExpertiseAuditLog {
   @@index([expertiseId])
   @@index([changedBy])
   @@map("expertise_audit_logs")
+}
+
+model ConsultationMinutes {
+  id        String   @id @default(uuid())
+  requestId String   @unique @map("request_id")
+
+  // Audio file
+  audioFileUrl      String?  @map("audio_file_url")
+  audioFileName     String?  @map("audio_file_name")
+  audioFileSize     Int?     @map("audio_file_size")
+  audioDuration     Int?     @map("audio_duration") // in seconds
+
+  // AI Processing
+  transcript        String?  @db.Text
+  summary           String?  @db.Text
+  keyPoints         Json?    @map("key_points")      // Array of strings
+  actionItems       Json?    @map("action_items")    // Array of { task, priority }
+  recommendations   String?  @db.Text
+
+  // Processing status
+  status            String   @default("draft") // draft, processing, ready, published
+  processingError   String?  @map("processing_error")
+
+  // Metadata
+  createdBy         String   @map("created_by")
+  publishedAt       DateTime? @map("published_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  request           ConsultationRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@map("consultation_minutes")
 }

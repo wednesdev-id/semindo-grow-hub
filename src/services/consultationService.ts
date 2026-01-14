@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot, BookingSlot } from '../types/consultation';
+import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot, BookingSlot, ConsultationReview, ConsultationMinutes } from '../types/consultation';
 
 const BASE_URL = '/consultation';
 
@@ -207,8 +207,26 @@ export const consultationService = {
         return response.data;
     },
 
-    async markMessagesAsRead(requestId: string) {
-        await api.put(`${BASE_URL}/requests/${requestId}/chat/read`);
+    async markMessagesAsRead(requestId: string, _channelId?: string) {
+        // channelId parameter kept for backwards compatibility but not used
+        await api.put(`${BASE_URL}/requests/${requestId}/chat/read`, {});
+    },
+
+    // Legacy methods for ConsultationChat.tsx compatibility
+    async getChannel(requestId: string) {
+        const response = await api.get<{ success: boolean; data: { channel: ChatChannel; requestStatus: string; canChat: boolean } }>(
+            `${BASE_URL}/requests/${requestId}/chat`
+        );
+        return response.data.channel;
+    },
+
+    async getChatHistory(channelId: string) {
+        // Get messages for a channel - using admin endpoint or we need the requestId
+        // For now, return empty array as the chat should use getChatDetails instead
+        const response = await api.get<{ success: boolean; data: ChatMessage[] }>(
+            `${BASE_URL}/admin/chat/${channelId}/messages`
+        );
+        return response.data;
     },
 
     // Admin Chat Monitoring
@@ -226,17 +244,18 @@ export const consultationService = {
         return response.data;
     },
 
-    // Archive Management
     async archiveRequest(id: string) {
         const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
-            `${BASE_URL}/requests/${id}/archive`
+            `${BASE_URL}/requests/${id}/archive`,
+            {}
         );
         return response.data;
     },
 
     async unarchiveRequest(id: string) {
         const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
-            `${BASE_URL}/requests/${id}/unarchive`
+            `${BASE_URL}/requests/${id}/unarchive`,
+            {}
         );
         return response.data;
     },
@@ -321,5 +340,59 @@ export const consultationService = {
             { packageIds }
         );
         return response;
+    },
+
+    // ============================================
+    // MINUTES OF MEETING (MoM)
+    // ============================================
+
+    async createMinutes(requestId: string) {
+        const response = await api.post<{ success: boolean; data: ConsultationMinutes }>(
+            `${BASE_URL}/minutes/${requestId}`,
+            {}
+        );
+        return response.data;
+    },
+
+    async uploadAudioForMoM(minutesId: string, audioFile: File) {
+        const formData = new FormData();
+        formData.append('audio', audioFile);
+
+        const response = await api.post<{ success: boolean; data: any }>(
+            `${BASE_URL}/minutes/${minutesId}/upload`,
+            formData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        return response.data;
+    },
+
+    async getMinutes(requestId: string) {
+        const response = await api.get<{ success: boolean; data: ConsultationMinutes }>(
+            `${BASE_URL}/minutes/request/${requestId}`
+        );
+        return response.data;
+    },
+
+    async getMinutesById(minutesId: string) {
+        const response = await api.get<{ success: boolean; data: ConsultationMinutes }>(
+            `${BASE_URL}/minutes/${minutesId}`
+        );
+        return response.data;
+    },
+
+    async updateMinutes(minutesId: string, data: Partial<ConsultationMinutes>) {
+        const response = await api.patch<{ success: boolean; data: ConsultationMinutes }>(
+            `${BASE_URL}/minutes/${minutesId}`,
+            data
+        );
+        return response.data;
+    },
+
+    async publishMinutes(minutesId: string) {
+        const response = await api.post<{ success: boolean; data: ConsultationMinutes }>(
+            `${BASE_URL}/minutes/${minutesId}/publish`,
+            {}
+        );
+        return response.data;
     },
 };
