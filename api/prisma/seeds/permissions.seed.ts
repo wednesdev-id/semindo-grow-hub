@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PrismaClient } from '../generated/client';
 
 export const permissions = [
     // ============================================
@@ -693,7 +691,7 @@ export const permissions = [
     },
 ];
 
-export async function seedPermissions() {
+export async function seedPermissions(prisma: any) {
     console.log('🔐 Seeding permissions...');
 
     for (const permission of permissions) {

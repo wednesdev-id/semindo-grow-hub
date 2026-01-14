@@ -1,15 +1,14 @@
-import { PrismaClient } from '@prisma/client'
+import 'dotenv/config'
+import { prisma } from '../src/lib/prisma'
 import { seedPermissions } from './seeds/permissions.seed'
 import { seedRolePermissions } from './seeds/role-permissions.seed'
 import { seedConsultationTypes } from './seeds/consultation.seed'
-
-const prisma = new PrismaClient()
 
 async function main() {
     // ============================================
     // STEP 1: Seed Permissions (85 permissions)
     // ============================================
-    await seedPermissions()
+    await seedPermissions(prisma)
 
     // ============================================
     // STEP 2: Create Roles
@@ -98,7 +97,7 @@ async function main() {
     // ============================================
     // STEP 3: Assign Permissions to Roles (NEW COMPREHENSIVE SYSTEM)
     // ============================================
-    await seedRolePermissions()
+    await seedRolePermissions(prisma)
 
     // ============================================
     // STEP 4: Create Assessment Templates & Questions
@@ -636,7 +635,7 @@ async function main() {
     // ============================================
     // STEP 13: Seed Consultation Types
     // ============================================
-    await seedConsultationTypes();
+    await seedConsultationTypes(prisma);
 
     console.log("✅ Seeding completed successfully!");
 }

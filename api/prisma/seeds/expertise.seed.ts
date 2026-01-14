@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/client';
 
-const prisma = new PrismaClient();
-
-export async function seedExpertise() {
+export async function seedExpertise(prisma: PrismaClient) {
     console.log('🌱 Seeding expertise categories...');
 
     const expertiseCategories = [
@@ -101,17 +99,4 @@ export async function seedExpertise() {
     }
 
     console.log(`✅ Created ${expertiseCategories.length} expertise categories`);
-}
-
-// Run if called directly
-if (require.main === module) {
-    seedExpertise()
-        .then(() => {
-            prisma.$disconnect();
-        })
-        .catch((error) => {
-            console.error('Error seeding expertise:', error);
-            prisma.$disconnect();
-            process.exit(1);
-        });
 }

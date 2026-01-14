@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '../generated/client'
 
-const prisma = new PrismaClient()
-
-export async function seedConsultationTypes() {
+export async function seedConsultationTypes(prisma: any) {
     console.log('🔧 Seeding Consultation Types...')
 
     const consultationTypes = [

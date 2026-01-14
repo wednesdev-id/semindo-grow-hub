@@ -1,16 +1,22 @@
 version: '3.8'
 services:
   postgres:
-    image: postgres:15-alpine
-    container_name: semindo-db
+    image: postgres:16-alpine
+    container_name: semindo-db-local
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_USER: ${DB_USER:-semindo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-semindo_password}
+      POSTGRES_DB: ${DB_NAME:-semindo_db}
     ports:
-      - "5433:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-semindo}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

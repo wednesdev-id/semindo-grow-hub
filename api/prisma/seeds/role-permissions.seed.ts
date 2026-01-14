@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PrismaClient } from '../generated/client';
 
 // Role to Permission Mappings
 export const rolePermissions = {
@@ -211,7 +209,7 @@ export const rolePermissions = {
     ],
 };
 
-export async function seedRolePermissions() {
+export async function seedRolePermissions(prisma: any) {
     console.log('🔗 Seeding role-permission mappings...');
 
     // Get all roles
@@ -220,7 +218,7 @@ export async function seedRolePermissions() {
 
     // Create a map for quick permission lookup
     const permissionMap = new Map(
-        permissions.map(p => [p.name, p.id])
+        permissions.map((p: { name: string; id: string }) => [p.name, p.id])
     );
 
     for (const role of roles) {
@@ -231,7 +229,7 @@ export async function seedRolePermissions() {
 
         if (rolePermissions[role.name as keyof typeof rolePermissions] === 'ALL') {
             // Assign all permissions
-            permissionsToAssign = permissions.map(p => p.id);
+            permissionsToAssign = permissions.map((p: { id: string }) => p.id);
             console.log(`    → Assigning ALL ${permissions.length} permissions`);
         } else if (rolePermissions[role.name as keyof typeof rolePermissions]) {
             // Assign specific permissions
