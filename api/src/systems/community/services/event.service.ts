@@ -1,5 +1,5 @@
 import { prisma } from '../../../lib/prisma';
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../../../prisma/generated/client";
 
 export class EventService {
     async getEvents(params: { type?: 'online' | 'offline'; search?: string; page?: number; limit?: number }) {

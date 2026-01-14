@@ -1,4 +1,5 @@
 import { prisma } from '../../../lib/prisma';
+import { Order } from '../../../../prisma/generated/client';
 import { MidtransService } from './midtrans.service';
 
 const midtrans = new MidtransService();
