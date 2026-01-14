@@ -1,30 +1,31 @@
-# Backend Dockerfile - Multi-environment support
+# Backend Dockerfile - Multi-environment support with PNPM
 ARG NODE_ENV=production
 
 FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Install dependencies
 FROM base AS deps
-COPY package*.json ./
-RUN npm ci
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
 
 # Development stage
 FROM base AS development
 ENV NODE_ENV=development
-COPY package*.json ./
-RUN npm install
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install
 COPY . .
-RUN npx prisma generate
+RUN pnpm exec prisma generate
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "run", "dev"]
 
 # Builder stage for production
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate
-RUN npm run build
+RUN pnpm exec prisma generate
+RUN pnpm run build
 
 # Production stage
 FROM base AS production
@@ -34,7 +35,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 COPY --from=builder --chown=expressjs:nodejs /app/dist ./dist
 COPY --from=builder --chown=expressjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=expressjs:nodejs /app/package*.json ./
+COPY --from=builder --chown=expressjs:nodejs /app/package.json ./
 COPY --from=builder --chown=expressjs:nodejs /app/prisma ./prisma
 
 USER expressjs
