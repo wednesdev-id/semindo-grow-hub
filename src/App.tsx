@@ -288,7 +288,9 @@ const App = () => {
                       }>
                         {/* Dashboards */}
                         <Route path="/consultation/dashboard" element={<ConsultantDashboard />} />
+
                         <Route path="/umkm/dashboard" element={<Dashboard />} />
+                        <Route path="/umkm/list" element={<UMKMListPage />} />
                         <Route path="/admin" element={<AdminDashboard />} />
 
                         {/* LMS Instructor */}
@@ -350,7 +352,7 @@ const App = () => {
                         <Route path="/admin/umkm/:id" element={<UMKMDetailPage />} />
                         <Route path="/admin/umkm/:id/edit" element={<UMKMFormPage />} />
 
-                        <Route path="/umkm/list" element={<UserManagement defaultRole="umkm" />} />
+
                         <Route path="/umkm/segmentation" element={<UMKMSegmentationPage />} />
                         <Route path="/umkm/region" element={<UMKMRegionMapPage />} />
                         <Route path="/umkm/assessment-status" element={<FeaturePreviewPage

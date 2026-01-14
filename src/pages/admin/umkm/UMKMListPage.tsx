@@ -46,9 +46,15 @@ export default function UMKMListPage() {
                 ...(userIdFilter && { userId: userIdFilter }),
             });
 
+
             const response = await api.get<UMKMListResponse>(`/umkm?${params}`);
-            setProfiles(response.data);
-            setTotalPages(response.meta.totalPages);
+            if (response.data && Array.isArray(response.data)) {
+                setProfiles(response.data);
+            } else {
+                console.warn('Expected array for profiles but got:', response.data);
+                setProfiles([]);
+            }
+            setTotalPages(response.meta?.totalPages || 1);
         } catch (error) {
             console.error('Failed to fetch UMKM profiles', error);
         } finally {

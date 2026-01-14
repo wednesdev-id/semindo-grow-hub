@@ -34,8 +34,8 @@ spec:
         # This will be replaced by the user's repo integration in Zeabur
       
       # Build & Start
-      buildCommand: npm install && npx prisma generate && npm run build:docker
-      startCommand: npm start
+      buildCommand: pnpm install && npx prisma generate && pnpm run build
+      startCommand: pnpm start
       
       # Environment Variables
       environment:
@@ -53,7 +53,7 @@ spec:
       
       # Build Configuration
       # Note: VITE_API_URL is needed at build time
-      buildCommand: npm install && npm run build
+      buildCommand: pnpm install && pnpm run build
       outputDirectory: dist
       
       environment:
