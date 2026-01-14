@@ -128,7 +128,7 @@ export default function UMKMListPage() {
                                     <TableRow
                                         key={profile.id}
                                         className="cursor-pointer hover:bg-muted/50"
-                                        onClick={() => navigate(`/ admin / umkm / ${profile.id} `)}
+                                        onClick={() => navigate(`/admin/umkm/${profile.id}`)}
                                     >
                                         <TableCell className="font-medium">{profile.businessName}</TableCell>
                                         <TableCell>

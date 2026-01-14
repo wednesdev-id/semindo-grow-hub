@@ -2,7 +2,11 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, TrendingUp, ShieldCheck, Users } from "lucide-react";
 import heroImage from "@/assets/hero-consulting.jpg";
 
-const HeroSection = () => {
+interface HeroSectionProps {
+  onDaftarClick?: () => void;
+}
+
+const HeroSection = ({ onDaftarClick }: HeroSectionProps) => {
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Background Image & Overlay */}
@@ -44,9 +48,10 @@ const HeroSection = () => {
             <Button
               variant="hero"
               size="lg"
+              onClick={onDaftarClick}
               className="w-full sm:w-auto text-lg px-8 py-6 rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 hover:-translate-y-1"
             >
-              Mulai Konsultasi Gratis
+              Daftar UMKM Sekarang
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
 

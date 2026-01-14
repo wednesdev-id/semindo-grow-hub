@@ -54,6 +54,7 @@ const ConsultantDashboard = lazy(() => import("./pages/dashboards/ConsultantDash
 const CreateCoursePage = lazy(() => import("./pages/lms/CreateCoursePage"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
+const UMKMOnboardingPage = lazy(() => import("./pages/onboarding/UMKMOnboardingPage"));
 const AssessmentLandingPage = lazy(() => import("./features/assessment/pages/AssessmentLandingPage"));
 const AssessmentHistoryPage = lazy(() => import("./features/assessment/pages/AssessmentHistoryPage"));
 const AssessmentWizardPage = lazy(() => import("./features/assessment/pages/AssessmentWizardPage"));
@@ -253,6 +254,7 @@ const App = () => {
                       {/* Auth Routes */}
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/register" element={<RegisterPage />} />
+                      <Route path="/daftar" element={<UMKMOnboardingPage />} />
 
                       {/* Program Routes */}
                       <Route path="programs" element={<ProgramLandingPage />} />

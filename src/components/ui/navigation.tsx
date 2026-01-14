@@ -16,7 +16,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { featureFlags } from "@/config/feature-flags";
 
-const Navigation = () => {
+interface NavigationProps {
+  onDaftarClick?: () => void;
+}
+
+const Navigation = ({ onDaftarClick }: NavigationProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const authContext = useContext(AuthContext);
   const user = authContext?.user;
@@ -136,11 +140,20 @@ const Navigation = () => {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link to="/login">
-                <Button variant="ghost" className="text-foreground hover:text-primary font-medium">
-                  Masuk
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="default"
+                  onClick={onDaftarClick}
+                  className="font-medium"
+                >
+                  Daftar UMKM
                 </Button>
-              </Link>
+                <Link to="/login">
+                  <Button variant="ghost" className="text-foreground hover:text-primary font-medium">
+                    Masuk
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
 

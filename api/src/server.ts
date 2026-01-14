@@ -24,6 +24,7 @@ import { rolesRouter } from './systems/roles/routes/roles.routes';
 import { permissionsRouter } from './systems/permissions/routes/permissions.routes';
 import { auditRouter } from './systems/audit/routes/audit.routes';
 import consultationRouter from './systems/consultation/routes/consultation.routes';
+import { onboardingRouter } from './systems/onboarding';
 
 import { CronService } from './systems/scheduler/cron.service';
 import { featureFlags, requireFeature } from './config/feature-flags';
@@ -70,6 +71,7 @@ export function createServer(): Application {
   app.use('/api/v1/permissions', permissionsRouter);
   app.use('/api/v1/audit-logs', auditRouter);
   app.use('/api/v1/consultation', consultationRouter);
+  app.use('/api/v1/onboarding', onboardingRouter); // Public registration
 
   // Feature-flagged routes
   if (featureFlags.MARKETPLACE_ENABLED) {
