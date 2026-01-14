@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidebar } from "../context/SidebarContext";
+import { featureFlags } from "@/config/feature-flags";
 import {
   LayoutDashboard,
   Users,
@@ -83,24 +84,23 @@ const getMenuItems = (): {
         { name: "Profil Konsultan Saya", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
       ],
     },
-    // 3. UMKM Database
-    {
+    // 3. UMKM Database (Feature Flagged)
+    ...(featureFlags.UMKM_DATABASE_ENABLED ? [{
       icon: <Database size={20} />,
       name: "UMKM Database",
-      // Accessible to UMKM for their own data
       subItems: [
         { name: "Daftar UMKM", path: "/umkm/list", roles: ["admin", "management", "mentor"] },
         { name: "Segmentasi UMKM", path: "/umkm/segmentation", roles: ["admin", "management", "mentor"] },
         { name: "Pemetaan Wilayah (Provinsi / Kota)", path: "/umkm/region", roles: ["admin", "management"] },
-        { name: "Self-Assessment", path: "/assessment" }, // All can view
-        { name: "Status Program", path: "/umkm/program-status" }, // All can view
+        { name: "Self-Assessment", path: "/assessment" },
+        { name: "Status Program", path: "/umkm/program-status" },
         { name: "Histori Pendampingan UMKM", path: "/umkm/history", roles: ["admin", "management", "mentor", "umkm"] },
         { name: "Dokumen & Verifikasi UMKM", path: "/umkm/documents", roles: ["admin", "management", "umkm"] },
         { name: "Event & Pelatihan", path: "/umkm/events", roles: ["umkm", "admin"], badge: "New", badgeColor: "bg-blue-500" },
       ],
-    },
-    // 4. Mentor Management
-    {
+    }] : []),
+    // 4. Mentor Management (Feature Flagged)
+    ...(featureFlags.MENTOR_MANAGEMENT_ENABLED ? [{
       icon: <UserCheck size={20} />,
       name: "Mentor Management",
       subItems: [
@@ -108,49 +108,49 @@ const getMenuItems = (): {
         { name: "Assign UMKM ke Mentor", path: "/mentors/assign", roles: ["admin", "management"] },
         { name: "Manajemen Event", path: "/mentor/events", roles: ["admin", "mentor"], badge: "New", badgeColor: "bg-green-500" },
         { name: "Status & Aktivitas Mentor", path: "/mentors/activity", roles: ["admin", "management", "mentor"] },
-        { name: "Jadwal Pendampingan", path: "/mentors/schedule" }, // All can view schedule
+        { name: "Jadwal Pendampingan", path: "/mentors/schedule" },
         { name: "Laporan & KPI Mentor", path: "/mentors/reports", roles: ["admin", "management"] },
         { name: "Approval Laporan Pendampingan", path: "/mentors/approval", roles: ["admin", "management"] },
       ],
-    },
-    // 5. Program Management
-    {
+    }] : []),
+    // 5. Program Management (Feature Flagged)
+    ...(featureFlags.PROGRAM_MANAGEMENT_ENABLED ? [{
       icon: <Briefcase size={20} />,
       name: "Program Management",
       subItems: [
-        { name: "Daftar Program", path: "/programs/list" }, // All can view programs
+        { name: "Daftar Program", path: "/programs/list" },
         { name: "Buat Program Baru", path: "/programs/create", roles: ["admin", "management"] },
         { name: "Batch Management", path: "/programs/batches", roles: ["admin", "management"] },
-        { name: "Kurikulum Program", path: "/programs/curriculum" }, // All can view
-        { name: "Jadwal Training & Event", path: "/programs/schedule" }, // All can view
+        { name: "Kurikulum Program", path: "/programs/curriculum" },
+        { name: "Jadwal Training & Event", path: "/programs/schedule" },
         { name: "Peserta per Program", path: "/programs/participants", roles: ["admin", "management", "trainer"] },
         { name: "Outcome & Evaluasi", path: "/programs/evaluation", roles: ["admin", "management"] },
         { name: "Import / Export Data Program", path: "/programs/import-export", roles: ["admin"] },
       ],
-    },
-    // 6. LMS Manager
-    {
+    }] : []),
+    // 6. LMS Manager (Feature Flagged)
+    ...(featureFlags.LMS_ENABLED ? [{
       icon: <GraduationCap size={20} />,
       name: "LMS Manager",
       subItems: [
-        { name: "Katalog Kelas", path: "/lms/catalog" }, // All can view
-        { name: "Kelas Saya", path: "/lms/my-courses" }, // All can view
+        { name: "Katalog Kelas", path: "/lms/catalog" },
+        { name: "Kelas Saya", path: "/lms/my-courses" },
         { name: "Manajemen Kelas", path: "/lms/instructor/courses", roles: ["admin", "trainer", "management"] },
         { name: "Kategori Kelas", path: "/lms/admin/categories", roles: ["admin"] },
         { name: "Buat Kelas Baru", path: "/lms/create", roles: ["admin", "management", "trainer"] },
-        { name: "Video Library", path: "/lms/videos" }, // All can view
-        { name: "Assignment & Quiz", path: "/lms/assignments" }, // All participants
-        { name: "Sertifikasi", path: "/lms/certificates" }, // All can view their certificates
+        { name: "Video Library", path: "/lms/videos" },
+        { name: "Assignment & Quiz", path: "/lms/assignments" },
+        { name: "Sertifikasi", path: "/lms/certificates" },
         { name: "Trainer Management", path: "/lms/trainers", roles: ["admin", "management"] },
         { name: "Review & Moderasi Materi", path: "/lms/review", roles: ["admin", "management", "trainer"] },
         { name: "Statistik LMS", path: "/lms/stats", roles: ["admin", "management", "trainer"] },
       ],
-    },
-    // 7. Marketplace Manager
-    {
+    }] : []),
+    // 7. Marketplace Manager (Feature Flagged)
+    ...(featureFlags.MARKETPLACE_ENABLED ? [{
       icon: <ShoppingBag size={20} />,
       name: "Manajer Marketplace",
-      roles: ["admin", "management", "umkm"], // Allowed UMKM access
+      roles: ["admin", "management", "umkm"],
       subItems: [
         { name: "Produk UMKM", path: "/marketplace/products", roles: ["admin", "management", "umkm"] },
         { name: "Produk Favorit", path: "/marketplace/wishlist" },
@@ -162,70 +162,67 @@ const getMenuItems = (): {
         { name: "Integrasi Marketplace Eksternal", path: "/marketplace/integration", roles: ["admin"] },
         { name: "Laporan Marketplace", path: "/marketplace/reports", roles: ["admin", "management"] },
       ],
-    },
-    // 8. Financing Manager
-    {
+    }] : []),
+    // 8. Financing Manager (Feature Flagged)
+    ...(featureFlags.FINANCING_ENABLED ? [{
       icon: <Banknote size={20} />,
       name: "Manajer Pembiayaan",
       subItems: [
-        { name: "Produk Pembiayaan", path: "/financing/products" }, // All can view options
-        { name: "Pengajuan UMKM", path: "/financing/applications" }, // UMKM can submit
+        { name: "Produk Pembiayaan", path: "/financing/products" },
+        { name: "Pengajuan UMKM", path: "/financing/applications" },
         { name: "Tahapan Verifikasi", path: "/financing/verification", roles: ["admin", "management", "finance_partner"] },
         { name: "Approval Pembiayaan", path: "/financing/approval", roles: ["admin", "finance_partner"] },
         { name: "Dokumen Pembiayaan", path: "/financing/documents", roles: ["admin", "management", "finance_partner", "umkm"] },
         { name: "Lembaga Keuangan Mitra", path: "/financing/partners", roles: ["admin", "management"] },
         { name: "Laporan Pembiayaan", path: "/financing/reports", roles: ["admin", "management", "finance_partner"] },
       ],
-    },
-    // 9. Export Hub Manager
-    {
+    }] : []),
+    // 9. Export Hub Manager (Feature Flagged)
+    ...(featureFlags.EXPORT_HUB_ENABLED ? [{
       icon: <Globe size={20} />,
       name: "Manajer Hub Ekspor",
       subItems: [
-        { name: "Panduan Ekspor", path: "/export/guide" }, // All can view guide
-        { name: "Direktori Pembeli", path: "/export/buyers" }, // All can view
-        { name: "Checklist Ekspor", path: "/export/checklist" }, // All can use
-        { name: "Dokumen Ekspor", path: "/export/documents" }, // All participants
+        { name: "Panduan Ekspor", path: "/export/guide" },
+        { name: "Direktori Pembeli", path: "/export/buyers" },
+        { name: "Checklist Ekspor", path: "/export/checklist" },
+        { name: "Dokumen Ekspor", path: "/export/documents" },
         { name: "Fasilitasi Ekspor", path: "/export/facilitation", roles: ["admin", "management", "umkm"] },
         { name: "Persetujuan Konsultasi Ekspor", path: "/export/approval", roles: ["admin", "management"] },
         { name: "Laporan Ekspor", path: "/export/reports", roles: ["admin", "management"] },
       ],
-    },
-    // 10. Consultation Management
-    {
+    }] : []),
+    // 10. Consultation Management (Feature Flagged)
+    ...(featureFlags.CONSULTATION_ENABLED ? [{
       icon: <MessageSquare size={20} />,
       name: "Manajemen Konsultasi",
       subItems: [
-        // User Features (All can access)
         { name: "My Consultant Profile", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
         { name: "Browse Consultants", path: "/consultation/consultants", roles: ["admin", "management", "umkm"] },
         { name: "My Consultations", path: "/consultation/dashboard", roles: ["consultant", "konsultan"] },
         { name: "Schedule Consultation", path: "/consultation/schedule", roles: ["umkm"] },
         { name: "Consultation History", path: "/consultation/history", roles: ["umkm", "consultant", "konsultan"] },
-
-        // Admin Features
         { name: "Dashboard Overview", path: "/dashboard/consultation/dashboard", roles: ["admin", "management"] },
         { name: "Pending Approvals", path: "/dashboard/consultation/consultants/pending", roles: ["admin", "management"] },
-        { name: "Active Consultants", path: "/dashboard/consultation/consultants/active", roles: ["admin", "management"] }, // Preview
+        { name: "Active Consultants", path: "/dashboard/consultation/consultants/active", roles: ["admin", "management"] },
         { name: "Expertise Categories", path: "/dashboard/consultation/expertise", roles: ["admin", "management"] },
-        { name: "All Requests", path: "/dashboard/consultation/requests/all", roles: ["admin", "management"] }, // Preview
-        { name: "Chat Monitoring", path: "/dashboard/consultation/chat-monitoring", roles: ["admin", "management"] }, // Preview
-        { name: "Reports & Analytics", path: "/dashboard/consultation/reports", roles: ["admin", "management"] }, // Preview
+        { name: "All Requests", path: "/dashboard/consultation/requests/all", roles: ["admin", "management"] },
+        { name: "Chat Monitoring", path: "/dashboard/consultation/chat-monitoring", roles: ["admin", "management"] },
+        { name: "Reports & Analytics", path: "/dashboard/consultation/reports", roles: ["admin", "management"] },
       ],
-    },
-    // 11. Community Platform Manager
-    {
+    }] : []),
+    // 11. Community Platform Manager (Feature Flagged)
+    ...(featureFlags.COMMUNITY_ENABLED ? [{
       icon: <MessagesSquare size={20} />,
       name: "Manajer Platform Komunitas",
       subItems: [
-        { name: "Forum", path: "/community/forum" }, // All can participate
+        { name: "Forum", path: "/community/forum" },
         { name: "Manajemen Topik", path: "/community/topics", roles: ["admin", "management"] },
-        { name: "Post & Komentar", path: "/community/posts" }, // All can post
+        { name: "Post & Komentar", path: "/community/posts" },
         { name: "Moderasi Konten", path: "/community/moderation", roles: ["admin", "management"] },
-        { name: "Event Komunitas", path: "/community/events" }, // All can view/join
-        { name: "Laporkan Pelanggaran", path: "/community/reports" }, // All can report
+        { name: "Event Komunitas", path: "/community/events" },
+        { name: "Laporkan Pelanggaran", path: "/community/reports" },
       ],
-    },
+    }] : []),
   ];
 
   const supportItems: NavItem[] = [
@@ -238,9 +235,9 @@ const getMenuItems = (): {
         { name: "Analisis Program", path: "/analytics/programs", roles: ["admin", "management"] },
         { name: "Wawasan LMS", path: "/analytics/lms", roles: ["admin", "management", "trainer"] },
         { name: "Analisis Pendampingan", path: "/analytics/mentoring", roles: ["admin", "management", "mentor"] },
-        { name: "Analisis Pembiayaan", path: "/analytics/financing", roles: ["admin", "management", "finance_partner"] },
-        { name: "Analisis Marketplace", path: "/analytics/marketplace", roles: ["admin", "management"] },
-        { name: "Analisis Ekspor", path: "/analytics/export", roles: ["admin", "management"] },
+        ...(featureFlags.FINANCING_ENABLED ? [{ name: "Analisis Pembiayaan", path: "/analytics/financing", roles: ["admin", "management", "finance_partner"] }] : []),
+        ...(featureFlags.MARKETPLACE_ENABLED ? [{ name: "Analisis Marketplace", path: "/analytics/marketplace", roles: ["admin", "management"] }] : []),
+        ...(featureFlags.EXPORT_HUB_ENABLED ? [{ name: "Analisis Ekspor", path: "/analytics/export", roles: ["admin", "management"] }] : []),
         { name: "KPI Performa (UMKM / Mentor / Program)", path: "/analytics/kpi", roles: ["admin", "management"] },
         { name: "Visualisasi Data & Ekspor", path: "/analytics/visualization", roles: ["admin", "management"] },
       ],

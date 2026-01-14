@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, User, LogOut, LayoutDashboard, Package } from "lucide-react";
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { featureFlags } from "@/config/feature-flags";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,16 +22,27 @@ const Navigation = () => {
   const user = authContext?.user;
   const logout = authContext?.logout;
 
-  const navItems = [
-    { name: "Beranda", href: "/" },
-    { name: "Layanan", href: "/layanan-konsultasi" },
-    { name: "Self-Assessment", href: "/self-assessment" },
-    { name: "Learning Hub", href: "/learning-hub" },
-    { name: "Marketplace", href: "/marketplace" },
-    { name: "Tentang Kami", href: "/tentang-kami" },
-    { name: "Blog", href: "/blog" },
-    { name: "Kontak", href: "/contact" }
-  ];
+  const navItems = useMemo(() => {
+    const items = [
+      { name: "Beranda", href: "/" },
+      { name: "Layanan", href: "/layanan-konsultasi" },
+      { name: "Self-Assessment", href: "/self-assessment" },
+      { name: "Learning Hub", href: "/learning-hub" },
+    ];
+
+    // Conditionally add Marketplace based on feature flag
+    if (featureFlags.MARKETPLACE_ENABLED) {
+      items.push({ name: "Marketplace", href: "/marketplace" });
+    }
+
+    items.push(
+      { name: "Tentang Kami", href: "/tentang-kami" },
+      { name: "Blog", href: "/blog" },
+      { name: "Kontak", href: "/contact" }
+    );
+
+    return items;
+  }, []);
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -86,24 +98,30 @@ const Navigation = () => {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/marketplace/seller">
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      <span>Seller Dashboard</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {featureFlags.MARKETPLACE_ENABLED && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/marketplace/seller">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <span>Seller Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/dashboard">
                       <LayoutDashboard className="mr-2 h-4 w-4" />
                       <span>Unified Dashboard</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/marketplace/my-orders">
-                      <Package className="mr-2 h-4 w-4" />
-                      <span>Pesanan Saya</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {featureFlags.MARKETPLACE_ENABLED && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/marketplace/my-orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>Pesanan Saya</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/profile">
                       <User className="mr-2 h-4 w-4" />
@@ -167,24 +185,28 @@ const Navigation = () => {
                         <span className="text-xs text-muted-foreground">{user.email}</span>
                       </div>
                     </div>
-                    <Link to="/marketplace/seller" onClick={() => setIsOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Seller Dashboard
-                      </Button>
-                    </Link>
+                    {featureFlags.MARKETPLACE_ENABLED && (
+                      <Link to="/marketplace/seller" onClick={() => setIsOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Seller Dashboard
+                        </Button>
+                      </Link>
+                    )}
                     <Link to="/dashboard" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Unified Dashboard
                       </Button>
                     </Link>
-                    <Link to="/marketplace/my-orders" onClick={() => setIsOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
-                        <Package className="mr-2 h-4 w-4" />
-                        Pesanan Saya
-                      </Button>
-                    </Link>
+                    {featureFlags.MARKETPLACE_ENABLED && (
+                      <Link to="/marketplace/my-orders" onClick={() => setIsOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
+                          <Package className="mr-2 h-4 w-4" />
+                          Pesanan Saya
+                        </Button>
+                      </Link>
+                    )}
                     <Link to="/profile" onClick={() => setIsOpen(false)}>
                       <Button variant="ghost" className="w-full justify-start text-foreground hover:text-primary font-medium">
                         <User className="mr-2 h-4 w-4" />
