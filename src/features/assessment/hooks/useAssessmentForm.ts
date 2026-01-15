@@ -144,6 +144,13 @@ export const useAssessmentForm = (assessmentId: string) => {
             case 'text':
                 schema = z.string().min(1, "Jawaban wajib diisi").max(500, "Maksimal 500 karakter");
                 break;
+            case 'location':
+                schema = z.object({
+                    address: z.string().min(5, "Alamat wajib diisi minimal 5 karakter"),
+                    lat: z.number().refine(val => val !== 0, "Silakan pilih titik lokasi pada peta"),
+                    lng: z.number().refine(val => val !== 0, "Silakan pilih titik lokasi pada peta")
+                });
+                break;
             default:
                 schema = z.any();
         }

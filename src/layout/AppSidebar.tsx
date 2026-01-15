@@ -61,7 +61,7 @@ const getMenuItems = (): {
         { name: "Aktivitas Terbaru", path: "/dashboard/activity" },
         { name: "Statistik Pengguna", path: "/dashboard/user-stats" },
         { name: "Status Server & API", path: "/dashboard/server-status", roles: ["admin"] },
-        { name: "Pesanan Saya", path: "/marketplace/my-orders" },
+        ...(featureFlags.MARKETPLACE_ENABLED ? [{ name: "Pesanan Saya", path: "/marketplace/my-orders" }] : []),
         { name: "Notifikasi Saya", path: "/notifications" },
       ],
     },

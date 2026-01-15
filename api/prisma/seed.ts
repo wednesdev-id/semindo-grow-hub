@@ -208,6 +208,13 @@ async function main() {
                     { label: '> 10 orang', value: 5 }
                 ]
             }
+        },
+        {
+            text: 'Dimana lokasi operasional usaha Anda?',
+            type: 'location',
+            category: 'Operasional',
+            weight: 0,
+            options: {}
         }
     ]
 

@@ -1,5 +1,13 @@
 import { api } from '@/services/api';
 
+export interface LocationData {
+    address: string;
+    city: string;
+    province: string;
+    lat: number;
+    lng: number;
+}
+
 export interface OnboardingData {
     fullName: string;
     email: string;
@@ -10,6 +18,8 @@ export interface OnboardingData {
     omzetMonthly: string;
     challenges: string;
     requestedServices: string[];
+    ownerLocation: LocationData;
+    businessLocation: LocationData;
 }
 
 export interface OnboardingResponse {

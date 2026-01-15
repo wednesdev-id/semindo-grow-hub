@@ -22,7 +22,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { onboardingService, OnboardingData } from '@/services/onboarding';
+import { onboardingService, OnboardingData, LocationData } from '@/services/onboarding';
+import LocationPicker from '@/components/ui/location-picker';
 
 // Icon mapping
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -85,6 +86,8 @@ export default function OnboardingModal({ open, onOpenChange }: OnboardingModalP
         omzetMonthly: '',
         challenges: '',
         requestedServices: [],
+        ownerLocation: { address: '', city: '', province: '', lat: 0, lng: 0 },
+        businessLocation: { address: '', city: '', province: '', lat: 0, lng: 0 },
     });
 
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -107,6 +110,8 @@ export default function OnboardingModal({ open, onOpenChange }: OnboardingModalP
                     omzetMonthly: '',
                     challenges: '',
                     requestedServices: [],
+                    ownerLocation: { address: '', city: '', province: '', lat: 0, lng: 0 },
+                    businessLocation: { address: '', city: '', province: '', lat: 0, lng: 0 },
                 });
                 setConfirmPassword('');
             }, 300);
@@ -168,6 +173,10 @@ export default function OnboardingModal({ open, onOpenChange }: OnboardingModalP
             setError('Omzet per bulan wajib dipilih');
             return false;
         }
+        if (!formData.challenges || formData.challenges.length < 10) {
+            setError('Kendala usaha wajib diisi (minimal 10 karakter)');
+            return false;
+        }
         return true;
     };
 
@@ -192,6 +201,8 @@ export default function OnboardingModal({ open, onOpenChange }: OnboardingModalP
             if (response.success && response.data) {
                 setWhatsappLink(response.data.whatsappLink);
                 setSuccess(true);
+                // Auto-open WhatsApp immediately
+                window.open(response.data.whatsappLink, '_blank');
             } else {
                 setError(response.message || 'Pendaftaran gagal');
             }
@@ -377,7 +388,7 @@ export default function OnboardingModal({ open, onOpenChange }: OnboardingModalP
                                 </div>
 
                                 <div className="space-y-1">
-                                    <Label htmlFor="challenges" className="text-xs">Kendala (Opsional)</Label>
+                                    <Label htmlFor="challenges" className="text-xs">Kendala Usaha *</Label>
                                     <Textarea
                                         id="challenges"
                                         name="challenges"
@@ -386,6 +397,23 @@ export default function OnboardingModal({ open, onOpenChange }: OnboardingModalP
                                         onChange={handleInputChange}
                                         rows={2}
                                         className="resize-none"
+                                    />
+                                </div>
+
+                                {/* Location Fields */}
+                                <div className="pt-2 border-t space-y-3">
+                                    <p className="text-xs font-medium text-muted-foreground">Lokasi (Opsional)</p>
+                                    <LocationPicker
+                                        label="Alamat Pemilik"
+                                        placeholder="Alamat tempat tinggal pemilik"
+                                        value={formData.ownerLocation}
+                                        onChange={(loc) => setFormData(prev => ({ ...prev, ownerLocation: loc }))}
+                                    />
+                                    <LocationPicker
+                                        label="Alamat Usaha"
+                                        placeholder="Alamat lokasi usaha"
+                                        value={formData.businessLocation}
+                                        onChange={(loc) => setFormData(prev => ({ ...prev, businessLocation: loc }))}
                                     />
                                 </div>
                             </div>
@@ -431,8 +459,8 @@ export default function OnboardingModal({ open, onOpenChange }: OnboardingModalP
                                             type="button"
                                             onClick={() => toggleService(service.id)}
                                             className={`relative p-3 rounded-lg border-2 text-left transition-all ${isSelected
-                                                    ? 'border-primary bg-primary/5'
-                                                    : 'border-border hover:border-primary/50'
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-border hover:border-primary/50'
                                                 }`}
                                             whileTap={{ scale: 0.98 }}
                                         >

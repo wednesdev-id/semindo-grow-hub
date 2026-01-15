@@ -78,9 +78,7 @@ const Navigation = ({ onDaftarClick }: NavigationProps) => {
 
           {/* CTA Button */}
           <div className="hidden lg:flex items-center space-x-4">
-            <Button className="bg-gradient-primary hover:opacity-90 text-white font-medium">
-              Mulai Konsultasi
-            </Button>
+
 
             {user ? (
               <DropdownMenu>
@@ -183,9 +181,7 @@ const Navigation = ({ onDaftarClick }: NavigationProps) => {
                 </Link>
               ))}
               <div className="pt-4 space-y-2">
-                <Button className="w-full bg-gradient-primary hover:opacity-90 text-white">
-                  Mulai Konsultasi
-                </Button>
+
                 {user ? (
                   <>
                     <div className="flex items-center px-3 py-2">
