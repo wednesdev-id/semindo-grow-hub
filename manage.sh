@@ -173,7 +173,7 @@ run_clean() {
 # Docker Commands
 docker_dev() {
     echo -e "${BLUE}🐳 Starting Docker development environment...${NC}"
-    docker-compose --profile dev up -d
+    docker compose --profile dev up -d
     echo -e "${GREEN}✅ Development environment started!${NC}"
     echo -e "${YELLOW}Frontend: http://localhost:8080${NC}"
     echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
@@ -184,7 +184,7 @@ docker_dev() {
 
 docker_prod() {
     echo -e "${BLUE}🐳 Starting Docker production environment...${NC}"
-    docker-compose --profile prod up -d
+    docker compose --profile prod up -d
     echo -e "${GREEN}✅ Production environment started!${NC}"
     echo -e "${YELLOW}Frontend: http://localhost:8080${NC}"
     echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
@@ -199,10 +199,10 @@ docker_build() {
     
     case $choice in
         1)
-            docker-compose --profile dev build --no-cache
+            docker compose --profile dev build --no-cache
             ;;
         2)
-            docker-compose --profile prod build --no-cache
+            docker compose --profile prod build --no-cache
             ;;
         *)
             echo -e "${RED}Invalid choice${NC}"
@@ -214,8 +214,8 @@ docker_build() {
 
 docker_stop() {
     echo -e "${BLUE}🛑 Stopping Docker containers...${NC}"
-    docker-compose --profile dev down
-    docker-compose --profile prod down
+    docker compose --profile dev down
+    docker compose --profile prod down
     echo -e "${GREEN}✅ All containers stopped!${NC}"
 }
 
@@ -223,8 +223,8 @@ docker_clean() {
     echo -e "${RED}⚠️  WARNING: This will remove all containers, volumes, and images!${NC}"
     read -p "Are you sure? (yes/no): " confirm
     if [ "$confirm" = "yes" ]; then
-        docker-compose --profile dev down -v --rmi all
-        docker-compose --profile prod down -v --rmi all
+        docker compose --profile dev down -v --rmi all
+        docker compose --profile prod down -v --rmi all
         echo -e "${GREEN}✅ Docker cleanup complete!${NC}"
     else
         echo -e "${YELLOW}Cancelled.${NC}"
@@ -233,20 +233,20 @@ docker_clean() {
 
 docker_logs() {
     echo -e "${BLUE}📋 Docker logs (Ctrl+C to exit):${NC}"
-    docker-compose logs -f
+    docker compose logs -f
 }
 
 # Deploy production via Docker Compose (build + up)
 deploy() {
     echo -e "${BLUE}🚀 Deploying production environment...${NC}"
     echo -e "${YELLOW}Step 1/2: Building Docker images...${NC}"
-    docker-compose --profile prod build
+    docker compose --profile prod build
     if [ $? -ne 0 ]; then
         echo -e "${RED}❌ Build failed!${NC}"
         return 1
     fi
     echo -e "${YELLOW}Step 2/2: Starting containers...${NC}"
-    docker-compose --profile prod up -d
+    docker compose --profile prod up -d
     if [ $? -ne 0 ]; then
         echo -e "${RED}❌ Deploy failed!${NC}"
         return 1
@@ -261,8 +261,8 @@ destroy() {
     echo -e "${BLUE}🛑 Stopping and removing containers, images, and build cache (volumes preserved)...${NC}"
     
     # Stop and remove containers
-    docker-compose --profile dev down --remove-orphans --rmi local
-    docker-compose --profile prod down --remove-orphans --rmi local
+    docker compose --profile dev down --remove-orphans --rmi local
+    docker compose --profile prod down --remove-orphans --rmi local
     
     # Remove build cache
     echo -e "${BLUE}🧹 Cleaning Docker build cache...${NC}"
@@ -278,13 +278,13 @@ destroy() {
 
 db_migrate() {
     echo -e "${BLUE}🔄 Running database migrations...${NC}"
-    docker-compose exec backend npx prisma migrate deploy
+    docker compose exec backend npx prisma migrate deploy
     echo -e "${GREEN}✅ Migrations complete!${NC}"
 }
 
 db_seed() {
     echo -e "${BLUE}🌱 Seeding database...${NC}"
-    docker-compose exec backend npx prisma db seed
+    docker compose exec backend npx prisma db seed
     echo -e "${GREEN}✅ Database seeded!${NC}"
 }
 
@@ -292,7 +292,7 @@ db_reset() {
     echo -e "${RED}⚠️  WARNING: This will delete ALL data!${NC}"
     read -p "Are you sure? (yes/no): " confirm
     if [ "$confirm" = "yes" ]; then
-        docker-compose exec backend npx prisma migrate reset --force
+        docker compose exec backend npx prisma migrate reset --force
         echo -e "${GREEN}✅ Database reset complete!${NC}"
     else
         echo -e "${YELLOW}Cancelled.${NC}"
