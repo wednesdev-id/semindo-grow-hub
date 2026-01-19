@@ -162,8 +162,7 @@ export class AuthService {
                     }
                 },
                 umkmProfiles: true,
-                mentorProfile: true,
-                consultantProfile: true
+                mentorProfile: true
             }
         })
 
@@ -186,8 +185,7 @@ export class AuthService {
             roles,
             permissions,
             umkmProfiles: user.umkmProfiles,
-            mentorProfile: user.mentorProfile,
-            consultantProfile: user.consultantProfile
+            mentorProfile: user.mentorProfile
         }
     }
 }

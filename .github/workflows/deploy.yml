@@ -1,0 +1,66 @@
+name: Deploy to Development
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up environment
+        run: |
+          echo "🔧 Setting up environment..."
+          cp .env.example .env || true
+      
+      - name: Build Docker images
+        run: |
+          echo "🏗️  Building Docker images..."
+          docker compose --profile dev build --no-cache
+      
+      - name: Stop old containers
+        run: |
+          echo "🛑 Stopping old containers..."
+          docker compose --profile dev down || true
+      
+      - name: Start new containers
+        run: |
+          echo "🚀 Starting new containers..."
+          docker compose --profile dev up -d
+      
+      - name: Wait for services to be ready
+        run: |
+          echo "⏳ Waiting for services..."
+          sleep 15
+      
+      - name: Health check
+        run: |
+          echo "🏥 Running health check..."
+          if curl --fail --max-time 10 http://localhost:9090/healthz; then
+            echo "✅ Health check passed!"
+          else
+            echo "❌ Health check failed!"
+            docker compose logs
+            exit 1
+          fi
+      
+      - name: Clean up old images
+        run: |
+          echo "🧹 Cleaning up old Docker images..."
+          docker image prune -f
+      
+      - name: Deployment summary
+        run: |
+          echo "📊 Deployment Summary:"
+          echo "Repository: ${{ github.repository }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "🎉 Deployment successful!"
+          echo "🌐 Website: https://dev.sinergiumkmindonesia.com"

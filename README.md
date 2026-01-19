@@ -1,73 +1,83 @@
-# Welcome to your Lovable project
+# Sinergium KM - UMKM Platform
 
-## Project info
+Platform konsultasi dan digitalisasi untuk UMKM Indonesia.
 
-**URL**: https://lovable.dev/projects/dc06852d-65f9-4b17-9c4b-c19315af48b2
+## 🚀 Quick Start
 
-## How can I edit this code?
+### Development with Docker
 
-There are several ways of editing your application.
+```bash
+# Start development environment
+docker compose --profile dev up -d
 
-**Use Lovable**
+# View logs
+docker compose logs -f
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dc06852d-65f9-4b17-9c4b-c19315af48b2) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Stop services
+docker compose --profile dev down
 ```
 
-**Edit a file directly in GitHub**
+## 📋 Prerequisites
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Docker & Docker Compose
+- Node.js 18+ (for local development)
+- PostgreSQL 16 (handled by Docker)
 
-**Use GitHub Codespaces**
+## 🌐 Services
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+| Service | Port | URL |
+|---------|------|-----|
+| Nginx (Gateway) | 9090 | http://localhost:9090 |
+| Frontend | 5173 | http://localhost:5173 (direct) |
+| Backend API | 3001 | http://localhost:3001 (direct) |
+| Database | 5433 | localhost:5433 |
+| Adminer | 8082 | http://localhost:8082 |
 
-## What technologies are used for this project?
+## 🔧 Environment Setup
 
-This project is built with:
+```bash
+# Copy environment template
+cp .env.example .env
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Edit with your values
+nano .env
+```
 
-## How can I deploy this project?
+## 📚 Documentation
 
-Simply open [Lovable](https://lovable.dev/projects/dc06852d-65f9-4b17-9c4b-c19315af48b2) and click on Share -> Publish.
+- [Deployment Guide](DEPLOYMENT-CLOUDFLARE.md) - Cloudflare Tunnel setup
+- [Docker Guide](DOCKER_GUIDE.md) - Docker commands reference
 
-## Can I connect a custom domain to my Lovable project?
+## 🔄 CI/CD
 
-Yes, you can!
+Automatic deployment on push to `main` branch via GitHub Actions with self-hosted runner.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🚢 Deployment
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Development
+```bash
+./scripts/deploy.sh dev
+```
+
+### Rollback
+```bash
+./scripts/rollback.sh
+```
+
+## 🛠️ Tech Stack
+
+- **Frontend**: React + TypeScript + Vite
+- **Backend**: Node.js + Express + TypeScript
+- **Database**: PostgreSQL 16
+- **ORM**: Prisma
+- **Reverse Proxy**: Nginx
+- **Tunnel**: Cloudflare
+- **CI/CD**: GitHub Actions
+
+## 📝 License
+
+Private - All rights reserved
+
+## 👥 Team
+
+Sinergium Indonesia

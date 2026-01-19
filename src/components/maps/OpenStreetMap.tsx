@@ -4,8 +4,6 @@ import { Link } from 'react-router-dom';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
-import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 
 // Fix for default marker icons in react-leaflet
 // @ts-ignore
