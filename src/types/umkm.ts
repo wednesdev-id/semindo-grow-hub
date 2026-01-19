@@ -30,6 +30,7 @@ export interface UMKMProfile {
     nib?: string;
     npwp?: string;
     address?: string;
+    businessAddress?: string;
     province?: string;
     city?: string;
     district?: string;

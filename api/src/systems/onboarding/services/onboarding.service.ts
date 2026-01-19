@@ -1,6 +1,14 @@
 import { prisma } from '../../../lib/prisma';
 import bcrypt from 'bcryptjs';
 
+export interface LocationData {
+    address: string;
+    city: string;
+    province: string;
+    lat: number;
+    lng: number;
+}
+
 export interface OnboardingData {
     // User info
     fullName: string;
@@ -16,6 +24,10 @@ export interface OnboardingData {
 
     // Selected services
     requestedServices: string[]; // Array of service names
+
+    // Location data
+    ownerLocation?: LocationData;
+    businessLocation?: LocationData;
 }
 
 export class OnboardingService {
@@ -61,7 +73,7 @@ export class OnboardingService {
             // 3. Parse omzet to decimal (convert range string to number)
             const omzetValue = this.parseOmzetRange(data.omzetMonthly);
 
-            // 4. Create UMKM profile
+            // 4. Create UMKM profile with location data
             const umkmProfile = await tx.uMKMProfile.create({
                 data: {
                     userId: user.id,
@@ -72,6 +84,13 @@ export class OnboardingService {
                     sector: data.sector,
                     omzetMonthly: omzetValue,
                     status: 'unverified',
+                    // Business location
+                    address: data.businessLocation?.address || '',
+                    city: data.businessLocation?.city || '',
+                    province: data.businessLocation?.province || '',
+                    location: data.businessLocation?.lat && data.businessLocation?.lng
+                        ? { lat: data.businessLocation.lat, lng: data.businessLocation.lng }
+                        : undefined,
                 }
             });
 
@@ -116,6 +135,9 @@ export class OnboardingService {
      */
     private formatWhatsAppMessage(data: OnboardingData): string {
         const services = data.requestedServices.join(', ');
+        const businessAddr = data.businessLocation?.address
+            ? `${data.businessLocation.address}${data.businessLocation.city ? ', ' + data.businessLocation.city : ''}${data.businessLocation.province ? ', ' + data.businessLocation.province : ''}`
+            : '-';
 
         return `🆕 *PENDAFTARAN UMKM BARU*
 
@@ -126,6 +148,7 @@ export class OnboardingService {
 🏢 *Nama Usaha:* ${data.businessName}
 📊 *Bidang Usaha:* ${data.sector}
 💰 *Omzet/Bulan:* ${data.omzetMonthly}
+📍 *Alamat Usaha:* ${businessAddr}
 
 ⚠️ *Kendala:*
 ${data.challenges || '-'}
