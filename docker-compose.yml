@@ -43,12 +43,7 @@ services:
       - semindo-network
     volumes:
       - ./api/uploads:/app/uploads
-    command: >
-      sh -c "
-        npx prisma migrate deploy &&
-        npx prisma db seed &&
-        node dist/index.js
-      "
+    command: [ "node", "dist/index.js" ]
 
   # Frontend
   frontend:
@@ -57,11 +52,11 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api/v1}
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
     container_name: semindo-frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_PORT:-3000}:80" # Frontend serves on port 80 inside container
     depends_on:
       - backend
     networks:
@@ -88,7 +83,7 @@ services:
     restart: unless-stopped
     profiles: [ "dev" ]
     ports:
-      - "9090:80"  # Cloudflare Tunnel connects here
+      - "9090:80" # Cloudflare Tunnel connects here
     depends_on:
       - backend-dev
       - frontend-dev
@@ -104,7 +99,7 @@ services:
     restart: unless-stopped
     profiles: [ "prod" ]
     ports:
-      - "9090:80"  # Cloudflare Tunnel connects to 8080
+      - "9090:80" # Cloudflare Tunnel connects to 8080
     depends_on:
       - backend
       - frontend

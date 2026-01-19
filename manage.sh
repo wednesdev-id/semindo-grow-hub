@@ -11,8 +11,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Ports
-FRONTEND_PORT=8080
-BACKEND_PORT=3000
+FRONTEND_PORT=5173
+BACKEND_PORT=8000
 
 # Ensure we are in the script directory
 cd "$(dirname "$0")"
@@ -175,9 +175,10 @@ docker_dev() {
     echo -e "${BLUE}🐳 Starting Docker development environment...${NC}"
     docker compose --profile dev up -d
     echo -e "${GREEN}✅ Development environment started!${NC}"
-    echo -e "${YELLOW}Frontend: http://localhost:8080${NC}"
-    echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
-    echo -e "${YELLOW}Adminer: http://localhost:8081${NC}"
+    echo -e "${YELLOW}Nginx (Dev): http://localhost:9090${NC}"
+    echo -e "${YELLOW}Frontend (Direct): http://localhost:5173${NC}"
+    echo -e "${YELLOW}Backend (Direct): http://localhost:3001${NC}"
+    echo -e "${YELLOW}Adminer: http://localhost:8082${NC}"
     echo ""
     echo -e "${BLUE}Lihat logs dengan: ./manage.sh docker-logs${NC}"
 }
@@ -252,8 +253,9 @@ deploy() {
         return 1
     fi
     echo -e "${GREEN}✅ Production deployment complete!${NC}"
-    echo -e "${YELLOW}Frontend: http://localhost:8080${NC}"
-    echo -e "${YELLOW}Backend: http://localhost:3000${NC}"
+    echo -e "${YELLOW}Nginx (Cloudflare): http://localhost:9090${NC}"
+    echo -e "${YELLOW}Frontend: http://localhost:3000${NC}"
+    echo -e "${YELLOW}Backend: http://localhost:8000${NC}"
 }
 
 # Destroy containers, images, and build cache without removing volumes

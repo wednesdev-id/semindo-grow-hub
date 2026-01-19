@@ -311,42 +311,20 @@ export default function ConsultationRequests() {
             </div>
 
             {/* Accept Modal */}
-            {showAcceptModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg w-full max-w-md">
-                        <h3 className="text-lg font-bold mb-4">Accept Request</h3>
-                        <p className="mb-4 text-sm text-gray-600">
-                            Please provide a meeting link for the session (e.g. Google Meet, Zoom).
-                        </p>
-
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium mb-1">Meeting URL</label>
-                            <input
-                                type="url"
-                                value={meetingUrl}
-                                onChange={(e) => setMeetingUrl(e.target.value)}
-                                placeholder="https://meet.google.com/..."
-                                className="w-full border rounded-md px-3 py-2"
-                            />
-                        </div>
-
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setShowAcceptModal(false)}
-                                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={confirmAccept}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
-                                Confirm & Accept
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <QuickAcceptModal
+                open={showAcceptModal}
+                onClose={() => {
+                    setShowAcceptModal(false);
+                    setSelectedRequest(null);
+                }}
+                onConfirm={handleConfirmAccept}
+                requestInfo={selectedRequest ? {
+                    clientName: selectedRequest.client?.fullName || 'Unknown',
+                    topic: selectedRequest.topic || '',
+                    date: selectedRequest.requestedDate ? format(new Date(selectedRequest.requestedDate), 'dd MMMM yyyy') : '',
+                    time: selectedRequest.requestedStartTime ? format(new Date(selectedRequest.requestedStartTime), 'HH:mm') : ''
+                } : undefined}
+            />
 
             {/* Reject Dialog */}
             <RejectRequestDialog
@@ -455,7 +433,7 @@ export default function ConsultationRequests() {
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <a
-                                                                href={`http://localhost:3000${file.fileUrl}`}
+                                                                href={file.fileUrl}
                                                                 target="_blank"
                                                                 rel="noreferrer"
                                                                 className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full"

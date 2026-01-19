@@ -267,7 +267,7 @@ export default function ConsultationDashboard() {
                                             </div>
                                         </div>
                                         <a
-                                            href={`http://localhost:3000${file.fileUrl}`}
+                                            href={file.fileUrl}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full flex-shrink-0"

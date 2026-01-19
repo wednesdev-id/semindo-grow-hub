@@ -33,16 +33,13 @@ export default function ConsultationChat() {
 
     const initializeChat = async () => {
         try {
-            // Get channel
-            const channelData = await consultationService.getChannel(requestId!);
-            setChannel(channelData);
-
-            // Load message history
-            const history = await consultationService.getChatHistory(channelData.id);
-            setMessages(history);
+            // Get channel and messages using getChatDetails
+            const chatData = await consultationService.getChatDetails(requestId!);
+            setChannel(chatData.channel);
+            setMessages(chatData.channel.messages || []);
 
             // Initialize Socket.io
-            const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+            const socketUrl = import.meta.env.VITE_API_URL || '';
             const newSocket = io(socketUrl, {
                 path: '/consultation-chat',
                 auth: {
@@ -53,7 +50,7 @@ export default function ConsultationChat() {
             newSocket.on('connect', () => {
                 console.log('Socket connected');
                 newSocket.emit('join_room', {
-                    channelId: channelData.id,
+                    channelId: chatData.channel.id,
                     userId: currentUser.id,
                 });
             });

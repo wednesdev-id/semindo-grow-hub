@@ -19,7 +19,7 @@ import { CORE_CONSTANTS, CoreApplication, CoreConfig, CoreError } from '.'
 const appConfig: CoreConfig = {
   environment: (import.meta.env.VITE_ENVIRONMENT as 'development' | 'staging' | 'production') || 'development',
   api: {
-    baseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+    baseUrl: import.meta.env.VITE_API_URL || '/api/v1',
     timeout: 30000,
     retries: 3
   },
