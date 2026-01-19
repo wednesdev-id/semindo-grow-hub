@@ -179,6 +179,19 @@ export default function UMKMDetailPage() {
                                             </div>
                                         </div>
                                     </div>
+                                    <Separator />
+                                    <div>
+                                        <div className="text-sm font-medium text-muted-foreground mb-2">Alamat Bisnis</div>
+                                        <div className="flex items-start gap-2 text-sm">
+                                            <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                            <span>{profile.businessAddress || profile.address || '-'}</span>
+                                        </div>
+                                        {(profile.city || profile.province) && (
+                                            <div className="text-sm text-muted-foreground mt-1 ml-6">
+                                                {[profile.city, profile.province].filter(Boolean).join(', ')}
+                                            </div>
+                                        )}
+                                    </div>
                                 </CardContent>
                             </Card>
 
