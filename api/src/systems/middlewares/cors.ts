@@ -4,7 +4,11 @@ import { Request, Response, NextFunction } from 'express'
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(origin => origin.trim()) || [
   'http://localhost:5173',
   'http://localhost:5174',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://dev.sinergiumkmindonesia.com',
+  'https://sinergiumkmindonesia.com',
+
 ]
 
 export function corsMiddleware(req: Request, res: Response, next: NextFunction) {
