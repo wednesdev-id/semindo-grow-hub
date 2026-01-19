@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
 import type { ConsultantProfile as ConsultantProfileType, BookingSlot } from '../../types/consultation';
 import { Star, ArrowLeft } from 'lucide-react';
@@ -185,11 +185,7 @@ export default function ConsultantProfile() {
             )}
 
             {/* Review Modal */}
-            {/* Logic for showing review modal from URL param or button */}
-            {/* For now, we rely on deep linking or a future button. 
-                If we want to support ?action=review, we need useEffect logic. 
-                Adding basic support for it. */}
-            <ReviewModalController consultant={consultant} />
+            {/* Review functionality can be added via ReviewForm component if needed */}
         </div>
     );
 }

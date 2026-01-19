@@ -1,0 +1,49 @@
+# Production Docker Compose Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+
+# Production-specific configurations
+services:
+  # Database - Production
+  db:
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+
+  # Backend - Use production profile
+  backend:
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      PORT: 8000
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        node dist/index.js
+      "
+
+  # Frontend - Build and copy to volume
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+    volumes:
+      - frontend-dist:/app/dist
+
+  # Nginx - Production only
+  nginx:
+    environment:
+      DOMAIN: ${DOMAIN}
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  frontend-dist:
+    driver: local
