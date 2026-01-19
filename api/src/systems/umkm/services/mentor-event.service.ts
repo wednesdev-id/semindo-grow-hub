@@ -1,5 +1,5 @@
 import { prisma } from '../../../lib/prisma';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../../prisma/generated/client';
 import { NotificationService } from '../../notification/services/notification.service';
 
 const notificationService = new NotificationService();

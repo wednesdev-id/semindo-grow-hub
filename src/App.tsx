@@ -54,6 +54,7 @@ const ConsultantDashboard = lazy(() => import("./pages/dashboards/ConsultantDash
 const CreateCoursePage = lazy(() => import("./pages/lms/CreateCoursePage"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
+const UMKMOnboardingPage = lazy(() => import("./pages/onboarding/UMKMOnboardingPage"));
 const AssessmentLandingPage = lazy(() => import("./features/assessment/pages/AssessmentLandingPage"));
 const AssessmentHistoryPage = lazy(() => import("./features/assessment/pages/AssessmentHistoryPage"));
 const AssessmentWizardPage = lazy(() => import("./features/assessment/pages/AssessmentWizardPage"));
@@ -253,6 +254,7 @@ const App = () => {
                       {/* Auth Routes */}
                       <Route path="/login" element={<LoginPage />} />
                       <Route path="/register" element={<RegisterPage />} />
+                      <Route path="/daftar" element={<UMKMOnboardingPage />} />
 
                       {/* Program Routes */}
                       <Route path="programs" element={<ProgramLandingPage />} />
@@ -288,7 +290,9 @@ const App = () => {
                       }>
                         {/* Dashboards */}
                         <Route path="/consultation/dashboard" element={<ConsultantDashboard />} />
+
                         <Route path="/umkm/dashboard" element={<Dashboard />} />
+                        <Route path="/umkm/list" element={<UMKMListPage />} />
                         <Route path="/admin" element={<AdminDashboard />} />
 
                         {/* LMS Instructor */}
@@ -350,7 +354,7 @@ const App = () => {
                         <Route path="/admin/umkm/:id" element={<UMKMDetailPage />} />
                         <Route path="/admin/umkm/:id/edit" element={<UMKMFormPage />} />
 
-                        <Route path="/umkm/list" element={<UserManagement defaultRole="umkm" />} />
+
                         <Route path="/umkm/segmentation" element={<UMKMSegmentationPage />} />
                         <Route path="/umkm/region" element={<UMKMRegionMapPage />} />
                         <Route path="/umkm/assessment-status" element={<FeaturePreviewPage

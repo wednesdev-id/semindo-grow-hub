@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '@/services/dashboardService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DollarSign, ShoppingBag, Package, Star, TrendingUp, BookOpen, Award } from 'lucide-react';
+import { DollarSign, ShoppingBag, Package, Star, TrendingUp, BookOpen, Award, AlertCircle } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { financingService } from '@/services/financingService';
@@ -36,7 +36,19 @@ export default function UMKMDashboard() {
         );
     }
 
-    if (!data) return null;
+    if (!data) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <AlertCircle className="h-12 w-12 text-yellow-500" />
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold">Data Tidak Tersedia</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Tidak ada data yang diterima dari server.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../../../lib/prisma';
 import { HttpError } from '../../../utils/error';
 
-const prisma = new PrismaClient();
 
 interface CreateMessageData {
     requestId: string;

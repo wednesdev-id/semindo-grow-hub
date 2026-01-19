@@ -11,9 +11,20 @@ export class UMKMController {
     // UMKM Profile
     static async getProfiles(req: Request, res: Response) {
         try {
-            const result = await umkmService.findAll(req.query as any);
+            console.log('[UMKM] GET /umkm - Query:', req.query);
+            const params = {
+                page: parseInt(req.query.page as string) || 1,
+                limit: parseInt(req.query.limit as string) || 10,
+                search: req.query.search as string,
+                segmentation: req.query.segmentation as string,
+                city: req.query.city as string,
+                province: req.query.province as string,
+                sector: req.query.sector as string,
+            };
+            const result = await umkmService.findAll(params);
             res.json(result);
         } catch (error) {
+            console.error('[UMKM] Error fetching profiles:', error);
             res.status(500).json({ error: 'Failed to fetch profiles' });
         }
     }
@@ -39,7 +50,7 @@ export class UMKMController {
 
     static async createProfile(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const profile = await umkmService.create(userId, req.body);
             res.status(201).json(profile);
         } catch (error) {
@@ -106,7 +117,7 @@ export class UMKMController {
 
     static async verifyDocument(req: Request, res: Response) {
         try {
-            const verifierId = (req as any).user.userId;
+            const verifierId = (req as any).user.userId as string;
             const { status, reason } = req.body;
             const doc = await documentService.verifyDocument(req.params.docId, verifierId, status, reason);
             res.json(doc);

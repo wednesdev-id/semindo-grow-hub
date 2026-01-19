@@ -1,7 +1,7 @@
-import { PrismaClient, Order } from '@prisma/client';
+import { prisma } from '../../../lib/prisma';
+import { Order } from '../../../../prisma/generated/client';
 import { MidtransService } from './midtrans.service';
 
-const prisma = new PrismaClient();
 const midtrans = new MidtransService();
 
 export const paymentService = {

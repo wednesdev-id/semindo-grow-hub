@@ -1,12 +1,27 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../prisma/generated/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { Pool } from 'pg';
 import { uuidv7 } from 'uuidv7';
 
 const prismaClientSingleton = () => {
+    // Create pg Pool with DATABASE_URL
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+        throw new Error('DATABASE_URL environment variable is not set');
+    }
+
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
+
     const logOptions = process.env.NODE_ENV !== 'production'
         ? { log: ['query', 'info', 'warn', 'error'] as ('query' | 'info' | 'warn' | 'error')[] }
         : { log: ['warn', 'error'] as ('warn' | 'error')[] };
 
-    return new PrismaClient(logOptions).$extends({
+    // Prisma 7: Use adapter for database connection
+    return new PrismaClient({
+        adapter,
+        ...logOptions,
+    }).$extends({
         query: {
             $allModels: {
                 async create({ args, query, model }) {

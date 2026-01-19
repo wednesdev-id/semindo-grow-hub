@@ -37,26 +37,31 @@ export default function UserRoleManagement() {
     }, [])
 
     const fetchData = async () => {
+        console.log('[UserRoleManagement] fetchData called');
         try {
             setLoading(true)
+            console.log('[UserRoleManagement] Calling roleService.getAllRoles()');
             const [rolesResponse, permissionsResponse] = await Promise.all([
                 roleService.getAllRoles(),
                 permissionService.getAllPermissions()
             ])
+            console.log('[UserRoleManagement] Roles response:', rolesResponse);
 
-            setRoles(rolesResponse.data || rolesResponse)
+            setRoles(((rolesResponse as any).data || rolesResponse) as Role[])
 
             // Handle permission data structure
-            const permData = permissionsResponse.data || permissionsResponse
-            setAllPermissions(Array.isArray(permData) ? permData : (permData.data || []))
+            const permData = (permissionsResponse as any).data || permissionsResponse
+            setAllPermissions(Array.isArray(permData) ? permData : ((permData as any).data || []))
 
         } catch (error: any) {
+            console.error('[UserRoleManagement] Error fetching data:', error);
             toast({
                 title: 'Error',
                 description: error.message || 'Failed to load data',
                 variant: 'destructive',
             })
         } finally {
+            console.log('[UserRoleManagement] Loading finished');
             setLoading(false)
         }
     }
@@ -64,8 +69,8 @@ export default function UserRoleManagement() {
     const fetchRolePermissions = async (roleId: string) => {
         try {
             const response = await roleService.getRolePermissions(roleId)
-            const data = response.data || response
-            const perms = Array.isArray(data) ? data : (data.data || [])
+            const data = (response as any).data || response
+            const perms = Array.isArray(data) ? data : ((data as any).data || [])
             return perms.map((p: any) => p.id)
         } catch (error) {
             console.error('Failed to fetch role permissions', error)
@@ -83,7 +88,7 @@ export default function UserRoleManagement() {
                 description: data.description
             })
 
-            const newRoleId = newRoleResponse.data?.id || newRoleResponse.id
+            const newRoleId = (newRoleResponse as any).data?.id || (newRoleResponse as any).id
 
             // 2. Assign Permissions
             if (data.permissions && data.permissions.length > 0) {

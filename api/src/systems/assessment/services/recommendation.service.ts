@@ -1,5 +1,5 @@
 import { db } from '../../utils/db';
-import { AssessmentScore, Prisma } from '@prisma/client';
+import { AssessmentScore, Prisma } from '../../../../prisma/generated/client';
 
 export class RecommendationService {
     static async generateRecommendations(assessmentId: string, score: AssessmentScore) {

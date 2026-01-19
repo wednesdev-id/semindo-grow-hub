@@ -20,36 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API - Development
-  backend-dev:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-      target: development
-    container_name: semindo-backend-dev
-    restart: unless-stopped
-    profiles: [ "dev" ]
-    environment:
-      NODE_ENV: development
-      DATABASE_URL: postgresql://${DB_USER:-semindo}:${DB_PASSWORD:-semindo_password}@db:5432/${DB_NAME:-semindo_db}
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-key}
-      JWT_EXPIRES_IN: 7d
-      PORT: 8000
-    ports:
-      - "3001:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      semindo-network:
-        aliases:
-          - backend-dev
-    volumes:
-      - ./api:/app
-      - /app/node_modules
-      - ./api/uploads:/app/uploads
-
-  # Backend API - Production
+  # Backend API
   backend:
     build:
       context: ./api
@@ -57,7 +28,6 @@ services:
       target: production
     container_name: semindo-backend
     restart: unless-stopped
-    profiles: [ "prod" ]
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${DB_USER:-semindo}:${DB_PASSWORD:-semindo_password}@db:5432/${DB_NAME:-semindo_db}
@@ -80,30 +50,7 @@ services:
         node dist/index.js
       "
 
-  # Frontend - Development
-  frontend-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: semindo-frontend-dev
-    restart: unless-stopped
-    profiles: [ "dev" ]
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api/v1}
-    ports:
-      - "${FRONTEND_DEV_PORT:-5173}:8080"
-    depends_on:
-      - backend-dev
-    networks:
-      semindo-network:
-        aliases:
-          - frontend-dev
-    volumes:
-      - .:/app
-      - /app/node_modules
-
-  # Frontend - Production
+  # Frontend
   frontend:
     build:
       context: .
@@ -113,7 +60,6 @@ services:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api/v1}
     container_name: semindo-frontend
     restart: unless-stopped
-    profiles: [ "prod" ]
     ports:
       - "${FRONTEND_PORT:-8080}:80"
     depends_on:
@@ -121,7 +67,7 @@ services:
     networks:
       - semindo-network
 
-  # Adminer - Database UI (available in both modes)
+  # Adminer - Database UI
   adminer:
     image: adminer:latest
     container_name: semindo-adminer

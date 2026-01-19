@@ -47,7 +47,19 @@ export default function AdminDashboard() {
         );
     }
 
-    if (!data) return null;
+    if (!data) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <AlertCircle className="h-12 w-12 text-yellow-500" />
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold">Data Tidak Tersedia</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Tidak ada data yang diterima dari server.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

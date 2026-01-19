@@ -4,6 +4,7 @@ import MultipleChoiceQuestion from '../components/forms/question-types/MultipleC
 import ScaleQuestion from '../components/forms/question-types/ScaleQuestion'
 import BooleanQuestion from '../components/forms/question-types/BooleanQuestion'
 import TextInputQuestion from '../components/forms/question-types/TextInputQuestion'
+import LocationQuestion from '../components/forms/question-types/LocationQuestion'
 import ProgressIndicator from '../components/shared/ProgressIndicator'
 import { Loader2, RotateCcw } from 'lucide-react'
 import { useAssessmentForm } from '../hooks/useAssessmentForm'
@@ -101,6 +102,14 @@ export default function AssessmentWizardPage() {
                             onChange={(val) => handleAnswerChange(question.id, val)}
                             multiline={true}
                             maxLength={500}
+                        />
+                    )
+                case 'location':
+                    return (
+                        <LocationQuestion
+                            question={question}
+                            value={value as any || { address: '', lat: 0, lng: 0 }}
+                            onChange={(val) => handleAnswerChange(question.id, val)}
                         />
                     )
                 default:

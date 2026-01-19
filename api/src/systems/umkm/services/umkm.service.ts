@@ -1,5 +1,5 @@
 import { prisma } from '../../../lib/prisma';
-import { UMKMProfile, Prisma } from '@prisma/client';
+import { UMKMProfile, Prisma } from '../../../../prisma/generated/client';
 
 export class UMKMService {
     async getStats() {

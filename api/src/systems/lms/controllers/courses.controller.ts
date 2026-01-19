@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
 import { CoursesService } from '../services/courses.service';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../../../prisma/generated/client';
 
 const coursesService = new CoursesService();
 
 export class CoursesController {
     async create(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const data: Prisma.CourseCreateInput = {
                 ...req.body,
                 author: { connect: { id: userId } },
@@ -129,7 +129,7 @@ export class CoursesController {
 
     async getMyCourses(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const courses = await coursesService.getMyCourses(userId);
             res.json({ data: courses });
         } catch (error: any) {
@@ -167,7 +167,7 @@ export class CoursesController {
 
     async getInstructorCourses(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const courses = await coursesService.getInstructorCourses(userId);
             res.json({ data: courses });
         } catch (error: any) {
@@ -177,7 +177,7 @@ export class CoursesController {
 
     async getInstructorStats(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const stats = await coursesService.getInstructorStats(userId);
             res.json({ data: stats });
         } catch (error: any) {

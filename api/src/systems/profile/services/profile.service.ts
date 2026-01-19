@@ -1,4 +1,4 @@
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, User } from '../../../../prisma/generated/client';
 import { UMKMProfileDto, MentorProfileDto } from '../types/profile.types';
 import { db } from '../../utils/db';
 

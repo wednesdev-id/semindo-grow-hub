@@ -182,6 +182,7 @@ export default function UMKMSegmentationPage() {
         );
     }
 
+
     if (statsError) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -193,6 +194,22 @@ export default function UMKMSegmentationPage() {
             </div>
         );
     }
+
+
+    if (!stats) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <div className="bg-yellow-100 p-4 rounded-full inline-block mb-4">
+                        <AlertCircle className="w-8 h-8 text-yellow-600" />
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2">Data tidak tersedia</h3>
+                    <p className="text-muted-foreground">Silakan coba muat ulang halaman atau hubungi admin.</p>
+                </div>
+            </div>
+        );
+    }
+
 
     return (
         <div className="space-y-6">

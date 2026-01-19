@@ -1,5 +1,5 @@
 import { db as prisma } from '../../utils/db';
-import { Cart, CartItem, Prisma } from '@prisma/client';
+import { Cart, CartItem, Prisma } from '../../../../prisma/generated/client';
 
 export const cartService = {
     getCart: async (userId: string) => {

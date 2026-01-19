@@ -30,7 +30,7 @@ export class AssessmentController {
 
     async submitQuiz(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { quizId } = req.params;
             const { answers } = req.body;
             const attempt = await quizService.submitQuiz(userId, quizId, answers);
@@ -42,7 +42,7 @@ export class AssessmentController {
 
     async getQuizAttempts(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { quizId } = req.params;
             const attempts = await quizService.getAttempts(userId, quizId);
             res.json({ data: attempts });
@@ -75,7 +75,7 @@ export class AssessmentController {
 
     async submitAssignment(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId;
+            const userId = (req as any).user.userId as string;
             const { assignmentId } = req.params;
             const submission = await assignmentService.submitAssignment(userId, assignmentId, req.body);
             res.json({ data: submission });

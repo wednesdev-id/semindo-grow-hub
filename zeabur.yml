@@ -21,11 +21,7 @@ spec:
       # Zeabur automatically provides connection variables like POSTGRES_PASSWORD, etc.
       # We reference the full connection string via ${db.CONNECTION_URI}
 
-    # 2. Redis (Optional - based on future needs, but good to have if you use queue)
-    # - name: redis
-    #   type: redis
-
-    # 3. Backend API
+    # 2. Backend API
     - name: api
       type: nodejs
       directory: api
@@ -33,9 +29,10 @@ spec:
         provider: github
         # This will be replaced by the user's repo integration in Zeabur
       
-      # Build & Start
-      buildCommand: npm install && npx prisma generate && npm run build:docker
-      startCommand: npm start
+      # Build & Start - No cache
+      cache: false
+      buildCommand: pnpm install && npx prisma generate && pnpm run build
+      startCommand: pnpm start
       
       # Environment Variables
       environment:
@@ -46,14 +43,14 @@ spec:
         JWT_SECRET: ${JWT_SECRET}
         JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
 
-    # 4. Frontend Application
+    # 3. Frontend Application
     - name: frontend
       type: static
       directory: .
       
-      # Build Configuration
-      # Note: VITE_API_URL is needed at build time
-      buildCommand: npm install && npm run build
+      # Build Configuration - No cache
+      cache: false
+      buildCommand: pnpm install && pnpm run build
       outputDirectory: dist
       
       environment:

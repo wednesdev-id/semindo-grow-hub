@@ -1,5 +1,5 @@
 import { db } from '../../utils/db';
-import { FinancingPartner, LoanApplication, Prisma } from '@prisma/client';
+import { FinancingPartner, LoanApplication, Prisma } from '../../../../prisma/generated/client';
 
 export class FinancingService {
     async getPartners() {

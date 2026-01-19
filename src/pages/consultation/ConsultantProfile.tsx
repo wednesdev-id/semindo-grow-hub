@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { consultationService } from '../../services/consultationService';
-import type { ConsultantProfile } from '../../types/consultation';
+import type { ConsultantProfile as ConsultantProfileType, BookingSlot } from '../../types/consultation';
 import { Star, ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/ui/footer';
 import { BookingForm } from '@/components/consultation/BookingForm';
 import ReviewList from '@/components/consultation/ReviewList';
 import ReviewForm from '@/components/consultation/ReviewForm';
-import { useToast } from '@/components/ui/use-toast';
 
 export default function ConsultantProfile() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [consultant, setConsultant] = useState<ConsultantProfile | null>(null);
+    const [consultant, setConsultant] = useState<ConsultantProfileType | null>(null);
     const [loading, setLoading] = useState(true);
     const [showBookingModal, setShowBookingModal] = useState(false);
 
@@ -191,8 +190,50 @@ export default function ConsultantProfile() {
     );
 }
 
+// Review Modal Controller - handles ?action=review URL param
+function ReviewModalController({ consultant }: { consultant: ConsultantProfileType }) {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('action') === 'review') {
+            setIsOpen(true);
+        }
+    }, [searchParams]);
+
+    const handleClose = () => {
+        setIsOpen(false);
+        // Remove param
+        searchParams.delete('action');
+        setSearchParams(searchParams);
+    };
+
+    if (!isOpen || !consultant) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999]">
+            <div className="bg-white rounded-lg p-6 max-w-lg w-full">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold">Write a Review</h3>
+                    <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <ReviewForm
+                    consultantId={consultant.id}
+                    consultantName={consultant.user.fullName}
+                    onSuccess={() => {
+                        handleClose();
+                        // Ideally refresh list
+                        window.location.reload();
+                    }}
+                    onCancel={handleClose}
+                />
+            </div>
+        </div>
+    );
+}
+
 // Booking Modal Component
-function BookingModal({ consultant, onClose }: { consultant: ConsultantProfile; onClose: () => void }): JSX.Element {
+function BookingModal({ consultant, onClose }: { consultant: ConsultantProfileType; onClose: () => void }): JSX.Element {
     const navigate = useNavigate();
 
     return (

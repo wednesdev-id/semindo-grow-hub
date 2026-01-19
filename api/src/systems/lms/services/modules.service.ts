@@ -1,4 +1,4 @@
-import { Module, Prisma } from '@prisma/client';
+import { Module, Prisma } from '../../../../prisma/generated/client';
 import { prisma } from '../../../lib/prisma';
 
 export class ModulesService {

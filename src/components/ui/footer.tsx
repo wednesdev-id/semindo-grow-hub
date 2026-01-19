@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Heart
 } from "lucide-react";
+import { featureFlags } from "@/config/feature-flags";
 
 const Footer = () => {
   const footerSections = [
@@ -28,7 +29,7 @@ const Footer = () => {
       links: [
         { name: "Self-Assessment", href: "#assessment" },
         { name: "Learning Hub", href: "#learning" },
-        { name: "Marketplace", href: "#marketplace" },
+        ...(featureFlags.MARKETPLACE_ENABLED ? [{ name: "Marketplace", href: "#marketplace" }] : []),
         { name: "Community", href: "#community" }
       ]
     },

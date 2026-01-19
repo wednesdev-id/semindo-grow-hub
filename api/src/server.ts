@@ -24,15 +24,17 @@ import { rolesRouter } from './systems/roles/routes/roles.routes';
 import { permissionsRouter } from './systems/permissions/routes/permissions.routes';
 import { auditRouter } from './systems/audit/routes/audit.routes';
 import consultationRouter from './systems/consultation/routes/consultation.routes';
-
-
+import { onboardingRouter } from './systems/onboarding';
 
 import { CronService } from './systems/scheduler/cron.service';
+import { featureFlags, requireFeature } from './config/feature-flags';
 
 export function createServer(): Application {
   const app = express()
 
-  // ... (existing middleware) ...
+  // Log feature flags status
+  console.log('[API] Feature Flags:', featureFlags);
+
   app.disable('x-powered-by')
   // Global Middleware
   app.use(compression())
@@ -54,46 +56,53 @@ export function createServer(): Application {
     next()
   })
 
-  // ... (existing routes) ...
+  // Core routes (always enabled)
   app.use('/healthz', healthRouter)
   app.use('/api/v1/auth', authRouter)
   app.use('/api/v1/users', usersRouter)
   app.use('/api/v1/profile', profileRouter)
-
   app.use('/api/v1/assessment', assessmentRouter)
   app.use('/api/v1/lms', lmsRouter)
   app.use('/api/v1/dashboard', dashboardRouter)
-  app.use('/api/v1/marketplace', marketplaceRouter)
-  app.use('/api/v1/marketplace', storeRouter);
-  app.use('/api/v1/marketplace', uploadRouter);
-  app.use('/api/v1/marketplace', cartRouter);
-  app.use('/api/v1/financing', financingRouter);
   app.use('/api/v1/documents', documentRouter);
-  app.use('/api/v1/export', exportRouter);
-  app.use('/api/v1/community', communityRouter);
   app.use('/api/v1/programs', programRouter);
   app.use('/api/v1/umkm', umkmRouter);
   app.use('/api/v1/roles', rolesRouter);
   app.use('/api/v1/permissions', permissionsRouter);
   app.use('/api/v1/audit-logs', auditRouter);
   app.use('/api/v1/consultation', consultationRouter);
+  app.use('/api/v1/onboarding', onboardingRouter); // Public registration
 
+  // Feature-flagged routes
+  if (featureFlags.MARKETPLACE_ENABLED) {
+    console.log('[API] Marketplace feature ENABLED');
+    app.use('/api/v1/marketplace', marketplaceRouter)
+    app.use('/api/v1/marketplace', storeRouter);
+    app.use('/api/v1/marketplace', uploadRouter);
+    app.use('/api/v1/marketplace', cartRouter);
+  } else {
+    // Return 404 for disabled marketplace routes
+    app.use('/api/v1/marketplace', requireFeature('MARKETPLACE_ENABLED'));
+  }
+
+  if (featureFlags.FINANCING_ENABLED) {
+    app.use('/api/v1/financing', financingRouter);
+  }
+
+  if (featureFlags.EXPORT_HUB_ENABLED) {
+    app.use('/api/v1/export', exportRouter);
+  }
+
+  if (featureFlags.COMMUNITY_ENABLED) {
+    app.use('/api/v1/community', communityRouter);
+  }
 
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
-  app.get('/', (_req, res) => {
-    res.json({ name: 'Semindo API', version: '0.1.0' })
-  })
-
-  app.use((req, res) => {
-    res.status(404).json({ error: 'Not Found', path: req.path })
-  })
-
-  // Initialize Cron Jobs
+  // Initialize background jobs
   const cronService = CronService.getInstance();
   cronService.init();
 
   return app
 }
-

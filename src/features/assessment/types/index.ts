@@ -6,14 +6,22 @@ export interface FileUploadAnswer {
     uploadedAt: Date;
 }
 
-export type AnswerValue = string | number | boolean | string[] | number[] | FileUploadAnswer | null;
+export interface LocationValue {
+    address: string;
+    city?: string;
+    province?: string;
+    lat: number;
+    lng: number;
+}
+
+export type AnswerValue = string | number | boolean | string[] | number[] | FileUploadAnswer | LocationValue | null;
 
 export interface AssessmentQuestion {
     id: string;
     templateId: string;
     categoryId: string;
     text: string;
-    type: 'multiple_choice' | 'scale' | 'boolean' | 'text';
+    type: 'multiple_choice' | 'scale' | 'boolean' | 'text' | 'location';
     options?: any;
     weight: number;
     order: number;

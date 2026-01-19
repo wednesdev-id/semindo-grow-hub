@@ -1,5 +1,5 @@
 import { db as prisma } from '../../utils/db';
-import { Store } from '@prisma/client';
+import { Store } from '../../../../prisma/generated/client';
 
 export const storeService = {
     createStore: async (userId: string, data: { name: string; slug: string; description?: string }) => {

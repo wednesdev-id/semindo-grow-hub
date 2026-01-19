@@ -80,8 +80,9 @@ export default function UMKMStats() {
                     <BarChart3 className="h-4 w-4 text-blue-500" />
                 </CardHeader>
                 <CardContent>
+
                     <div className="text-2xl font-bold">
-                        {stats.byLevel.sort((a, b) => b.count - a.count)[0]?.level || 'N/A'}
+                        {[...stats.byLevel].sort((a, b) => b.count - a.count)[0]?.level || 'N/A'}
                     </div>
                     <p className="text-xs text-muted-foreground">Most common segment</p>
                 </CardContent>
