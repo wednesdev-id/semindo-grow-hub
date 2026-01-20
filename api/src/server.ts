@@ -59,7 +59,7 @@ export function createServer(): Application {
   // Core routes (always enabled)
   app.use('/healthz', healthRouter)
   app.use('/api/v1/auth', authRouter)
-  app.use('/api/v1/users', usersRouter)
+  app.use('/api/v1/users', usersRouter) // Includes distribution map
   app.use('/api/v1/profile', profileRouter)
   app.use('/api/v1/assessment', assessmentRouter)
   app.use('/api/v1/lms', lmsRouter)

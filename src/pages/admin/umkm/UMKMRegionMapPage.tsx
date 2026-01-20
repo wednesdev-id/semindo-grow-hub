@@ -53,6 +53,7 @@ const PROVINCE_COORDINATES: Record<string, { lat: number; lng: number }> = {
     'Banten': { lat: -6.405817, lng: 106.064018 },
     'Jawa Tengah': { lat: -7.150975, lng: 110.140259 },
     'DI Yogyakarta': { lat: -7.797068, lng: 110.370529 },
+    'Daerah Istimewa Yogyakarta': { lat: -7.797068, lng: 110.370529 },
     'Jawa Timur': { lat: -7.536064, lng: 112.238402 },
     'Bali': { lat: -8.340539, lng: 115.091949 },
     'Nusa Tenggara Barat': { lat: -8.652930, lng: 117.361648 },
@@ -72,6 +73,11 @@ const PROVINCE_COORDINATES: Record<string, { lat: number; lng: number }> = {
     'Maluku Utara': { lat: 1.570858, lng: 127.808808 },
     'Papua': { lat: -4.269928, lng: 138.080353 },
     'Papua Barat': { lat: -1.336826, lng: 133.174166 },
+    // Common variations
+    'Jawa': { lat: -7.150975, lng: 110.140259 },
+    'Yogyakarta': { lat: -7.797068, lng: 110.370529 },
+    'DIY': { lat: -7.797068, lng: 110.370529 },
+    'Jakarta': { lat: -6.211544, lng: 106.845172 },
 };
 
 function ProvinceStatsCard({ stats, onClose }: { stats: RegionStats; onClose: () => void }) {
@@ -401,41 +407,114 @@ export default function UMKMRegionMapPage() {
                                 </Suspense>
                             ) : (
                                 <div className="border rounded-lg max-h-[500px] overflow-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Provinsi</TableHead>
-                                                <TableHead className="text-right">Jumlah UMKM</TableHead>
-                                                <TableHead className="text-right">%</TableHead>
-                                                <TableHead></TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {sortedProvinces.map((prov, idx) => (
-                                                <TableRow
-                                                    key={prov.province}
-                                                    className={`cursor-pointer ${selectedProvince === prov.province ? 'bg-primary/5' : ''}`}
-                                                    onClick={() => setSelectedProvince(prov.province)}
-                                                >
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-muted-foreground w-6">{idx + 1}.</span>
-                                                            <span className="font-medium">{prov.province}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell className="text-right font-mono">
-                                                        {prov.count.toLocaleString('id-ID')}
-                                                    </TableCell>
-                                                    <TableCell className="text-right text-muted-foreground">
-                                                        {totals.total > 0 ? Math.round((prov.count / totals.total) * 100) : 0}%
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                                    </TableCell>
+                                    {!selectedProvince ? (
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Provinsi</TableHead>
+                                                    <TableHead className="text-right">Jumlah UMKM</TableHead>
+                                                    <TableHead className="text-right">%</TableHead>
+                                                    <TableHead></TableHead>
                                                 </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {sortedProvinces.map((prov, idx) => (
+                                                    <TableRow
+                                                        key={prov.province}
+                                                        className={`cursor-pointer hover:bg-muted/50 transition-colors`}
+                                                        onClick={() => setSelectedProvince(prov.province)}
+                                                    >
+                                                        <TableCell>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-muted-foreground w-6">{idx + 1}.</span>
+                                                                <span className="font-medium">{prov.province}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono">
+                                                            {prov.count.toLocaleString('id-ID')}
+                                                        </TableCell>
+                                                        <TableCell className="text-right text-muted-foreground">
+                                                            {totals.total > 0 ? Math.round((prov.count / totals.total) * 100) : 0}%
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    ) : (
+                                        <div className="p-0">
+                                            <div className="p-4 border-b bg-muted/20 flex justify-between items-center sticky top-0 bg-background z-10">
+                                                <h3 className="font-semibold text-lg">
+                                                    Daftar UMKM di {selectedProvince}
+                                                </h3>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => setSelectedProvince(null)}
+                                                >
+                                                    ← Kembali ke Daftar Provinsi
+                                                </Button>
+                                            </div>
+                                            {mapDataLoading ? (
+                                                <div className="flex justify-center p-8">
+                                                    <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                                                </div>
+                                            ) : markers.length === 0 ? (
+                                                <div className="text-center p-8 text-muted-foreground">
+                                                    Tidak ada data UMKM yang ditemukan di wilayah ini.
+                                                </div>
+                                            ) : (
+                                                <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead>Nama Usaha</TableHead>
+                                                            <TableHead>Pemilik</TableHead>
+                                                            <TableHead>Kota/Kab</TableHead>
+                                                            <TableHead>Skala</TableHead>
+                                                            <TableHead>Omset</TableHead>
+                                                            <TableHead className="text-right">Aksi</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {markers.map((marker) => (
+                                                            <TableRow key={marker.id}>
+                                                                <TableCell className="font-medium">
+                                                                    {marker.businessName}
+                                                                </TableCell>
+                                                                <TableCell>{marker.ownerName}</TableCell>
+                                                                <TableCell>{marker.city}</TableCell>
+                                                                <TableCell>
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        style={{
+                                                                            borderColor: SEGMENTATION_COLORS[marker.segmentation] || '#9ca3af',
+                                                                            color: SEGMENTATION_COLORS[marker.segmentation] || '#9ca3af'
+                                                                        }}
+                                                                    >
+                                                                        {marker.segmentation}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell>
+                                                                    {marker.turnover ?
+                                                                        `Rp ${(marker.turnover / 1_000_000).toFixed(0)} Jt` :
+                                                                        '-'
+                                                                    }
+                                                                </TableCell>
+                                                                <TableCell className="text-right">
+                                                                    {/* Reuse getDetailUrl logic implicitly or link directly */}
+                                                                    <Button asChild size="sm" variant="outline">
+                                                                        <a href={`/admin/umkm/${marker.id}`}>Detail</a>
+                                                                    </Button>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </CardContent>

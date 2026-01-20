@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/services/api';
-import { ArrowLeft, Building2, MapPin, Phone, Mail, Globe, FileText, Users, Calendar, Plus } from 'lucide-react';
+import { ArrowLeft, Building2, MapPin, Phone, Mail, Globe, FileText, Users, Calendar, Plus, Pencil } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import {
     Dialog,
@@ -20,6 +20,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import LocationPickerField from '@/components/maps/LocationPickerField';
+import { LocationData } from '@/components/maps/MapPickerModal';
 
 import MentoringHistory from '../../../components/umkm/MentoringHistory';
 import DocumentList from '../../../components/umkm/DocumentList';
@@ -29,15 +32,41 @@ import { UMKMProfile } from '@/types/umkm';
 export default function UMKMDetailPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user, roles } = useAuth();
     const [profile, setProfile] = useState<UMKMProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [isMentorDialogOpen, setIsMentorDialogOpen] = useState(false);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [mentorForm, setMentorForm] = useState({
         topic: '',
         date: '',
         notes: '',
-        mentorId: '', // Ideally this would be a select from available mentors
+        mentorId: '',
     });
+    const [editForm, setEditForm] = useState({
+        businessName: '',
+        ownerName: '',
+        nib: '',
+        npwp: '',
+        phone: '',
+        email: '',
+        website: '',
+        address: '',
+        city: '',
+        province: '',
+        sector: '',
+        foundedYear: '',
+        employees: '',
+        turnover: '',
+        productionCapacity: '',
+    });
+    const [editLocation, setEditLocation] = useState<LocationData | null>(null);
+
+    // Check if user can edit (admin or owner)
+    const isAdmin = roles.includes('admin');
+    const isOwner = profile?.userId === user?.id;
+    const canEdit = isAdmin || isOwner;
 
     useEffect(() => {
         if (id) fetchProfile(id);
@@ -48,6 +77,35 @@ export default function UMKMDetailPage() {
         try {
             const response = await api.get<UMKMProfile>(`/umkm/${profileId}`);
             setProfile(response);
+            // Initialize edit form with profile data
+            setEditForm({
+                businessName: response.businessName || '',
+                ownerName: response.ownerName || '',
+                nib: response.nib || '',
+                npwp: response.npwp || '',
+                phone: response.phone || '',
+                email: response.email || '',
+                website: response.website || '',
+                address: response.address || '',
+                city: response.city || '',
+                province: response.province || '',
+                sector: response.sector || '',
+                foundedYear: response.foundedYear?.toString() || '',
+                employees: response.employees?.toString() || '',
+                turnover: response.turnover?.toString() || '',
+                productionCapacity: response.productionCapacity || '',
+            });
+            // Initialize location from profile
+            if (response.location) {
+                const loc = response.location as { lat?: number; lng?: number; address?: string };
+                if (loc.lat && loc.lng) {
+                    setEditLocation({
+                        lat: loc.lat,
+                        lng: loc.lng,
+                        address: loc.address || response.address || '',
+                    });
+                }
+            }
         } catch (error) {
             console.error('Failed to fetch UMKM profile', error);
         } finally {
@@ -63,19 +121,9 @@ export default function UMKMDetailPage() {
     const handleAssignMentor = async () => {
         if (!profile) return;
         try {
-            // In a real app, we'd have a separate endpoint or use the mentoring service directly
-            // For now, we'll simulate creating a session which effectively assigns a mentor
-            // Since we don't have a direct "Assign Mentor" endpoint that isn't a session,
-            // we will create a "Kickoff" session.
-
-            // Note: This assumes we have a way to get a mentor ID. 
-            // For this implementation, we'll just show a success message as if it worked,
-            // or we'd need to implement the full session creation flow.
-            // Let's implement the session creation flow.
-
             await api.post(`/mentoring/sessions`, {
                 umkmId: profile.id,
-                mentorId: 'user-id-placeholder', // This needs to be a real user ID with mentor role
+                mentorId: 'user-id-placeholder',
                 date: mentorForm.date || new Date().toISOString(),
                 topic: mentorForm.topic || 'Mentoring Assignment',
                 notes: mentorForm.notes,
@@ -86,11 +134,47 @@ export default function UMKMDetailPage() {
             setIsMentorDialogOpen(false);
             fetchProfile(profile.id);
         } catch (error) {
-            // Since we don't have a real mentor ID selector, this might fail.
-            // We'll show a toast for the UI demo.
             console.error('Failed to assign mentor', error);
             toast.success('Mentor assigned successfully (Demo)');
             setIsMentorDialogOpen(false);
+        }
+    };
+
+    const handleSaveEdit = async () => {
+        if (!profile) return;
+        setSaving(true);
+        try {
+            await api.put(`/umkm/${profile.id}`, {
+                businessName: editForm.businessName,
+                ownerName: editForm.ownerName,
+                nib: editForm.nib || null,
+                npwp: editForm.npwp || null,
+                phone: editForm.phone || null,
+                email: editForm.email || null,
+                website: editForm.website || null,
+                address: editLocation?.address || editForm.address || null,
+                city: editForm.city || null,
+                province: editForm.province || null,
+                sector: editForm.sector || null,
+                foundedYear: editForm.foundedYear ? parseInt(editForm.foundedYear) : null,
+                employees: editForm.employees ? parseInt(editForm.employees) : null,
+                turnover: editForm.turnover ? parseFloat(editForm.turnover) : null,
+                productionCapacity: editForm.productionCapacity || null,
+                location: editLocation ? {
+                    lat: editLocation.lat,
+                    lng: editLocation.lng,
+                    address: editLocation.address || '',
+                } : null,
+            });
+
+            toast.success('Profil UMKM berhasil diperbarui');
+            setIsEditDialogOpen(false);
+            fetchProfile(profile.id);
+        } catch (error) {
+            console.error('Failed to update profile', error);
+            toast.error('Gagal memperbarui profil');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -114,6 +198,12 @@ export default function UMKMDetailPage() {
                     </div>
                 </div>
                 <div className="ml-auto flex gap-2">
+                    {canEdit && (
+                        <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit Profil
+                        </Button>
+                    )}
                     <Badge variant="outline" className="text-lg px-4 py-1">
                         {profile.segmentation || 'Unsegmented'}
                     </Badge>
@@ -125,6 +215,182 @@ export default function UMKMDetailPage() {
                     </Badge>
                 </div>
             </div>
+
+            {/* Edit Profile Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Edit Profil UMKM</DialogTitle>
+                        <DialogDescription>
+                            Perbarui informasi bisnis Anda
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="businessName">Nama Usaha *</Label>
+                                <Input
+                                    id="businessName"
+                                    value={editForm.businessName}
+                                    onChange={(e) => setEditForm({ ...editForm, businessName: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="ownerName">Nama Pemilik *</Label>
+                                <Input
+                                    id="ownerName"
+                                    value={editForm.ownerName}
+                                    onChange={(e) => setEditForm({ ...editForm, ownerName: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="nib">NIB</Label>
+                                <Input
+                                    id="nib"
+                                    value={editForm.nib}
+                                    onChange={(e) => setEditForm({ ...editForm, nib: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="npwp">NPWP</Label>
+                                <Input
+                                    id="npwp"
+                                    value={editForm.npwp}
+                                    onChange={(e) => setEditForm({ ...editForm, npwp: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <Separator />
+                        <p className="text-sm font-medium">Kontak</p>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="phone">Telepon</Label>
+                                <Input
+                                    id="phone"
+                                    value={editForm.phone}
+                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={editForm.email}
+                                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="website">Website</Label>
+                                <Input
+                                    id="website"
+                                    value={editForm.website}
+                                    onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <Separator />
+                        <p className="text-sm font-medium">Alamat</p>
+                        <div className="grid gap-2">
+                            <LocationPickerField
+                                value={editLocation}
+                                onChange={(location) => {
+                                    setEditLocation(location);
+                                    if (location?.address) {
+                                        setEditForm(prev => ({ ...prev, address: location.address || '' }));
+                                    }
+                                }}
+                                province={editForm.province}
+                                error={!editLocation ? 'Lokasi belum dipilih' : undefined}
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="address">Alamat Lengkap</Label>
+                            <Textarea
+                                id="address"
+                                value={editForm.address}
+                                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                                rows={2}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="city">Kota/Kabupaten</Label>
+                                <Input
+                                    id="city"
+                                    value={editForm.city}
+                                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="province">Provinsi</Label>
+                                <Input
+                                    id="province"
+                                    value={editForm.province}
+                                    onChange={(e) => setEditForm({ ...editForm, province: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <Separator />
+                        <p className="text-sm font-medium">Informasi Bisnis</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="sector">Bidang Usaha</Label>
+                                <Input
+                                    id="sector"
+                                    value={editForm.sector}
+                                    onChange={(e) => setEditForm({ ...editForm, sector: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="foundedYear">Tahun Berdiri</Label>
+                                <Input
+                                    id="foundedYear"
+                                    type="number"
+                                    value={editForm.foundedYear}
+                                    onChange={(e) => setEditForm({ ...editForm, foundedYear: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="employees">Jumlah Karyawan</Label>
+                                <Input
+                                    id="employees"
+                                    type="number"
+                                    value={editForm.employees}
+                                    onChange={(e) => setEditForm({ ...editForm, employees: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="turnover">Omzet Tahunan (Rp)</Label>
+                                <Input
+                                    id="turnover"
+                                    type="number"
+                                    value={editForm.turnover}
+                                    onChange={(e) => setEditForm({ ...editForm, turnover: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="productionCapacity">Kapasitas Produksi</Label>
+                                <Input
+                                    id="productionCapacity"
+                                    value={editForm.productionCapacity}
+                                    onChange={(e) => setEditForm({ ...editForm, productionCapacity: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Batal</Button>
+                        <Button onClick={handleSaveEdit} disabled={saving}>
+                            {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Main Content */}
@@ -258,7 +524,6 @@ export default function UMKMDetailPage() {
 
                                         <div>
                                             <h4 className="font-medium mb-4">Assessment Details</h4>
-                                            {/* Since we don't have detailed assessment questions in the profile yet, we show the score */}
                                             <div className="space-y-4">
                                                 <div>
                                                     <div className="flex justify-between mb-1 text-sm">

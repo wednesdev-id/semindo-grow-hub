@@ -312,6 +312,9 @@ export class ApiClient {
       };
     }
 
+    // Clone the response so we can try text() if json() fails
+    const clonedResponse = response.clone();
+
     // Parse JSON response
     try {
       const data = await response.json();
@@ -347,14 +350,19 @@ export class ApiClient {
       };
 
     } catch (parseError) {
-      // Handle non-JSON responses
-      const text = await response.text();
+      // Handle non-JSON responses using the cloned response
+      let text = '';
+      try {
+        text = await clonedResponse.text();
+      } catch {
+        text = 'Unable to read response body';
+      }
 
       return {
         success: false,
         error: {
-          code: 'PARSE_ERROR',
-          message: 'Failed to parse response',
+          code: response.ok ? 'PARSE_ERROR' : `HTTP_${statusCode}`,
+          message: response.ok ? 'Failed to parse response' : (text || response.statusText),
           details: { parseError, responseText: text }
         },
         statusCode,

@@ -18,6 +18,7 @@ export const featureFlags = {
     COMMUNITY_ENABLED: import.meta.env.VITE_FEATURE_COMMUNITY !== 'false', // default enabled
     EXPORT_HUB_ENABLED: import.meta.env.VITE_FEATURE_EXPORT_HUB !== 'false', // default enabled
     FINANCING_ENABLED: import.meta.env.VITE_FEATURE_FINANCING !== 'false', // default enabled
+    EVENT_MANAGEMENT_ENABLED: import.meta.env.VITE_EVENT_MANAGEMENT !== 'false', // default enabled
 };
 
 /**

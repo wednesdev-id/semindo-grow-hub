@@ -22,6 +22,7 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelLeftOpen,
+  Calendar,
 } from "lucide-react";
 
 type NavItem = {
@@ -82,6 +83,7 @@ const getMenuItems = (): {
         { name: "Audit Aktivitas Pengguna", path: "/users/audit", roles: ["admin", "management"] },
         // Consultant Self-Service
         { name: "Profil Konsultan Saya", path: "/consultants/my-profile", roles: ["consultant", "konsultan"] },
+        { name: "Pemetaan User", path: "/users/map", roles: ["admin", "management"] },
       ],
     },
     // 3. UMKM Database (Feature Flagged)
@@ -99,6 +101,15 @@ const getMenuItems = (): {
         { name: "Event & Pelatihan", path: "/umkm/events", roles: ["umkm", "admin"], badge: "New", badgeColor: "bg-blue-500" },
       ],
     }] : []),
+    // 4. Event Management (New Module)
+    ...(featureFlags.EVENT_MANAGEMENT_ENABLED ? [{
+      icon: <Calendar size={20} />,
+      name: "Manajemen Event",
+      subItems: [
+        { name: "Daftar Event", path: "/events", roles: ["admin", "management", "mentor"] },
+        { name: "Buat Event", path: "/events/new", roles: ["admin", "management", "mentor"] },
+      ],
+    }] : []),
     // 4. Mentor Management (Feature Flagged)
     ...(featureFlags.MENTOR_MANAGEMENT_ENABLED ? [{
       icon: <UserCheck size={20} />,
@@ -106,7 +117,7 @@ const getMenuItems = (): {
       subItems: [
         { name: "Daftar Mentor", path: "/mentors/list", roles: ["admin", "management"] },
         { name: "Assign UMKM ke Mentor", path: "/mentors/assign", roles: ["admin", "management"] },
-        { name: "Manajemen Event", path: "/mentor/events", roles: ["admin", "mentor"], badge: "New", badgeColor: "bg-green-500" },
+
         { name: "Status & Aktivitas Mentor", path: "/mentors/activity", roles: ["admin", "management", "mentor"] },
         { name: "Jadwal Pendampingan", path: "/mentors/schedule" },
         { name: "Laporan & KPI Mentor", path: "/mentors/reports", roles: ["admin", "management"] },

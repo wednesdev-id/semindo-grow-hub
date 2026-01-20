@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { User } from '@/types/auth'
 import { userService } from '@/services/userService'
 import { roleService } from '@/services/roleService'
@@ -60,7 +61,8 @@ interface UserManagementProps {
 export default function UserManagement({ defaultRole }: UserManagementProps) {
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(true)
-    const [search, setSearch] = useState('')
+    const [searchSearchParams] = useSearchParams();
+    const [search, setSearch] = useState(searchSearchParams.get('search') || '')
     const [page, setPage] = useState(1)
     const [totalPages, setTotalPages] = useState(1)
     const [isDialogOpen, setIsDialogOpen] = useState(false)

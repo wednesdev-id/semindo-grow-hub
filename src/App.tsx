@@ -141,9 +141,9 @@ const PublicCourseCatalog = lazy(() => import("./pages/public/CourseCatalogPage"
 
 // Mentor Pages
 const MentorDashboard = lazy(() => import("./pages/dashboards/MentorDashboard"));
-const EventManagementPage = lazy(() => import("./pages/mentor/EventManagementPage"));
-const EventFormPage = lazy(() => import("./pages/mentor/EventFormPage"));
-const MentorEventDetailPage = lazy(() => import("./pages/mentor/EventDetailPage"));
+const EventManagementPage = lazy(() => import("./pages/event/EventManagementPage"));
+const EventFormPage = lazy(() => import("./pages/event/EventFormPage"));
+const MentorEventDetailPage = lazy(() => import("./pages/event/EventDetailPage"));
 const MyUMKMPage = lazy(() => import("./pages/mentor/MyUMKMPage"));
 const MentorCourseListPage = lazy(() => import("./pages/mentor/MentorCourseListPage"));
 const MentorCourseFormPage = lazy(() => import("./pages/mentor/MentorCourseFormPage"));
@@ -160,6 +160,9 @@ const AnalyticsTracker = () => {
   useAnalytics();
   return null;
 };
+
+const UserDistributionMapPage = lazy(() => import("./pages/admin/users/UserDistributionMapPage"));
+const UserDetailPage = lazy(() => import("./pages/admin/users/UserDetailPage"));
 
 const App = () => {
   const container = useMemo(() => ServiceContainer.getInstance(), []);
@@ -273,6 +276,7 @@ const App = () => {
                         <Route index element={<Navigate to="dashboard" replace />} />
                         <Route path="dashboard" element={<AdminDashboard />} />
                         <Route path="users" element={<UserManagement />} />
+                        <Route path="users/:id" element={<UserDetailPage />} />
                         <Route path="umkm" element={<UMKMListPage />} />
                         <Route path="umkm/:id" element={<UMKMDetailPage />} />
                         <Route path="products" element={<ProductModerationPage />} />
@@ -321,6 +325,7 @@ const App = () => {
                         />} />
 
                         {/* User Management */}
+                        <Route path="/users/map" element={<UserDistributionMapPage />} />
                         <Route path="/admin/users" element={<UserManagement />} />
                         <Route path="/users/all" element={<UserManagement />} />
                         <Route path="/users/consultants" element={<ConsultantManagement />} />
@@ -401,6 +406,20 @@ const App = () => {
                           description="Analisis pembelajaran dan performa siswa."
                           features={["Progress tracking", "Completion rates", "Performance metrics"]}
                         />} />
+
+                        {/* Mentor Dashboard & Events */}
+                        <Route path="/mentor/dashboard" element={<MentorDashboard />} />
+
+                        {/* Event Management */}
+                        <Route path="/events" element={<EventManagementPage />} />
+                        <Route path="/events/new" element={<EventFormPage />} />
+                        <Route path="/events/:id" element={<MentorEventDetailPage />} />
+                        <Route path="/events/:id/edit" element={<EventFormPage />} />
+                        <Route path="/mentor/my-umkm" element={<MyUMKMPage />} />
+                        <Route path="/mentor/courses" element={<MentorCourseListPage />} />
+                        <Route path="/mentor/courses/new" element={<MentorCourseFormPage />} />
+                        <Route path="/mentor/courses/:id/edit" element={<MentorCourseFormPage />} />
+                        <Route path="/mentor/umkm/:id" element={<MentorUMKMDetailPage />} />
 
                         {/* Consultation Manager */}
                         <Route path="/consultation/schedule" element={<FeaturePreviewPage

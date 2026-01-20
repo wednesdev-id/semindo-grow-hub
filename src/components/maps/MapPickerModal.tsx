@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Search, Loader2, X } from 'lucide-react';
+import { MapPin, Search, Loader2, X, Locate } from 'lucide-react';
+import { toast } from 'sonner';
 import { INDONESIA_CENTER, PROVINCE_COORDINATES } from './OpenStreetMap';
 
 // Fix for default marker icons
@@ -132,7 +133,8 @@ async function searchAddress(query: string): Promise<Array<{
                 },
             }
         );
-        return await response.json();
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
     } catch (error) {
         console.error('Geocoding error:', error);
         return [];
@@ -189,6 +191,7 @@ export default function MapPickerModal({
     const [isSearching, setIsSearching] = useState(false);
     const [address, setAddress] = useState<string>(initialLocation?.address || '');
     const [showResults, setShowResults] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
     const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     // Reset position when modal opens
@@ -202,11 +205,16 @@ export default function MapPickerModal({
     }, [open, getInitialPosition, initialLocation]);
 
     // Update address when position changes
+    // Update address when position changes with debounce
     useEffect(() => {
         if (position) {
-            reverseGeocode(position.lat, position.lng).then(addr => {
-                if (addr) setAddress(addr);
-            });
+            const timer = setTimeout(() => {
+                reverseGeocode(position.lat, position.lng).then(addr => {
+                    if (addr) setAddress(addr);
+                });
+            }, 1000); // Debounce 1s to respect OSM rate limits
+
+            return () => clearTimeout(timer);
         }
     }, [position]);
 
@@ -229,6 +237,7 @@ export default function MapPickerModal({
         } else {
             setSearchResults([]);
             setShowResults(false);
+            setIsSearching(false);
         }
     };
 
@@ -256,6 +265,31 @@ export default function MapPickerModal({
         setPosition(latlng);
     };
 
+    const handleUseCurrentLocation = () => {
+        setIsLocating(true);
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const newPosition = L.latLng(latitude, longitude);
+                    setPosition(newPosition);
+                    // Address will be updated by useEffect
+                    setIsLocating(false);
+                    setIsLocating(false);
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    toast.error('Gagal mendapatkan lokasi saat ini. Pastikan GPS aktif.');
+                    setIsLocating(false);
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            toast.error('Browser Anda tidak mendukung geolokasi.');
+            setIsLocating(false);
+        }
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
@@ -270,47 +304,71 @@ export default function MapPickerModal({
                 </DialogHeader>
 
                 {/* Search Box */}
-                <div className="relative">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input
-                            placeholder="Cari alamat atau nama tempat..."
-                            value={searchQuery}
-                            onChange={(e) => handleSearchChange(e.target.value)}
-                            className="pl-10 pr-10"
-                        />
-                        {isSearching && (
-                            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
-                        )}
-                        {searchQuery && !isSearching && (
-                            <button
-                                onClick={() => {
-                                    setSearchQuery('');
-                                    setSearchResults([]);
-                                    setShowResults(false);
-                                }}
-                                className="absolute right-3 top-1/2 -translate-y-1/2"
-                            >
-                                <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
-                            </button>
+                {/* Search Box */}
+                <div className="relative z-[2000] flex gap-2">
+                    <div className="relative flex-1">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Input
+                                placeholder="Cari alamat atau nama tempat..."
+                                value={searchQuery}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                className="pl-10 pr-10"
+                            />
+                            {isSearching && (
+                                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-gray-400" />
+                            )}
+                            {searchQuery && !isSearching && (
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setSearchResults([]);
+                                        setShowResults(false);
+                                        setIsSearching(false);
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                                >
+                                    <X className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Search Results Dropdown */}
+                        {showResults && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                {searchResults.length > 0 ? (
+                                    searchResults.map((result, index) => (
+                                        <button
+                                            key={index}
+                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
+                                            onClick={() => handleSelectResult(result)}
+                                        >
+                                            <MapPin className="inline w-4 h-4 mr-2 text-red-500" />
+                                            {result.display_name}
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                                        Tidak ditemukan hasil untuk "{searchQuery}"
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
 
-                    {/* Search Results Dropdown */}
-                    {showResults && searchResults.length > 0 && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                            {searchResults.map((result, index) => (
-                                <button
-                                    key={index}
-                                    className="w-full px-4 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
-                                    onClick={() => handleSelectResult(result)}
-                                >
-                                    <MapPin className="inline w-4 h-4 mr-2 text-red-500" />
-                                    {result.display_name}
-                                </button>
-                            ))}
-                        </div>
-                    )}
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleUseCurrentLocation}
+                        disabled={isLocating}
+                        title="Gunakan lokasi saat ini"
+                    >
+                        {isLocating ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Locate className="w-4 h-4" />
+                        )}
+                    </Button>
                 </div>
 
                 {/* Map Container */}
@@ -356,7 +414,21 @@ export default function MapPickerModal({
                     </div>
                 )}
 
-                <DialogFooter>
+                <DialogFooter className="gap-2 sm:gap-2">
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleUseCurrentLocation}
+                        disabled={isLocating}
+                        className="mr-auto"
+                    >
+                        {isLocating ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                            <Locate className="w-4 h-4 mr-2" />
+                        )}
+                        Lokasi Saya
+                    </Button>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
                         Batal
                     </Button>

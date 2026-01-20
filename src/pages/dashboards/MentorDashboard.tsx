@@ -102,7 +102,7 @@ export default function MentorDashboard() {
                     </p>
                 </div>
                 <button
-                    onClick={() => navigate('/mentor/events/new')}
+                    onClick={() => navigate('/events/new')}
                     className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                 >
                     <Plus className="w-4 h-4" />
@@ -144,7 +144,7 @@ export default function MentorDashboard() {
                     title="Kelola Event"
                     description="Buat dan kelola workshop/gathering untuk UMKM"
                     icon={CalendarDays}
-                    to="/mentor/events"
+                    to="/events"
                 />
                 <QuickActionCard
                     title="UMKM Dampingan"
@@ -167,7 +167,7 @@ export default function MentorDashboard() {
                         Event Mendatang
                     </h2>
                     <Link
-                        to="/mentor/events"
+                        to="/events"
                         className="text-sm text-primary-600 hover:text-primary-700"
                     >
                         Lihat Semua →
@@ -183,7 +183,7 @@ export default function MentorDashboard() {
                             <CalendarDays className="w-12 h-12 mx-auto mb-3 opacity-50" />
                             <p>Belum ada event mendatang</p>
                             <button
-                                onClick={() => navigate('/mentor/events/new')}
+                                onClick={() => navigate('/events/new')}
                                 className="mt-3 text-primary-600 hover:text-primary-700"
                             >
                                 + Buat Event Pertama
@@ -260,7 +260,7 @@ function EventListItem({ event }: { event: MentorEvent }) {
 
     return (
         <Link
-            to={`/mentor/events/${event.id}`}
+            to={`/events/${event.id}`}
             className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
         >
             <div className="flex-shrink-0 w-12 h-12 bg-primary-50 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">

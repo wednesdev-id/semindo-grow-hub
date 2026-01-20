@@ -1,10 +1,13 @@
 import { Router } from 'express'
 import { UsersController } from '../controllers/users.controller'
+import { UserMapController } from '../controllers/user-map.controller'
 import { authenticate, requireRole } from '../../middlewares/auth.middleware'
 import { upload } from '../../utils/upload.service'
 
 const router = Router()
 const controller = new UsersController()
+const mapController = new UserMapController()
+
 
 // Apply authentication to all routes
 router.use(authenticate)
@@ -21,6 +24,10 @@ router.post('/me/change-password', controller.changePassword)
 
 // POST /api/v1/users/me/upload-picture - Upload profile picture
 router.post('/me/upload-picture', upload.single('picture'), controller.uploadProfilePicture)
+
+// Map Distribution Route (Must be before /:id)
+// GET /api/v1/users/distribution - Get user distribution map data
+router.get('/distribution', requireRole(['admin', 'super_admin', 'management']), mapController.getDistribution)
 
 // Admin Routes
 // GET /api/v1/users - List users (Admin/SuperAdmin)

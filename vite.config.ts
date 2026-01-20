@@ -15,10 +15,14 @@ export default defineConfig(({ mode }) => ({
       'sinergiumkmindonesia.com',
       'localhost',
     ],
-    hmr: {
-      clientPort: 443, // Cloudflare uses HTTPS on port 443
-      protocol: 'wss', // Secure WebSocket
-    },
+    // HMR config only for Cloudflare tunnel (production/staging)
+    // For localhost, use default HMR settings
+    ...(process.env.VITE_HMR_CLOUDFLARE === 'true' ? {
+      hmr: {
+        clientPort: 443,
+        protocol: 'wss',
+      },
+    } : {}),
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

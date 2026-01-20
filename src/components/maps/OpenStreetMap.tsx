@@ -41,6 +41,16 @@ const markerClusterStyles = `
 .marker-cluster span {
   line-height: 30px;
 }
+/* Constrain leaflet z-index to stay below navigation */
+.leaflet-pane {
+  z-index: 40 !important;
+}
+.leaflet-top, .leaflet-bottom {
+  z-index: 45 !important;
+}
+.leaflet-popup {
+  z-index: 50 !important;
+}
 `;
 
 // Inject cluster styles
@@ -139,6 +149,7 @@ export const PROVINCE_COORDINATES: Record<string, { lat: number; lng: number }> 
     'Banten': { lat: -6.405817, lng: 106.064018 },
     'Jawa Tengah': { lat: -7.150975, lng: 110.140259 },
     'DI Yogyakarta': { lat: -7.797068, lng: 110.370529 },
+    'Daerah Istimewa Yogyakarta': { lat: -7.797068, lng: 110.370529 },
     'Jawa Timur': { lat: -7.536064, lng: 112.238402 },
     'Bali': { lat: -8.340539, lng: 115.091949 },
     'Nusa Tenggara Barat': { lat: -8.652930, lng: 117.361648 },
@@ -162,6 +173,11 @@ export const PROVINCE_COORDINATES: Record<string, { lat: number; lng: number }> 
     'Papua Pegunungan': { lat: -4.100000, lng: 138.500000 },
     'Papua Selatan': { lat: -6.500000, lng: 139.500000 },
     'Papua Barat Daya': { lat: -2.000000, lng: 131.500000 },
+    // Common variations from reverse geocoding
+    'Jawa': { lat: -7.150975, lng: 110.140259 },
+    'Yogyakarta': { lat: -7.797068, lng: 110.370529 },
+    'DIY': { lat: -7.797068, lng: 110.370529 },
+    'Jakarta': { lat: -6.211544, lng: 106.845172 },
 };
 
 export interface UMKMMapMarker {
@@ -170,8 +186,10 @@ export interface UMKMMapMarker {
     ownerName?: string;
     lat: number;
     lng: number;
+    address?: string;
     province: string;
     city?: string;
+    umkmId?: string;
     segmentation: string;
     level?: string;
     sector?: string;
@@ -226,6 +244,122 @@ function MapController({
     return null;
 }
 
+// ZoomableMarker component - zooms to street level when clicked
+function ZoomableMarker({
+    marker,
+    icon,
+    color,
+    onMarkerClick,
+    getDetailUrl,
+    children,
+}: {
+    marker: UMKMMapMarker;
+    icon: L.DivIcon;
+    color: string;
+    onMarkerClick?: (marker: UMKMMapMarker) => void;
+    getDetailUrl?: (marker: UMKMMapMarker) => string;
+    children?: React.ReactNode;
+}) {
+    const map = useMap();
+
+    const handleClick = () => {
+        // Zoom to street level (17) for clear view
+        map.setView([marker.lat, marker.lng], 17, {
+            animate: true,
+            duration: 0.8,
+        });
+        onMarkerClick?.(marker);
+    };
+
+    return (
+        <Marker
+            position={[marker.lat, marker.lng]}
+            icon={icon}
+            eventHandlers={{
+                click: handleClick,
+            }}
+        >
+            <Popup>
+                <div className="min-w-[220px]">
+                    <div className="font-semibold text-base">{marker.businessName}</div>
+                    {marker.ownerName && (
+                        <div className="text-sm text-gray-600">{marker.ownerName}</div>
+                    )}
+                    <div className="mt-2 space-y-1">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Lokasi:</span>
+                            <span className="text-right max-w-[140px] truncate">
+                                {marker.address || `${marker.city ? `${marker.city}, ` : ''}${marker.province}`}
+                            </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Segmentasi:</span>
+                            <span
+                                className="px-2 py-0.5 rounded text-white text-xs"
+                                style={{ backgroundColor: color }}
+                            >
+                                {marker.segmentation}
+                            </span>
+                        </div>
+                        {marker.level && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Level:</span>
+                                <span>{marker.level}</span>
+                            </div>
+                        )}
+                        {marker.sector && (
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Sektor:</span>
+                                <span>{marker.sector}</span>
+                            </div>
+                        )}
+                        {/* Statistics Section */}
+                        <div className="border-t pt-2 mt-2">
+                            {marker.turnover != null && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Omzet/Tahun:</span>
+                                    <span className="font-medium text-green-600">
+                                        Rp {marker.turnover.toLocaleString('id-ID')}
+                                    </span>
+                                </div>
+                            )}
+                            {marker.employees != null && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Karyawan:</span>
+                                    <span className="font-medium">
+                                        {marker.employees} orang
+                                    </span>
+                                </div>
+                            )}
+                            {marker.status && (
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Status:</span>
+                                    <span className={`px-2 py-0.5 rounded text-xs ${marker.status === 'verified'
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                        {marker.status === 'verified' ? 'Terverifikasi' : 'Pending'}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                        {/* Detail Button */}
+                        <div className="mt-3 pt-2 border-t">
+                            <Link
+                                to={getDetailUrl ? getDetailUrl(marker) : `/admin/umkm/${marker.id}`}
+                                className="block w-full text-center py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-sm font-medium rounded transition-colors"
+                                style={{ color: 'white' }}
+                            >
+                                Lihat Detail
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </Popup>
+        </Marker>
+    );
+}
+
 // Legend component
 function MapLegend() {
     return (
@@ -258,7 +392,7 @@ interface OpenStreetMapProps {
     className?: string;
     showLegend?: boolean;
     height?: string;
-    getDetailUrl?: (id: string) => string;
+    getDetailUrl?: (marker: UMKMMapMarker) => string;
 }
 
 export default function OpenStreetMap({
@@ -281,7 +415,7 @@ export default function OpenStreetMap({
     const zoom = selectedProvince ? 8 : INDONESIA_ZOOM;
 
     return (
-        <div className={`relative rounded-lg overflow-hidden ${className}`} style={{ height }}>
+        <div className={`relative rounded-lg overflow-hidden ${className}`} style={{ height, zIndex: 0 }}>
             <MapContainer
                 center={center}
                 zoom={zoom}
@@ -384,89 +518,14 @@ export default function OpenStreetMap({
                             const icon = createCustomIcon(color, 20);
 
                             return (
-                                <Marker
+                                <ZoomableMarker
                                     key={marker.id}
-                                    position={[marker.lat, marker.lng]}
+                                    marker={marker}
                                     icon={icon}
-                                    eventHandlers={{
-                                        click: () => onMarkerClick?.(marker),
-                                    }}
-                                >
-                                    <Popup>
-                                        <div className="min-w-[220px]">
-                                            <div className="font-semibold text-base">{marker.businessName}</div>
-                                            {marker.ownerName && (
-                                                <div className="text-sm text-gray-600">{marker.ownerName}</div>
-                                            )}
-                                            <div className="mt-2 space-y-1">
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Lokasi:</span>
-                                                    <span>{marker.city ? `${marker.city}, ` : ''}{marker.province}</span>
-                                                </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Segmentasi:</span>
-                                                    <span
-                                                        className="px-2 py-0.5 rounded text-white text-xs"
-                                                        style={{ backgroundColor: color }}
-                                                    >
-                                                        {marker.segmentation}
-                                                    </span>
-                                                </div>
-                                                {marker.level && (
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-gray-500">Level:</span>
-                                                        <span>{marker.level}</span>
-                                                    </div>
-                                                )}
-                                                {marker.sector && (
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className="text-gray-500">Sektor:</span>
-                                                        <span>{marker.sector}</span>
-                                                    </div>
-                                                )}
-                                                {/* Statistics Section */}
-                                                <div className="border-t pt-2 mt-2">
-                                                    {marker.turnover != null && (
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className="text-gray-500">Omzet/Tahun:</span>
-                                                            <span className="font-medium text-green-600">
-                                                                Rp {marker.turnover.toLocaleString('id-ID')}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {marker.employees != null && (
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className="text-gray-500">Karyawan:</span>
-                                                            <span className="font-medium">
-                                                                {marker.employees} orang
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {marker.status && (
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className="text-gray-500">Status:</span>
-                                                            <span className={`px-2 py-0.5 rounded text-xs ${marker.status === 'verified'
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : 'bg-yellow-100 text-yellow-800'
-                                                                }`}>
-                                                                {marker.status === 'verified' ? 'Terverifikasi' : 'Pending'}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {/* Detail Button */}
-                                                <div className="mt-3 pt-2 border-t">
-                                                    <Link
-                                                        to={getDetailUrl ? getDetailUrl(marker.id) : `/admin/umkm/${marker.id}`}
-                                                        className="block w-full text-center py-1.5 px-3 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded transition-colors"
-                                                    >
-                                                        Lihat Detail
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </Popup>
-                                </Marker>
+                                    color={color}
+                                    onMarkerClick={onMarkerClick}
+                                    getDetailUrl={getDetailUrl}
+                                />
                             );
                         })}
                     </MarkerClusterGroup>
