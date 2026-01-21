@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAllRequests = exports.getRecentActivities = exports.getExpertiseDistribution = exports.getTopConsultants = exports.getAnalyticsTrends = exports.getStatsOverview = void 0;
-const client_1 = require("../../../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../lib/prisma");
 /**
  * Get admin dashboard statistics overview
  * GET /api/consultation/admin/stats/overview
@@ -10,23 +9,23 @@ const prisma = new client_1.PrismaClient();
 const getStatsOverview = async (req, res) => {
     try {
         // Consultant stats
-        const totalConsultants = await prisma.consultantProfile.count();
-        const pendingConsultants = await prisma.consultantProfile.count({
+        const totalConsultants = await prisma_1.prisma.consultantProfile.count();
+        const pendingConsultants = await prisma_1.prisma.consultantProfile.count({
             where: { status: 'pending' }
         });
-        const activeConsultants = await prisma.consultantProfile.count({
+        const activeConsultants = await prisma_1.prisma.consultantProfile.count({
             where: { status: 'approved' }
         });
-        const suspendedConsultants = await prisma.consultantProfile.count({
+        const suspendedConsultants = await prisma_1.prisma.consultantProfile.count({
             where: { status: 'suspended' }
         });
         // Request stats
-        const totalRequests = await prisma.consultationRequest.count();
+        const totalRequests = await prisma_1.prisma.consultationRequest.count();
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
-        const requestsToday = await prisma.consultationRequest.count({
+        const requestsToday = await prisma_1.prisma.consultationRequest.count({
             where: {
                 createdAt: {
                     gte: today,
@@ -35,27 +34,27 @@ const getStatsOverview = async (req, res) => {
             }
         });
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const requestsThisMonth = await prisma.consultationRequest.count({
+        const requestsThisMonth = await prisma_1.prisma.consultationRequest.count({
             where: {
                 createdAt: {
                     gte: firstDayOfMonth
                 }
             }
         });
-        const pendingRequests = await prisma.consultationRequest.count({
+        const pendingRequests = await prisma_1.prisma.consultationRequest.count({
             where: { status: 'pending' }
         });
-        const approvedRequests = await prisma.consultationRequest.count({
+        const approvedRequests = await prisma_1.prisma.consultationRequest.count({
             where: { status: 'approved' }
         });
-        const completedRequests = await prisma.consultationRequest.count({
+        const completedRequests = await prisma_1.prisma.consultationRequest.count({
             where: { status: 'completed' }
         });
-        const cancelledRequests = await prisma.consultationRequest.count({
+        const cancelledRequests = await prisma_1.prisma.consultationRequest.count({
             where: { status: 'cancelled' }
         });
         // Calculate average rating
-        const consultantsWithRating = await prisma.consultantProfile.findMany({
+        const consultantsWithRating = await prisma_1.prisma.consultantProfile.findMany({
             where: { status: 'approved' },
             select: { averageRating: true }
         });
@@ -125,7 +124,7 @@ const getAnalyticsTrends = async (req, res) => {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days);
         // Get requests grouped by date
-        const requests = await prisma.consultationRequest.findMany({
+        const requests = await prisma_1.prisma.consultationRequest.findMany({
             where: {
                 createdAt: {
                     gte: startDate,
@@ -206,7 +205,7 @@ const getTopConsultants = async (req, res) => {
                 valueField = 'totalSessions';
                 break;
         }
-        const consultants = await prisma.consultantProfile.findMany({
+        const consultants = await prisma_1.prisma.consultantProfile.findMany({
             where: { status: 'approved' },
             select: {
                 id: true,
@@ -249,7 +248,7 @@ exports.getTopConsultants = getTopConsultants;
 const getExpertiseDistribution = async (req, res) => {
     try {
         // Get all consultants with their expertise areas
-        const consultants = await prisma.consultantProfile.findMany({
+        const consultants = await prisma_1.prisma.consultantProfile.findMany({
             where: { status: 'approved' },
             select: { expertiseAreas: true }
         });
@@ -287,7 +286,7 @@ const getRecentActivities = async (req, res) => {
         const { limit = '10' } = req.query;
         const limitNum = parseInt(limit);
         // Get recent requests
-        const recentRequests = await prisma.consultationRequest.findMany({
+        const recentRequests = await prisma_1.prisma.consultationRequest.findMany({
             take: limitNum,
             orderBy: { createdAt: 'desc' },
             include: {
@@ -309,7 +308,7 @@ const getRecentActivities = async (req, res) => {
             }
         });
         // Get recent consultant registrations
-        const recentConsultants = await prisma.consultantProfile.findMany({
+        const recentConsultants = await prisma_1.prisma.consultantProfile.findMany({
             take: Math.min(5, limitNum),
             orderBy: { createdAt: 'desc' },
             include: {
@@ -322,7 +321,7 @@ const getRecentActivities = async (req, res) => {
             }
         });
         // Get recent reviews
-        const recentReviews = await prisma.consultationReview.findMany({
+        const recentReviews = await prisma_1.prisma.consultationReview.findMany({
             take: Math.min(5, limitNum),
             orderBy: { createdAt: 'desc' },
             include: {
@@ -411,7 +410,7 @@ const getAllRequests = async (req, res) => {
             whereClause.status = status;
         }
         const [requests, totalCount] = await Promise.all([
-            prisma.consultationRequest.findMany({
+            prisma_1.prisma.consultationRequest.findMany({
                 where: whereClause,
                 select: {
                     id: true,
@@ -446,7 +445,7 @@ const getAllRequests = async (req, res) => {
                 skip,
                 take: limitNum
             }),
-            prisma.consultationRequest.count({ where: whereClause })
+            prisma_1.prisma.consultationRequest.count({ where: whereClause })
         ]);
         res.json({
             requests,

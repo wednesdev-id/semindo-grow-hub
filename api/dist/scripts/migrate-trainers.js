@@ -1,12 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 async function migrateTrainers() {
     console.log('🔄 Starting Trainer Migration...');
     // 1. Get the 'konsultan' and 'trainer' role IDs
-    const trainerRole = await prisma.role.findUnique({ where: { name: 'trainer' } });
-    const konsultanRole = await prisma.role.findUnique({ where: { name: 'konsultan' } });
+    const trainerRole = await prisma_1.prisma.role.findUnique({ where: { name: 'trainer' } });
+    const konsultanRole = await prisma_1.prisma.role.findUnique({ where: { name: 'konsultan' } });
     if (!konsultanRole) {
         console.error('❌ Role "konsultan" not found! Run seed first.');
         return;
@@ -16,7 +15,7 @@ async function migrateTrainers() {
     // Find all users who MIGHT be trainers (e.g. have 'trainer' role or were manually tagged)
     let trainers = [];
     if (trainerRole) {
-        trainers = await prisma.user.findMany({
+        trainers = await prisma_1.prisma.user.findMany({
             where: {
                 userRoles: {
                     some: {
@@ -41,7 +40,7 @@ async function migrateTrainers() {
             // 1. Assign 'konsultan' role if not already assigned
             const hasKonsultan = trainer.userRoles.some((r) => r.roleId === konsultanRole.id);
             if (!hasKonsultan) {
-                await prisma.userRole.create({
+                await prisma_1.prisma.userRole.create({
                     data: {
                         userId: trainer.id,
                         roleId: konsultanRole.id
@@ -53,7 +52,7 @@ async function migrateTrainers() {
             if (trainerRole) {
                 // Note: Prisma many-to-many delete might need explicit table access if using valid relations
                 // But here we access UserRole directly
-                await prisma.userRole.deleteMany({
+                await prisma_1.prisma.userRole.deleteMany({
                     where: {
                         userId: trainer.id,
                         roleId: trainerRole.id
@@ -62,11 +61,11 @@ async function migrateTrainers() {
                 console.log('  🗑️ Removed "trainer" role');
             }
             // 3. Create/Update Consultant Profile with LMS capability
-            const existingProfile = await prisma.consultantProfile.findUnique({
+            const existingProfile = await prisma_1.prisma.consultantProfile.findUnique({
                 where: { userId: trainer.id }
             });
             if (!existingProfile) {
-                await prisma.consultantProfile.create({
+                await prisma_1.prisma.consultantProfile.create({
                     data: {
                         userId: trainer.id,
                         title: 'Professional Instructor', // Default title
@@ -83,7 +82,7 @@ async function migrateTrainers() {
                 console.log('  ✨ Created ConsultantProfile (LMS Instructor)');
             }
             else {
-                await prisma.consultantProfile.update({
+                await prisma_1.prisma.consultantProfile.update({
                     where: { id: existingProfile.id },
                     data: {
                         canTeachCourses: true, // Enable LMS
@@ -104,5 +103,5 @@ migrateTrainers()
     process.exit(1);
 })
     .finally(async () => {
-    await prisma.$disconnect();
+    await prisma_1.prisma.$disconnect();
 });

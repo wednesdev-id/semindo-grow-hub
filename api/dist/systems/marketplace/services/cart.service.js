@@ -20,7 +20,6 @@ exports.cartService = {
                                 }
                             }
                         },
-                        variant: true,
                     },
                     orderBy: {
                         product: {
@@ -41,7 +40,6 @@ exports.cartService = {
                                     store: true
                                 }
                             },
-                            variant: true
                         }
                     }
                 }
@@ -49,13 +47,12 @@ exports.cartService = {
         }
         return cart;
     },
-    addToCart: async (userId, productId, quantity, variantId) => {
+    addToCart: async (userId, productId, quantity) => {
         const cart = await exports.cartService.getCart(userId);
         const existingItem = await db_1.db.cartItem.findFirst({
             where: {
                 cartId: cart.id,
                 productId,
-                variantId: variantId || null,
             }
         });
         if (existingItem) {
@@ -69,7 +66,6 @@ exports.cartService = {
                 cartId: cart.id,
                 productId,
                 quantity,
-                variantId,
             }
         });
     },

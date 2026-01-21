@@ -1,14 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.unarchiveRequest = exports.archiveRequest = exports.getAvailableSlots = exports.updateSessionNotes = exports.payRequest = exports.updateMeetingLink = exports.completeSession = exports.rejectRequest = exports.acceptRequest = exports.getRequestDetails = exports.getUserRequests = exports.createConsultationRequest = void 0;
-const client_1 = require("../../../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../lib/prisma");
 /**
  * Create consultation request
  */
 const createConsultationRequest = async (clientId, data) => {
     // Verify consultant exists and is approved
-    const consultant = await prisma.consultantProfile.findUnique({
+    const consultant = await prisma_1.prisma.consultantProfile.findUnique({
         where: { id: data.consultantId }
     });
     if (!consultant) {
@@ -18,7 +17,7 @@ const createConsultationRequest = async (clientId, data) => {
         throw new Error('Consultant is not available for bookings');
     }
     // Create request and chat channel in a transaction
-    const request = await prisma.consultationRequest.create({
+    const request = await prisma_1.prisma.consultationRequest.create({
         data: {
             clientId,
             consultantId: data.consultantId,
@@ -62,13 +61,13 @@ exports.createConsultationRequest = createConsultationRequest;
 const getUserRequests = async (userId, role) => {
     if (role === 'consultant') {
         // Get consultant profile first
-        const profile = await prisma.consultantProfile.findUnique({
+        const profile = await prisma_1.prisma.consultantProfile.findUnique({
             where: { userId }
         });
         if (!profile) {
             return [];
         }
-        const requests = await prisma.consultationRequest.findMany({
+        const requests = await prisma_1.prisma.consultationRequest.findMany({
             where: {
                 consultantId: profile.id
             },
@@ -114,7 +113,7 @@ const getUserRequests = async (userId, role) => {
         }));
     }
     // Default: Get as client
-    const requests = await prisma.consultationRequest.findMany({
+    const requests = await prisma_1.prisma.consultationRequest.findMany({
         where: {
             clientId: userId
         },
@@ -165,7 +164,7 @@ exports.getUserRequests = getUserRequests;
  * Get request details with authorization check
  */
 const getRequestDetails = async (requestId, userId) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             client: {
@@ -218,7 +217,7 @@ exports.getRequestDetails = getRequestDetails;
  */
 const acceptRequest = async (requestId, consultantUserId, meetingDetails) => {
     // Verify consultant owns this request
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: {
@@ -237,7 +236,7 @@ const acceptRequest = async (requestId, consultantUserId, meetingDetails) => {
     if (request.status !== 'pending') {
         throw new Error(`Cannot accept request with status: ${request.status}`);
     }
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             status: 'approved',
@@ -252,7 +251,7 @@ exports.acceptRequest = acceptRequest;
  * Consultant: Reject request
  */
 const rejectRequest = async (requestId, consultantUserId, reason) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: {
@@ -271,7 +270,7 @@ const rejectRequest = async (requestId, consultantUserId, reason) => {
     if (request.status !== 'pending') {
         throw new Error(`Cannot reject request with status: ${request.status}`);
     }
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             status: 'rejected',
@@ -285,7 +284,7 @@ exports.rejectRequest = rejectRequest;
  * Consultant: Complete session with notes
  */
 const completeSession = async (requestId, consultantUserId, data) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: {
@@ -304,7 +303,7 @@ const completeSession = async (requestId, consultantUserId, data) => {
     if (request.status !== 'approved') {
         throw new Error(`Cannot complete session with status: ${request.status}`);
     }
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             status: 'completed',
@@ -322,7 +321,7 @@ exports.completeSession = completeSession;
  * Update meeting link
  */
 const updateMeetingLink = async (requestId, consultantUserId, meetingDetails) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: {
@@ -338,7 +337,7 @@ const updateMeetingLink = async (requestId, consultantUserId, meetingDetails) =>
     if (request.consultant.userId !== consultantUserId) {
         throw new Error('Unauthorized');
     }
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             meetingUrl: meetingDetails.meetingUrl,
@@ -353,7 +352,7 @@ exports.updateMeetingLink = updateMeetingLink;
  */
 const payRequest = async (requestId, userId, // Client paying
 paymentMethod = 'manual_transfer') => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId }
     });
     if (!request) {
@@ -364,7 +363,7 @@ paymentMethod = 'manual_transfer') => {
     }
     // In a real system, you'd create a Transaction/Payment record here
     // For MVP Manual Transfer, we just mark it as paid
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             isPaid: true,
@@ -377,7 +376,7 @@ exports.payRequest = payRequest;
  * Update session notes
  */
 const updateSessionNotes = async (requestId, consultantUserId, notes) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: {
@@ -391,7 +390,7 @@ const updateSessionNotes = async (requestId, consultantUserId, notes) => {
     if (request.consultant.userId !== consultantUserId) {
         throw new Error('Unauthorized');
     }
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             sessionNotes: notes
@@ -404,7 +403,7 @@ exports.updateSessionNotes = updateSessionNotes;
  */
 const getAvailableSlots = async (consultantId, startDate, endDate) => {
     // 1. Get Consultant Availability
-    const availability = await prisma.consultantAvailability.findMany({
+    const availability = await prisma_1.prisma.consultantAvailability.findMany({
         where: {
             consultantId: consultantId,
             isAvailable: true
@@ -413,7 +412,7 @@ const getAvailableSlots = async (consultantId, startDate, endDate) => {
     // 2. Get Existing Bookings (Approved or Pending)
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const bookings = await prisma.consultationRequest.findMany({
+    const bookings = await prisma_1.prisma.consultationRequest.findMany({
         where: {
             consultantId: consultantId,
             status: { in: ['pending', 'approved'] },
@@ -474,7 +473,7 @@ exports.getAvailableSlots = getAvailableSlots;
  * Archive a consultation request
  */
 const archiveRequest = async (requestId, userId) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: {
@@ -495,7 +494,7 @@ const archiveRequest = async (requestId, userId) => {
     if (!['completed', 'rejected', 'cancelled'].includes(request.status)) {
         throw new Error('Can only archive completed, rejected, or cancelled requests');
     }
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             isArchived: true,
@@ -508,7 +507,7 @@ exports.archiveRequest = archiveRequest;
  * Unarchive a consultation request
  */
 const unarchiveRequest = async (requestId, userId) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: {
@@ -525,7 +524,7 @@ const unarchiveRequest = async (requestId, userId) => {
     if (!isClient && !isConsultant) {
         throw new Error('Unauthorized');
     }
-    return await prisma.consultationRequest.update({
+    return await prisma_1.prisma.consultationRequest.update({
         where: { id: requestId },
         data: {
             isArchived: false,

@@ -6,11 +6,24 @@ const lessonsService = new lessons_service_1.LessonsService();
 class LessonsController {
     async create(req, res) {
         try {
-            const lesson = await lessonsService.create(req.body);
+            console.log('=== LESSON CREATE REQUEST ===');
+            console.log('Params:', req.params);
+            console.log('Body:', JSON.stringify(req.body, null, 2));
+            const { moduleId } = req.params;
+            if (!moduleId) {
+                console.error('ERROR: moduleId is missing from params');
+                return res.status(400).json({ error: 'Module ID is required' });
+            }
+            console.log('Calling lessonsService.create with moduleId:', moduleId);
+            const lesson = await lessonsService.create(moduleId, req.body);
+            console.log('Lesson created successfully:', lesson.id);
             res.status(201).json({ data: lesson });
         }
         catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error('=== LESSON CREATION ERROR ===');
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+            res.status(400).json({ error: error.message || 'Failed to create lesson' });
         }
     }
     async findAll(req, res) {

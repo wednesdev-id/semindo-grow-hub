@@ -6,7 +6,16 @@ const modulesService = new modules_service_1.ModulesService();
 class ModulesController {
     async create(req, res) {
         try {
-            const module = await modulesService.create(req.body);
+            const { courseId } = req.params;
+            const { title, order } = req.body;
+            if (!courseId) {
+                return res.status(400).json({ error: 'Course ID is required' });
+            }
+            const module = await modulesService.create({
+                title,
+                order,
+                course: { connect: { id: courseId } }
+            });
             res.status(201).json({ data: module });
         }
         catch (error) {

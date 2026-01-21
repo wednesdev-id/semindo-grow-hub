@@ -7,4 +7,5 @@ const auth_middleware_1 = require("../../middlewares/auth.middleware");
 const router = (0, express_1.Router)();
 router.post('/upload/image', auth_middleware_1.authenticate, upload_controller_1.upload.single('image'), upload_controller_1.uploadController.uploadImage);
 router.post('/upload/images', auth_middleware_1.authenticate, upload_controller_1.upload.array('images', 10), upload_controller_1.uploadController.uploadMultipleImages);
+router.post('/upload/url', auth_middleware_1.authenticate, upload_controller_1.uploadController.uploadFromUrl);
 exports.uploadRouter = router;

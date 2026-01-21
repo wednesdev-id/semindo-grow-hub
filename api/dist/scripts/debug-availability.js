@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 async function main() {
     const userEmail = 'kons@mail.me'; // From user screenshot/logs
     console.log(`Checking availability for email: ${userEmail}`);
-    const user = await prisma.user.findUnique({
+    const user = await prisma_1.prisma.user.findUnique({
         where: { email: userEmail }
     });
     if (!user) {
@@ -13,7 +12,7 @@ async function main() {
         return;
     }
     console.log(`Found user: ${user.id}`);
-    const profile = await prisma.consultantProfile.findUnique({
+    const profile = await prisma_1.prisma.consultantProfile.findUnique({
         where: { userId: user.id },
         include: { availability: true }
     });
@@ -28,5 +27,5 @@ async function main() {
 main()
     .catch(e => console.error(e))
     .finally(async () => {
-    await prisma.$disconnect();
+    await prisma_1.prisma.$disconnect();
 });

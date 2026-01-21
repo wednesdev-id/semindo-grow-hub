@@ -6,6 +6,13 @@ export interface User {
   phone?: string
   businessName?: string
   profilePictureUrl?: string
+
+  // Personal Location (Owner Address)
+  address?: string
+  city?: string
+  province?: string
+  location?: { lat: number; lng: number }
+
   isActive: boolean
   isVerified: boolean
   emailVerifiedAt?: Date
@@ -14,7 +21,8 @@ export interface User {
   updatedAt: Date
   roles?: string[]
   permissions?: string[]
-  umkmProfile?: UMKMProfile
+  umkmProfile?: UMKMProfile  // For backward compatibility (first profile)
+  umkmProfiles?: UMKMProfile[] // All UMKM profiles
   mentorProfile?: MentorProfile
 }
 
@@ -99,6 +107,8 @@ export interface UMKMProfile {
   legalEntity?: string
   nib?: string
   level?: string
+  status?: string  // unverified, submitted, in_review, verified, rejected
+  segmentation?: string  // Pemula, Madya, Utama
   isVerified: boolean
   location?: { lat: number; lng: number; address?: string }
 }

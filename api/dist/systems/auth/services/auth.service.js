@@ -139,7 +139,9 @@ class AuthService {
                             }
                         }
                     }
-                }
+                },
+                umkmProfiles: true,
+                mentorProfile: true
             }
         });
         if (!user) {
@@ -151,8 +153,11 @@ class AuthService {
             id: user.id,
             email: user.email,
             fullName: user.fullName,
+            phone: user.phone,
             roles,
-            permissions
+            permissions,
+            umkmProfiles: user.umkmProfiles,
+            mentorProfile: user.mentorProfile
         };
     }
 }

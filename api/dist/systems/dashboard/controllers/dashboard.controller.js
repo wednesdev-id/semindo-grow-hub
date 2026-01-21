@@ -16,5 +16,16 @@ class DashboardController {
             res.status(500).json({ message: 'Internal server error' });
         }
     }
+    async getAdminOverview(req, res) {
+        try {
+            console.log('[Dashboard] Fetching admin overview...');
+            const data = await dashboardService.getAdminOverview();
+            res.json(data);
+        }
+        catch (error) {
+            console.error('[Dashboard] Admin overview error:', error);
+            res.status(500).json({ message: 'Failed to fetch admin dashboard data' });
+        }
+    }
 }
 exports.DashboardController = DashboardController;

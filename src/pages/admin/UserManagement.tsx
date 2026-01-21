@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { User } from '@/types/auth'
 import { userService } from '@/services/userService'
 import { roleService } from '@/services/roleService'
@@ -35,8 +35,9 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Plus, Search, Pencil, Trash2, Upload, Download, ExternalLink } from 'lucide-react'
+import { Loader2, Plus, Search, Pencil, Trash2, Upload, Download, ExternalLink, Eye } from 'lucide-react'
 import { ImportUsersDialog } from '@/components/admin/ImportUsersDialog'
+import LocationPicker, { LocationData } from '@/components/ui/location-picker'
 
 // Type-safe API response interfaces
 interface PaginatedUsersResponse {
@@ -71,6 +72,7 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [userToDelete, setUserToDelete] = useState<string | null>(null)
     const { toast } = useToast()
+    const navigate = useNavigate()
 
     const [roleFilter, setRoleFilter] = useState(defaultRole || 'all')
     const [statusFilter, setStatusFilter] = useState('all')
@@ -107,7 +109,8 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
         password: '',
         role: defaultRole || 'umkm',
         phone: '',
-        businessName: ''
+        businessName: '',
+        location: { address: '', city: '', province: '', lat: 0, lng: 0 } as LocationData
     })
 
     // Fetch UMKM profiles when editing user with UMKM role
@@ -116,8 +119,14 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
             if (selectedUser && selectedUser.roles?.includes('umkm')) {
                 try {
                     const response = await api.get<{ data: any[] }>(`/umkm?userId=${selectedUser.id}`)
-                    setUserUmkmProfiles(response.data || [])
-                    setSelectedUmkmId('')
+                    const profiles = response.data || []
+                    setUserUmkmProfiles(profiles)
+                    // Auto-select the first UMKM profile if available
+                    if (profiles.length > 0) {
+                        setSelectedUmkmId(profiles[0].id)
+                    } else {
+                        setSelectedUmkmId('')
+                    }
                 } catch (error) {
                     console.error('Failed to fetch UMKM profiles', error)
                     setUserUmkmProfiles([])
@@ -199,11 +208,28 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
         }
 
         try {
+            // Transform location data for backend
+            const submitData = {
+                email: formData.email,
+                fullName: formData.fullName,
+                password: formData.password || undefined,
+                role: formData.role,
+                phone: formData.phone || undefined,
+                businessName: formData.businessName || undefined,
+                // User personal location fields
+                address: formData.location?.address || undefined,
+                city: formData.location?.city || undefined,
+                province: formData.location?.province || undefined,
+                location: formData.location?.lat && formData.location?.lng
+                    ? { lat: formData.location.lat, lng: formData.location.lng }
+                    : undefined,
+            }
+
             if (selectedUser) {
-                await userService.update(selectedUser.id, formData)
+                await userService.update(selectedUser.id, submitData)
                 toast({ title: 'Success', description: 'User updated successfully' })
             } else {
-                await userService.create(formData)
+                await userService.create(submitData)
                 toast({ title: 'Success', description: 'User created successfully' })
             }
             setIsDialogOpen(false)
@@ -244,13 +270,39 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
 
     const openEdit = (user: User) => {
         setSelectedUser(user)
+
+        // PRIORITY 1: User's personal location
+        // PRIORITY 2: Fallback to UMKM profile location (business address)
+        let userLocation = { address: '', city: '', province: '', lat: 0, lng: 0 }
+
+        if (user.location && user.location.lat && user.location.lng) {
+            // Personal location exists
+            userLocation = {
+                address: user.address || '',
+                city: user.city || '',
+                province: user.province || '',
+                lat: user.location.lat,
+                lng: user.location.lng
+            }
+        } else if (user.umkmProfile?.location) {
+            // Fallback to business location
+            userLocation = {
+                address: user.umkmProfile.address || '',
+                city: user.umkmProfile.city || '',
+                province: user.umkmProfile.province || '',
+                lat: user.umkmProfile.location.lat,
+                lng: user.umkmProfile.location.lng
+            }
+        }
+
         setFormData({
             email: user.email,
             fullName: user.fullName,
             password: '', // Don't fill password
             role: user.roles?.[0] || defaultRole || 'umkm',
             phone: user.phone || '',
-            businessName: user.businessName || ''
+            businessName: user.businessName || '',
+            location: userLocation
         })
         setIsDialogOpen(true)
     }
@@ -263,7 +315,8 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
             password: '',
             role: defaultRole || 'umkm',
             phone: '',
-            businessName: ''
+            businessName: '',
+            location: { address: '', city: '', province: '', lat: 0, lng: 0 }
         })
     }
 
@@ -447,6 +500,14 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                     />
                                 </div>
+                                <div className="grid gap-2">
+                                    <LocationPicker
+                                        label="Alamat"
+                                        placeholder="Pilih lokasi di peta atau ketik alamat..."
+                                        value={formData.location}
+                                        onChange={(loc) => setFormData({ ...formData, location: loc })}
+                                    />
+                                </div>
                                 <DialogFooter>
                                     <Button type="button" onClick={(e) => handleSubmit(e as any)}>Save</Button>
                                 </DialogFooter>
@@ -542,10 +603,13 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)}>
+                                        <Button variant="ghost" size="icon" onClick={() => navigate(`/admin/users/${user.id}`)} title="Lihat Detail">
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" onClick={() => openEdit(user)} title="Edit">
                                             <Pencil className="w-4 h-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(user.id)}>
+                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(user.id)} title="Hapus">
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
                                     </TableCell>
@@ -557,31 +621,33 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
             </div>
 
             {/* Pagination UI */}
-            {!loading && users.length > 0 && (
-                <div className="flex items-center justify-between px-2 py-4">
-                    <div className="text-sm text-muted-foreground">
-                        Page {page} of {totalPages}
+            {
+                !loading && users.length > 0 && (
+                    <div className="flex items-center justify-between px-2 py-4">
+                        <div className="text-sm text-muted-foreground">
+                            Page {page} of {totalPages}
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                            >
+                                Next
+                            </Button>
+                        </div>
                     </div>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                        >
-                            Previous
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages}
-                        >
-                            Next
-                        </Button>
-                    </div>
-                </div>
-            )}
+                )
+            }
 
             {/* Import Users Dialog */}
             <ImportUsersDialog
@@ -619,6 +685,6 @@ export default function UserManagement({ defaultRole }: UserManagementProps) {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </div >
     )
 }

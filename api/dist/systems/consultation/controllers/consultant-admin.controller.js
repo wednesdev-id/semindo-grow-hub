@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateConsultantStatus = exports.getConsultantPerformance = exports.getActiveConsultants = void 0;
-const client_1 = require("../../../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../lib/prisma");
 /**
  * Get active consultants with performance metrics
  * GET /api/consultation/admin/consultants/active?page=1&sort=rating|sessions|earnings
@@ -27,7 +26,7 @@ const getActiveConsultants = async (req, res) => {
                 break;
         }
         const [consultants, totalCount] = await Promise.all([
-            prisma.consultantProfile.findMany({
+            prisma_1.prisma.consultantProfile.findMany({
                 where: { status: 'approved' },
                 select: {
                     id: true,
@@ -69,7 +68,7 @@ const getActiveConsultants = async (req, res) => {
                 skip,
                 take: limitNum
             }),
-            prisma.consultantProfile.count({
+            prisma_1.prisma.consultantProfile.count({
                 where: { status: 'approved' }
             })
         ]);
@@ -132,7 +131,7 @@ exports.getActiveConsultants = getActiveConsultants;
 const getConsultantPerformance = async (req, res) => {
     try {
         const { id } = req.params;
-        const consultant = await prisma.consultantProfile.findUnique({
+        const consultant = await prisma_1.prisma.consultantProfile.findUnique({
             where: { id },
             include: {
                 user: {
@@ -284,7 +283,7 @@ const updateConsultantStatus = async (req, res) => {
         if (!['approved', 'suspended'].includes(status)) {
             return res.status(400).json({ error: 'Invalid status. Must be "approved" or "suspended"' });
         }
-        const consultant = await prisma.consultantProfile.update({
+        const consultant = await prisma_1.prisma.consultantProfile.update({
             where: { id },
             data: {
                 status,

@@ -32,6 +32,7 @@ const OpenStreetMap = lazy(() => import('@/components/maps/OpenStreetMap'));
 
 // Role Colors
 const ROLE_COLORS: Record<string, string> = {
+    wirausaha: '#f59e0b', // Amber - Entrepreneur
     umkm: '#3b82f6',      // Blue
     mentor: '#10b981',    // Emerald
     consultant: '#8b5cf6', // Violet
@@ -168,13 +169,18 @@ export default function UserDistributionMapPage() {
             type: u.type,
             umkmId: u.umkmId, // Mapped from service
             status: 'active', // Dummy
-            segmentation: u.type.toUpperCase() // Use type as label
+            segmentation: u.type.toUpperCase(), // Use type as label
+            locationSource: u.locationSource // Personal vs Business location indicator
         }));
     }, [users, selectedProvince]);
 
     const getDetailUrl = (marker: any) => {
-        // If it's a UMKM and we have the profile ID, go to the detailed UMKM profile
-        if (marker.type === 'umkm' && marker.umkmId) {
+        // Log marker for debugging if needed
+        // console.log('Marker clicked:', marker);
+
+        // If we have an umkmId, ALWAYS prefer linking to the UMKM profile
+        // This handles cases where type might be 'umkm' or other roles with a business
+        if (marker.umkmId) {
             return `/admin/umkm/${marker.umkmId}`;
         }
 
@@ -331,6 +337,7 @@ export default function UserDistributionMapPage() {
                                         getDetailUrl={getDetailUrl}
                                         height="500px"
                                         showLegend={true}
+                                        context="user" // Customize for User Map
                                     />
                                 </Suspense>
                             ) : (
@@ -348,10 +355,10 @@ export default function UserDistributionMapPage() {
                                                 <TableRow key={m.id}>
                                                     <TableCell>
                                                         <div>
-                                                            <div className="font-medium text-gray-900 dark:text-gray-100">{m.businessName}</div>
-                                                            {m.ownerName && (
+                                                            <div className="font-medium text-gray-900 dark:text-gray-100">{m.ownerName || m.businessName}</div>
+                                                            {m.businessName && m.ownerName && (
                                                                 <div className="text-xs text-muted-foreground">
-                                                                    {m.type === 'umkm' ? 'Usaha: ' : ''}{m.ownerName}
+                                                                    Usaha: {m.businessName}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -368,6 +375,11 @@ export default function UserDistributionMapPage() {
                                                     <TableCell>
                                                         <div className="text-sm">
                                                             {m.city}, {m.province}
+                                                            {m.locationSource && (
+                                                                <Badge variant="outline" className={`ml-2 text-xs ${m.locationSource === 'personal' ? 'bg-purple-50 text-purple-700' : 'bg-orange-50 text-orange-600'}`}>
+                                                                    {m.locationSource === 'personal' ? '📍 Pribadi' : '🏢 Usaha'}
+                                                                </Badge>
+                                                            )}
                                                         </div>
                                                     </TableCell>
                                                 </TableRow>

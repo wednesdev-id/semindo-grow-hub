@@ -19,7 +19,7 @@ const updateStoreSchema = zod_1.z.object({
 exports.storeController = {
     createStore: async (req, res) => {
         try {
-            const userId = req.user.id;
+            const userId = req.user.userId;
             const data = createStoreSchema.parse(req.body);
             const existingStore = await store_service_1.storeService.getStoreByUserId(userId);
             if (existingStore) {
@@ -30,14 +30,14 @@ exports.storeController = {
         }
         catch (error) {
             if (error instanceof zod_1.z.ZodError) {
-                return res.status(400).json({ error: error.errors });
+                return res.status(400).json({ error: error.issues });
             }
             res.status(500).json({ error: 'Failed to create store' });
         }
     },
     getMyStore: async (req, res) => {
         try {
-            const userId = req.user.id;
+            const userId = req.user.userId;
             const store = await store_service_1.storeService.getStoreByUserId(userId);
             if (!store) {
                 return res.status(404).json({ error: 'Store not found' });
@@ -63,14 +63,14 @@ exports.storeController = {
     },
     updateMyStore: async (req, res) => {
         try {
-            const userId = req.user.id;
+            const userId = req.user.userId;
             const data = updateStoreSchema.parse(req.body);
             const store = await store_service_1.storeService.updateStore(userId, data);
             res.json({ data: store });
         }
         catch (error) {
             if (error instanceof zod_1.z.ZodError) {
-                return res.status(400).json({ error: error.errors });
+                return res.status(400).json({ error: error.issues });
             }
             res.status(500).json({ error: 'Failed to update store' });
         }

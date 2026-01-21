@@ -3,12 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.tokopediaAdapter = exports.shopeeAdapter = exports.MockMarketplaceAdapter = void 0;
 class MockMarketplaceAdapter {
     constructor(platformName) {
-        Object.defineProperty(this, "platformName", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.platformName = platformName;
     }
     async syncStock(productId, stock) {

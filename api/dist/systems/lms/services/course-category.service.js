@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.courseCategoryService = exports.CourseCategoryService = void 0;
-const client_1 = require("../../../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../lib/prisma");
 class CourseCategoryService {
     async findAll() {
-        return prisma.courseCategory.findMany({
+        return prisma_1.prisma.courseCategory.findMany({
             orderBy: { name: 'asc' },
             include: {
                 _count: {
@@ -15,7 +14,7 @@ class CourseCategoryService {
         });
     }
     async findById(id) {
-        return prisma.courseCategory.findUnique({
+        return prisma_1.prisma.courseCategory.findUnique({
             where: { id },
             include: {
                 _count: {
@@ -26,7 +25,7 @@ class CourseCategoryService {
     }
     async create(data) {
         const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        return prisma.courseCategory.create({
+        return prisma_1.prisma.courseCategory.create({
             data: {
                 ...data,
                 slug
@@ -38,13 +37,13 @@ class CourseCategoryService {
         if (data.name) {
             updateData.slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         }
-        return prisma.courseCategory.update({
+        return prisma_1.prisma.courseCategory.update({
             where: { id },
             data: updateData
         });
     }
     async delete(id) {
-        return prisma.courseCategory.delete({
+        return prisma_1.prisma.courseCategory.delete({
             where: { id }
         });
     }

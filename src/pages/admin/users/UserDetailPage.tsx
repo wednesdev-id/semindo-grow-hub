@@ -176,36 +176,98 @@ export default function UserDetailPage() {
                     </CardContent>
                 </Card>
 
-                {/* Specific Profile Details (UMKM or Mentor) */}
-                {user.umkmProfile && (
-                    <Card className="border-blue-100 bg-blue-50/20">
+                {/* Personal Location Card */}
+                {(user.address || user.city || user.province || user.location) && (
+                    <Card className="border-purple-100 bg-purple-50/20">
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
+                                <MapPin className="w-5 h-5" />
+                                Lokasi Pribadi (Pemilik)
+                            </CardTitle>
+                            <CardDescription>
+                                Alamat tempat tinggal pemilik akun
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {user.address && (
+                                <div>
+                                    <span className="text-muted-foreground text-sm block mb-1">Alamat</span>
+                                    <div className="font-medium">{user.address}</div>
+                                </div>
+                            )}
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                {user.city && (
+                                    <div>
+                                        <span className="text-muted-foreground block mb-1">Kota/Kabupaten</span>
+                                        <span className="font-medium">{user.city}</span>
+                                    </div>
+                                )}
+                                {user.province && (
+                                    <div>
+                                        <span className="text-muted-foreground block mb-1">Provinsi</span>
+                                        <span className="font-medium">{user.province}</span>
+                                    </div>
+                                )}
+                            </div>
+                            {user.location && (
+                                <div className="text-xs text-muted-foreground pt-2 border-t">
+                                    📍 Koordinat: {user.location.lat?.toFixed(5)}, {user.location.lng?.toFixed(5)}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* UMKM Business Profiles - Showing ALL businesses */}
+                {((user.umkmProfiles && user.umkmProfiles.length > 0) || user.umkmProfile) && (
+                    <Card className="border-blue-100 bg-blue-50/20 md:col-span-2">
                         <CardHeader>
                             <CardTitle className="text-lg flex items-center gap-2 text-blue-700">
                                 <Briefcase className="w-5 h-5" />
-                                Profil UMKM
+                                Daftar Usaha ({user.umkmProfiles?.length || (user.umkmProfile ? 1 : 0)} bisnis)
                             </CardTitle>
                             <CardDescription>
-                                User ini terdaftar sebagai UMKM
+                                Semua usaha yang terdaftar atas nama pemilik ini
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="space-y-2">
-                                <div className="font-semibold text-lg">{user.umkmProfile.businessName}</div>
-                                <div className="text-sm text-gray-600 flex items-start gap-2">
-                                    <MapPin className="w-4 h-4 mt-0.5" />
-                                    <span>
-                                        {user.umkmProfile.address || '-'} <br />
-                                        {user.umkmProfile.city}, {user.umkmProfile.province}
-                                    </span>
-                                </div>
+                        <CardContent>
+                            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                                {/* Map through umkmProfiles or fallback to single umkmProfile */}
+                                {(user.umkmProfiles || (user.umkmProfile ? [user.umkmProfile] : [])).map((umkm, index) => (
+                                    <div key={umkm.id || index} className="bg-white p-4 rounded-lg border shadow-sm space-y-3">
+                                        <div>
+                                            <div className="font-semibold text-base">{umkm.businessName}</div>
+                                            {umkm.sector && (
+                                                <Badge variant="outline" className="mt-1 text-xs">
+                                                    {umkm.sector}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <div className="text-sm text-gray-600 flex items-start gap-2">
+                                            <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                            <span className="line-clamp-2">
+                                                {umkm.address || '-'}<br />
+                                                {umkm.city}, {umkm.province}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t">
+                                            <Badge
+                                                variant={umkm.status === 'verified' ? 'default' : 'secondary'}
+                                                className={umkm.status === 'verified' ? 'bg-green-600' : ''}
+                                            >
+                                                {umkm.status || 'Pending'}
+                                            </Badge>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => navigate(`/admin/umkm/${umkm.id}`)}
+                                            >
+                                                Lihat Detail
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
-                            <Button
-                                className="w-full mt-2"
-                                variant="outline"
-                                onClick={() => navigate(`/admin/umkm/${user.umkmProfile?.id}`)}
-                            >
-                                Lihat Detail Profil UMKM
-                            </Button>
                         </CardContent>
                     </Card>
                 )}

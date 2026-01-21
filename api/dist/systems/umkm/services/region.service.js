@@ -19,6 +19,7 @@ const PROVINCE_COORDINATES = {
     'Banten': { lat: -6.405817, lng: 106.064018 },
     'Jawa Tengah': { lat: -7.150975, lng: 110.140259 },
     'DI Yogyakarta': { lat: -7.797068, lng: 110.370529 },
+    'Daerah Istimewa Yogyakarta': { lat: -7.797068, lng: 110.370529 },
     'Jawa Timur': { lat: -7.536064, lng: 112.238402 },
     'Bali': { lat: -8.340539, lng: 115.091949 },
     'Nusa Tenggara Barat': { lat: -8.652930, lng: 117.361648 },
@@ -42,6 +43,11 @@ const PROVINCE_COORDINATES = {
     'Papua Pegunungan': { lat: -4.100000, lng: 138.500000 },
     'Papua Selatan': { lat: -6.500000, lng: 139.500000 },
     'Papua Barat Daya': { lat: -2.000000, lng: 131.500000 },
+    // Common variations
+    'Jawa': { lat: -7.150975, lng: 110.140259 },
+    'Yogyakarta': { lat: -7.797068, lng: 110.370529 },
+    'DIY': { lat: -7.797068, lng: 110.370529 },
+    'Jakarta': { lat: -6.211544, lng: 106.845172 },
 };
 class RegionService {
     /**

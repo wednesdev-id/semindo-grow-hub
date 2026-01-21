@@ -23,6 +23,10 @@ class UMKMService {
         const limit = params.limit || 10;
         const skip = (page - 1) * limit;
         const where = {};
+        // Filter by userId
+        if (params.userId) {
+            where.userId = params.userId;
+        }
         if (params.search) {
             where.OR = [
                 { businessName: { contains: params.search, mode: 'insensitive' } },

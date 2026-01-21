@@ -4,8 +4,8 @@ exports.DocumentService = void 0;
 const db_1 = require("../../utils/db");
 class DocumentService {
     async uploadDocument(userId, file, type, number) {
-        // Find UMKM Profile
-        const umkmProfile = await db_1.db.uMKMProfile.findUnique({
+        // Find UMKM Profile (get first/primary profile since user can have multiple)
+        const umkmProfile = await db_1.db.uMKMProfile.findFirst({
             where: { userId }
         });
         if (!umkmProfile) {
@@ -29,7 +29,7 @@ class DocumentService {
         });
     }
     async getDocuments(userId) {
-        const umkmProfile = await db_1.db.uMKMProfile.findUnique({
+        const umkmProfile = await db_1.db.uMKMProfile.findFirst({
             where: { userId }
         });
         if (!umkmProfile) {

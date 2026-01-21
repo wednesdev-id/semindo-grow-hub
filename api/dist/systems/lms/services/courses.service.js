@@ -84,6 +84,25 @@ class CoursesService {
         });
     }
     async enroll(userId, courseId) {
+        // Check if user is already enrolled
+        const existingEnrollment = await prisma_1.prisma.enrollment.findUnique({
+            where: {
+                userId_courseId: {
+                    userId,
+                    courseId,
+                },
+            },
+        });
+        if (existingEnrollment) {
+            throw new Error('You are already enrolled in this course');
+        }
+        // Check if course exists
+        const course = await prisma_1.prisma.course.findUnique({
+            where: { id: courseId },
+        });
+        if (!course) {
+            throw new Error('Course not found');
+        }
         return prisma_1.prisma.enrollment.create({
             data: {
                 userId,
@@ -107,6 +126,34 @@ class CoursesService {
             },
         });
     }
+    async checkEnrollment(userId, courseId) {
+        const enrollment = await prisma_1.prisma.enrollment.findUnique({
+            where: {
+                userId_courseId: {
+                    userId,
+                    courseId,
+                },
+            },
+            include: {
+                course: {
+                    include: {
+                        modules: {
+                            include: {
+                                lessons: {
+                                    orderBy: { order: 'asc' }
+                                }
+                            },
+                            orderBy: { order: 'asc' }
+                        }
+                    }
+                }
+            }
+        });
+        return {
+            isEnrolled: !!enrollment,
+            enrollment: enrollment || undefined
+        };
+    }
     async updateProgress(userId, lessonId, completed) {
         const lesson = await prisma_1.prisma.lesson.findUnique({
             where: { id: lessonId },
@@ -124,7 +171,7 @@ class CoursesService {
         });
         if (!enrollment)
             throw new Error('User not enrolled in this course');
-        return prisma_1.prisma.lessonProgress.upsert({
+        const lessonProgress = await prisma_1.prisma.lessonProgress.upsert({
             where: {
                 enrollmentId_lessonId: {
                     enrollmentId: enrollment.id,
@@ -142,6 +189,59 @@ class CoursesService {
                 completedAt: completed ? new Date() : null,
             },
         });
+        // Recalculate Course Progress
+        const totalLessons = await prisma_1.prisma.lesson.count({
+            where: {
+                module: {
+                    courseId: lesson.module.courseId
+                }
+            }
+        });
+        const completedLessons = await prisma_1.prisma.lessonProgress.count({
+            where: {
+                enrollmentId: enrollment.id,
+                isCompleted: true
+            }
+        });
+        const progressPercentage = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+        await prisma_1.prisma.enrollment.update({
+            where: { id: enrollment.id },
+            data: { progress: progressPercentage }
+        });
+        return lessonProgress;
+    }
+    async getInstructorCourses(userId) {
+        return prisma_1.prisma.course.findMany({
+            where: { authorId: userId },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                _count: {
+                    select: { enrollments: true }
+                }
+            }
+        });
+    }
+    async getInstructorStats(userId) {
+        const courses = await prisma_1.prisma.course.findMany({
+            where: { authorId: userId },
+            include: {
+                _count: {
+                    select: { enrollments: true }
+                }
+            }
+        });
+        const totalCourses = courses.length;
+        const totalStudents = courses.reduce((acc, course) => acc + course._count.enrollments, 0);
+        // Commission Logic
+        // If < 5 courses, deduction 30%
+        // If >= 5 courses, deduction 15%
+        const deductionRate = totalCourses >= 5 ? 0.15 : 0.30;
+        return {
+            totalCourses,
+            totalStudents,
+            deductionRate,
+            deductionPercentage: deductionRate * 100
+        };
     }
 }
 exports.CoursesService = CoursesService;

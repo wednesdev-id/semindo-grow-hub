@@ -11,10 +11,21 @@ class UMKMController {
     // UMKM Profile
     static async getProfiles(req, res) {
         try {
-            const result = await umkmService.findAll(req.query);
+            console.log('[UMKM] GET /umkm - Query:', req.query);
+            const params = {
+                page: parseInt(req.query.page) || 1,
+                limit: parseInt(req.query.limit) || 10,
+                search: req.query.search,
+                segmentation: req.query.segmentation,
+                city: req.query.city,
+                province: req.query.province,
+                sector: req.query.sector,
+            };
+            const result = await umkmService.findAll(params);
             res.json(result);
         }
         catch (error) {
+            console.error('[UMKM] Error fetching profiles:', error);
             res.status(500).json({ error: 'Failed to fetch profiles' });
         }
     }

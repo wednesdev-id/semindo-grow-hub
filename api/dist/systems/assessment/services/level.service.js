@@ -43,22 +43,12 @@ class LevelDeterminationService {
     }
 }
 exports.LevelDeterminationService = LevelDeterminationService;
-Object.defineProperty(LevelDeterminationService, "LEVELS", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: {
-        MIKRO: 'mikro',
-        KECIL: 'kecil',
-        MENENGAH: 'menengah'
-    }
-});
-Object.defineProperty(LevelDeterminationService, "THRESHOLDS", {
-    enumerable: true,
-    configurable: true,
-    writable: true,
-    value: {
-        KECIL: 40,
-        MENENGAH: 70
-    }
-});
+LevelDeterminationService.LEVELS = {
+    MIKRO: 'mikro',
+    KECIL: 'kecil',
+    MENENGAH: 'menengah'
+};
+LevelDeterminationService.THRESHOLDS = {
+    KECIL: 40,
+    MENENGAH: 70
+};

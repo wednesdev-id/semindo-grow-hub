@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getInstructors = exports.rejectConsultant = exports.approveConsultant = exports.removeAvailabilitySlot = exports.addAvailabilitySlot = exports.getConsultantAvailability = exports.getProfileByUserId = exports.updateConsultantProfile = exports.createConsultantProfile = exports.getConsultantProfile = exports.listConsultants = void 0;
-const client_1 = require("../../../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../lib/prisma");
 /**
  * List consultants with filters (Public)
  */
@@ -51,7 +50,7 @@ const listConsultants = async (filters) => {
     if (filters.featured) {
         where.isFeatured = true;
     }
-    return await prisma.consultantProfile.findMany({
+    return await prisma_1.prisma.consultantProfile.findMany({
         where,
         include: {
             user: {
@@ -90,7 +89,7 @@ exports.listConsultants = listConsultants;
  * Get single consultant profile (Public)
  */
 const getConsultantProfile = async (consultantId) => {
-    return await prisma.consultantProfile.findUnique({
+    return await prisma_1.prisma.consultantProfile.findUnique({
         where: { id: consultantId },
         include: {
             user: {
@@ -135,14 +134,14 @@ exports.getConsultantProfile = getConsultantProfile;
  */
 const createConsultantProfile = async (userId, data) => {
     // Check if user already has a profile
-    const existing = await prisma.consultantProfile.findUnique({
+    const existing = await prisma_1.prisma.consultantProfile.findUnique({
         where: { userId }
     });
     if (existing) {
         throw new Error('User already has a consultant profile');
     }
     // Create profile
-    const profile = await prisma.consultantProfile.create({
+    const profile = await prisma_1.prisma.consultantProfile.create({
         data: {
             userId,
             title: data.title,
@@ -160,7 +159,7 @@ const createConsultantProfile = async (userId, data) => {
     });
     // Create expertise associations if provided
     if (data.expertiseIds && Array.isArray(data.expertiseIds) && data.expertiseIds.length > 0) {
-        await prisma.consultantExpertise.createMany({
+        await prisma_1.prisma.consultantExpertise.createMany({
             data: data.expertiseIds.map((expertiseId) => ({
                 consultantId: profile.id,
                 expertiseId
@@ -174,14 +173,14 @@ exports.createConsultantProfile = createConsultantProfile;
  * Update consultant profile
  */
 const updateConsultantProfile = async (userId, updates) => {
-    const profile = await prisma.consultantProfile.findUnique({
+    const profile = await prisma_1.prisma.consultantProfile.findUnique({
         where: { userId }
     });
     if (!profile) {
         throw new Error('Consultant profile not found');
     }
     // Update profile
-    const updatedProfile = await prisma.consultantProfile.update({
+    const updatedProfile = await prisma_1.prisma.consultantProfile.update({
         where: { userId },
         data: {
             title: updates.title,
@@ -201,12 +200,12 @@ const updateConsultantProfile = async (userId, updates) => {
     // Handle expertise updates if provided
     if (updates.expertiseIds && Array.isArray(updates.expertiseIds)) {
         // Delete all existing expertise associations
-        await prisma.consultantExpertise.deleteMany({
+        await prisma_1.prisma.consultantExpertise.deleteMany({
             where: { consultantId: profile.id }
         });
         // Create new associations
         if (updates.expertiseIds.length > 0) {
-            await prisma.consultantExpertise.createMany({
+            await prisma_1.prisma.consultantExpertise.createMany({
                 data: updates.expertiseIds.map((expertiseId) => ({
                     consultantId: profile.id,
                     expertiseId
@@ -221,7 +220,7 @@ exports.updateConsultantProfile = updateConsultantProfile;
  * Get consultant profile by user ID (for own profile with stats)
  */
 const getProfileByUserId = async (userId) => {
-    const profile = await prisma.consultantProfile.findUnique({
+    const profile = await prisma_1.prisma.consultantProfile.findUnique({
         where: { userId },
         include: {
             user: {
@@ -253,7 +252,7 @@ const getProfileByUserId = async (userId) => {
         return null;
     }
     // Calculate completed sessions
-    const completedSessions = await prisma.consultationRequest.count({
+    const completedSessions = await prisma_1.prisma.consultationRequest.count({
         where: {
             consultantId: profile.id,
             status: 'COMPLETED'
@@ -273,7 +272,7 @@ exports.getProfileByUserId = getProfileByUserId;
  * Get consultant availability
  */
 const getConsultantAvailability = async (userId) => {
-    const profile = await prisma.consultantProfile.findUnique({
+    const profile = await prisma_1.prisma.consultantProfile.findUnique({
         where: { userId },
         include: { availability: true }
     });
@@ -288,7 +287,7 @@ exports.getConsultantAvailability = getConsultantAvailability;
  * Add availability slot
  */
 const addAvailabilitySlot = async (userId, slotData) => {
-    const profile = await prisma.consultantProfile.findUnique({
+    const profile = await prisma_1.prisma.consultantProfile.findUnique({
         where: { userId }
     });
     if (!profile) {
@@ -300,7 +299,7 @@ const addAvailabilitySlot = async (userId, slotData) => {
     const baseDate = slotData.specificDate ? new Date(slotData.specificDate).toISOString().split('T')[0] : today;
     const startTimeDate = new Date(`${baseDate}T${slotData.startTime}:00`);
     const endTimeDate = new Date(`${baseDate}T${slotData.endTime}:00`);
-    const newSlot = await prisma.consultantAvailability.create({
+    const newSlot = await prisma_1.prisma.consultantAvailability.create({
         data: {
             consultantId: profile.id,
             dayOfWeek: slotData.dayOfWeek,
@@ -320,14 +319,14 @@ exports.addAvailabilitySlot = addAvailabilitySlot;
  * Remove availability slot
  */
 const removeAvailabilitySlot = async (userId, slotId) => {
-    const profile = await prisma.consultantProfile.findUnique({
+    const profile = await prisma_1.prisma.consultantProfile.findUnique({
         where: { userId }
     });
     if (!profile) {
         throw new Error('Consultant profile not found');
     }
     // Verify slot belongs to this consultant
-    const slot = await prisma.consultantAvailability.findFirst({
+    const slot = await prisma_1.prisma.consultantAvailability.findFirst({
         where: {
             id: slotId,
             consultantId: profile.id
@@ -336,7 +335,7 @@ const removeAvailabilitySlot = async (userId, slotId) => {
     if (!slot) {
         throw new Error('Availability slot not found or unauthorized');
     }
-    return await prisma.consultantAvailability.delete({
+    return await prisma_1.prisma.consultantAvailability.delete({
         where: { id: slotId }
     });
 };
@@ -345,7 +344,7 @@ exports.removeAvailabilitySlot = removeAvailabilitySlot;
  * Admin: Approve consultant
  */
 const approveConsultant = async (consultantId, adminId) => {
-    return await prisma.consultantProfile.update({
+    return await prisma_1.prisma.consultantProfile.update({
         where: { id: consultantId },
         data: {
             status: 'approved',
@@ -358,7 +357,7 @@ exports.approveConsultant = approveConsultant;
  * Admin: Reject consultant
  */
 const rejectConsultant = async (consultantId, reason) => {
-    return await prisma.consultantProfile.update({
+    return await prisma_1.prisma.consultantProfile.update({
         where: { id: consultantId },
         data: {
             status: 'rejected'
@@ -371,7 +370,7 @@ exports.rejectConsultant = rejectConsultant;
  */
 const getInstructors = async () => {
     // Get mentors (all mentors can teach)
-    const mentors = await prisma.mentorProfile.findMany({
+    const mentors = await prisma_1.prisma.mentorProfile.findMany({
         where: {
             isVerified: true
         },
@@ -398,7 +397,7 @@ const getInstructors = async () => {
         }
     });
     // Get consultants who opted-in to teaching
-    const consultants = await prisma.consultantProfile.findMany({
+    const consultants = await prisma_1.prisma.consultantProfile.findMany({
         where: {
             canTeachCourses: true,
             status: 'approved'

@@ -1,15 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.markMessagesAsRead = exports.createMessage = exports.verifyChannelAccess = exports.markAsRead = exports.sendMessage = exports.getChatDetails = void 0;
-const client_1 = require("../../../../prisma/generated/client");
+const prisma_1 = require("../../../lib/prisma");
 const error_1 = require("../../../utils/error");
-const prisma = new client_1.PrismaClient();
 /**
  * Get chat details (Channel + Messages)
  * Auto-creates channel if allowed and missing.
  */
 const getChatDetails = async (requestId, userId) => {
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: requestId },
         include: {
             consultant: { include: { user: true } }, // Need user.id
@@ -64,7 +63,7 @@ exports.getChatDetails = getChatDetails;
  */
 const sendMessage = async (data) => {
     // 1. Get request & channel
-    const request = await prisma.consultationRequest.findUnique({
+    const request = await prisma_1.prisma.consultationRequest.findUnique({
         where: { id: data.requestId },
         include: {
             chatChannel: true,
@@ -87,14 +86,14 @@ const sendMessage = async (data) => {
     // 4. Get or Create Channel
     let channelId = request.chatChannel?.id;
     if (!channelId) {
-        const newChannel = await prisma.chatChannel.create({
+        const newChannel = await prisma_1.prisma.chatChannel.create({
             data: { requestId: data.requestId }
         });
         channelId = newChannel.id;
     }
     // 5. Create Message
     const contentType = data.fileUrl ? (data.fileUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? 'image' : 'file') : 'text';
-    const message = await prisma.chatMessage.create({
+    const message = await prisma_1.prisma.chatMessage.create({
         data: {
             channelId,
             senderId: data.senderId,
@@ -119,12 +118,12 @@ exports.sendMessage = sendMessage;
  * Mark all messages in a channel as read by user
  */
 const markAsRead = async (requestId, userId) => {
-    const channel = await prisma.chatChannel.findUnique({
+    const channel = await prisma_1.prisma.chatChannel.findUnique({
         where: { requestId }
     });
     if (!channel)
         return;
-    await prisma.chatMessage.updateMany({
+    await prisma_1.prisma.chatMessage.updateMany({
         where: {
             channelId: channel.id,
             senderId: { not: userId },
@@ -144,7 +143,7 @@ exports.markAsRead = markAsRead;
  * Verify access by channel ID (used by Gateway)
  */
 const verifyChannelAccess = async (channelId, userId) => {
-    const channel = await prisma.chatChannel.findUnique({
+    const channel = await prisma_1.prisma.chatChannel.findUnique({
         where: { id: channelId },
         include: {
             request: {
@@ -167,7 +166,7 @@ exports.verifyChannelAccess = verifyChannelAccess;
  * Create message directly from Gateway (using channelId)
  */
 const createMessage = async (data) => {
-    return prisma.chatMessage.create({
+    return prisma_1.prisma.chatMessage.create({
         data: {
             channelId: data.channelId,
             senderId: data.senderId,
@@ -193,7 +192,7 @@ exports.createMessage = createMessage;
 const markMessagesAsRead = async (messageIds, userId) => {
     if (!messageIds.length)
         return;
-    await prisma.chatMessage.updateMany({
+    await prisma_1.prisma.chatMessage.updateMany({
         where: {
             id: { in: messageIds },
             senderId: { not: userId } // Only mark others' messages

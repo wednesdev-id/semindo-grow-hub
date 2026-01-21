@@ -1,17 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("../../prisma/generated/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 async function main() {
     console.log('=== CONSULTANT DATA AUDIT ===');
     // 1. Check Roles
-    const roles = await prisma.role.findMany({
+    const roles = await prisma_1.prisma.role.findMany({
         where: { name: { contains: 'onsul', mode: 'insensitive' } }
     });
     console.log('1. Roles found matching "onsul":');
     console.table(roles);
     // 2. Check Users with these roles
-    const users = await prisma.user.findMany({
+    const users = await prisma_1.prisma.user.findMany({
         where: {
             userRoles: {
                 some: {
@@ -31,10 +30,10 @@ async function main() {
         console.log(` - [${u.id}] ${u.fullName} | Roles: ${u.userRoles.map(ur => ur.role.name).join(', ')} | Profile: ${u.consultantProfile ? 'YES (' + u.consultantProfile.status + ')' : 'NO'}`);
     });
     // 3. Count Profiles
-    const profileCount = await prisma.consultantProfile.count();
+    const profileCount = await prisma_1.prisma.consultantProfile.count();
     console.log(`\n3. Total ConsultantProfile records in DB: ${profileCount}`);
     if (profileCount > 0) {
-        const profiles = await prisma.consultantProfile.findMany({ include: { user: true } });
+        const profiles = await prisma_1.prisma.consultantProfile.findMany({ include: { user: true } });
         console.log('Sample Profile Statuses:', profiles.map(p => `${p.status} (User: ${p.user?.fullName})`));
     }
     // 4. Simulate API Query
@@ -42,7 +41,7 @@ async function main() {
     const where = {};
     // Logic from service: if status=all, do nothing to where.status
     // So where remain empty.
-    const results = await prisma.consultantProfile.findMany({
+    const results = await prisma_1.prisma.consultantProfile.findMany({
         where: {}, // Explicitly empty
         select: { id: true, status: true, userId: true }
     });
@@ -52,4 +51,4 @@ async function main() {
 }
 main()
     .catch(e => console.error(e))
-    .finally(async () => await prisma.$disconnect());
+    .finally(async () => await prisma_1.prisma.$disconnect());

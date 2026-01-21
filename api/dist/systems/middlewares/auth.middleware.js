@@ -5,16 +5,34 @@ const jwt_1 = require("../utils/jwt");
 const authenticate = (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({ success: false, error: 'No token provided' });
+        console.log('[Auth] Incoming request to:', req.path);
+        console.log('[Auth] Authorization header:', authHeader ? 'Present' : 'Missing');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            console.log('[Auth] ❌ No valid auth header');
+            return res.status(401).json({ error: 'No token provided' });
         }
         const token = authHeader.split(' ')[1];
-        const decoded = (0, jwt_1.verifyToken)(token);
-        req.user = decoded;
-        next();
+        console.log('[Auth] Token extracted, length:', token?.length);
+        try {
+            const decoded = (0, jwt_1.verifyToken)(token);
+            console.log('[Auth] ✅ Token verified successfully');
+            console.log('[Auth] User:', { userId: decoded.userId, email: decoded.email, roles: decoded.roles });
+            req.user = {
+                userId: decoded.userId,
+                id: decoded.userId,
+                email: decoded.email,
+                roles: decoded.roles
+            };
+            next();
+        }
+        catch (tokenError) {
+            console.error('[Auth] ❌ Token verification failed:', tokenError);
+            return res.status(401).json({ error: 'Invalid token', details: tokenError.message });
+        }
     }
     catch (error) {
-        return res.status(401).json({ success: false, error: 'Invalid token' });
+        console.error('[Auth] ❌ Authentication error:', error);
+        res.status(401).json({ error: 'Authentication failed' });
     }
 };
 exports.authenticate = authenticate;

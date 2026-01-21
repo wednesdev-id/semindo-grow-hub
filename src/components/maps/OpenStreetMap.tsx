@@ -252,6 +252,7 @@ function ZoomableMarker({
     onMarkerClick,
     getDetailUrl,
     children,
+    context = 'umkm', // Default to umkm
 }: {
     marker: UMKMMapMarker;
     icon: L.DivIcon;
@@ -259,8 +260,10 @@ function ZoomableMarker({
     onMarkerClick?: (marker: UMKMMapMarker) => void;
     getDetailUrl?: (marker: UMKMMapMarker) => string;
     children?: React.ReactNode;
+    context?: 'umkm' | 'user';
 }) {
     const map = useMap();
+
 
     const handleClick = () => {
         // Zoom to street level (17) for clear view
@@ -283,7 +286,9 @@ function ZoomableMarker({
                 <div className="min-w-[220px]">
                     <div className="font-semibold text-base">{marker.businessName}</div>
                     {marker.ownerName && (
-                        <div className="text-sm text-gray-600">{marker.ownerName}</div>
+                        <div className="text-sm text-gray-600">
+                            {context === 'user' && marker.segmentation === 'UMKM' ? `Usaha: ${marker.ownerName}` : marker.ownerName}
+                        </div>
                     )}
                     <div className="mt-2 space-y-1">
                         <div className="flex justify-between text-sm">
@@ -293,7 +298,7 @@ function ZoomableMarker({
                             </span>
                         </div>
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Segmentasi:</span>
+                            <span className="text-gray-500">{context === 'user' ? 'Peran:' : 'Segmentasi:'}</span>
                             <span
                                 className="px-2 py-0.5 rounded text-white text-xs"
                                 style={{ backgroundColor: color }}
@@ -301,48 +306,59 @@ function ZoomableMarker({
                                 {marker.segmentation}
                             </span>
                         </div>
-                        {marker.level && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Level:</span>
-                                <span>{marker.level}</span>
+
+                        {/* UMKM Specific Fields - Hide for User Context if not needed */}
+                        {context === 'umkm' && (
+                            <>
+                                {marker.level && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Level:</span>
+                                        <span>{marker.level}</span>
+                                    </div>
+                                )}
+                                {marker.sector && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Sektor:</span>
+                                        <span>{marker.sector}</span>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* Statistics Section (UMKM Only) */}
+                        {context === 'umkm' && (marker.turnover != null || marker.employees != null) && (
+                            <div className="border-t pt-2 mt-2">
+                                {marker.turnover != null && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Omzet/Tahun:</span>
+                                        <span className="font-medium text-green-600">
+                                            Rp {marker.turnover.toLocaleString('id-ID')}
+                                        </span>
+                                    </div>
+                                )}
+                                {marker.employees != null && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-500">Karyawan:</span>
+                                        <span className="font-medium">
+                                            {marker.employees} orang
+                                        </span>
+                                    </div>
+                                )}
                             </div>
                         )}
-                        {marker.sector && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Sektor:</span>
-                                <span>{marker.sector}</span>
+
+                        {/* Status (Show for both but maybe styled differently?) */}
+                        {marker.status && (
+                            <div className="flex justify-between text-sm mt-1">
+                                <span className="text-gray-500">Status:</span>
+                                <span className={`px-2 py-0.5 rounded text-xs ${marker.status === 'verified'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                    }`}>
+                                    {marker.status === 'verified' ? 'Terverifikasi' : 'Pending'}
+                                </span>
                             </div>
                         )}
-                        {/* Statistics Section */}
-                        <div className="border-t pt-2 mt-2">
-                            {marker.turnover != null && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Omzet/Tahun:</span>
-                                    <span className="font-medium text-green-600">
-                                        Rp {marker.turnover.toLocaleString('id-ID')}
-                                    </span>
-                                </div>
-                            )}
-                            {marker.employees != null && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Karyawan:</span>
-                                    <span className="font-medium">
-                                        {marker.employees} orang
-                                    </span>
-                                </div>
-                            )}
-                            {marker.status && (
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-gray-500">Status:</span>
-                                    <span className={`px-2 py-0.5 rounded text-xs ${marker.status === 'verified'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-yellow-100 text-yellow-800'
-                                        }`}>
-                                        {marker.status === 'verified' ? 'Terverifikasi' : 'Pending'}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
                         {/* Detail Button */}
                         <div className="mt-3 pt-2 border-t">
                             <Link
@@ -382,17 +398,19 @@ function MapLegend() {
     );
 }
 
+
 interface OpenStreetMapProps {
     markers?: UMKMMapMarker[];
     clusters?: ProvinceCluster[];
     onMarkerClick?: (marker: UMKMMapMarker) => void;
     onClusterClick?: (cluster: ProvinceCluster) => void;
-    onResetSelection?: () => void; // New prop for zoom out reset
+    onResetSelection?: () => void;
     selectedProvince?: string | null;
     className?: string;
     showLegend?: boolean;
     height?: string;
     getDetailUrl?: (marker: UMKMMapMarker) => string;
+    context?: 'umkm' | 'user';
 }
 
 export default function OpenStreetMap({
@@ -400,12 +418,13 @@ export default function OpenStreetMap({
     clusters = [],
     onMarkerClick,
     onClusterClick,
-    onResetSelection, // Destructure new prop
+    onResetSelection,
     selectedProvince,
     className = '',
     showLegend = true,
     height = '500px',
     getDetailUrl,
+    context = 'umkm',
 }: OpenStreetMapProps) {
     // Determine map center based on selected province
     const center: [number, number] = selectedProvince && PROVINCE_COORDINATES[selectedProvince]
@@ -464,9 +483,7 @@ export default function OpenStreetMap({
                                 />
                             )}
 
-                            {/* Interactive Bubble with Count - ONLY SHOW IF NOT SELECTED OR WE WANT TO SEE BUBBLES ALWAYS */}
-                            {/* User request: "ketika saya klik bubble hilang jadi fokus ke lokasi" */}
-                            {/* So we hide the BUBBLE (Marker) when isSelected is true */}
+                            {/* Interactive Bubble with Count */}
                             {!isSelected && (
                                 <Marker
                                     position={[cluster.lat, cluster.lng]}
@@ -525,6 +542,7 @@ export default function OpenStreetMap({
                                     color={color}
                                     onMarkerClick={onMarkerClick}
                                     getDetailUrl={getDetailUrl}
+                                    context={context}
                                 />
                             );
                         })}
@@ -584,6 +602,7 @@ export function ProvinceMap({
             selectedProvince={selectedProvince}
             height={height}
             showLegend={false}
+            context="umkm"
         />
     );
 }

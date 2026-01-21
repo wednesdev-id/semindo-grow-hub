@@ -14,24 +14,26 @@ export interface UserMapPoint {
     city?: string;
     umkmId?: string;
     type: 'umkm' | 'mentor' | 'consultant' | 'user';
+    // New: indicate if this is personal or business location
+    locationSource: 'personal' | 'business';
 }
 
 export class UserMapService {
     async getDistributionData() {
-        // 1. Fetch users with target roles who typically have location data (UMKMs)
-        // We strictly exclude super_admin, admin, management
+        // Fetch users with target roles who have some location data
+        // Either personal location (User.location) OR business location (UMKMProfile.location)
         const users = await prisma.user.findMany({
             where: {
                 AND: [
                     {
-                        isActive: true, // Only active users
+                        isActive: true,
                     },
                     {
                         userRoles: {
                             some: {
                                 role: {
                                     name: {
-                                        in: ['umkm', 'mentor', 'consultant', 'general_user'],
+                                        in: ['wirausaha', 'umkm', 'mentor', 'consultant', 'general_user'],
                                     },
                                 },
                             },
@@ -49,16 +51,21 @@ export class UserMapService {
                         },
                     },
                     {
-                        // Filter: Must have some location data source
-                        // Currently primarily UMKMProfile
-                        umkmProfiles: {
-                            some: {
-                                OR: [
-                                    { location: { not: Prisma.DbNull } },
-                                    { city: { not: null } }
-                                ]
+                        // Must have SOME location: personal OR business
+                        OR: [
+                            { location: { not: Prisma.DbNull } },
+                            { city: { not: null } },
+                            {
+                                umkmProfiles: {
+                                    some: {
+                                        OR: [
+                                            { location: { not: Prisma.DbNull } },
+                                            { city: { not: null } }
+                                        ]
+                                    }
+                                }
                             }
-                        }
+                        ]
                     }
                 ],
             },
@@ -81,33 +88,45 @@ export class UserMapService {
             },
         });
 
-        // 2. Map coordinates
-        // We need a way to geocode if lat/lng missing but city/prov exists. 
-        // For now, we'll only return valid ones or mock/approximate if we had a local DB of city coords.
-        // Since we don't have a local city DB loaded here, we'll filter for those with `location` JSON or we rely on frontend/regionApi to maybe handle it?
-        // Actually, `regionApi` on frontend handles aggregation. 
-        // But for individual points, we need coords.
-        // Detailed implementation: We will map what we have.
-
         const results: UserMapPoint[] = [];
 
         for (const user of users as any[]) {
             // Determine primary role for display
             const roles = user.userRoles.map((ur: any) => ur.role.name);
             let primaryType: UserMapPoint['type'] = 'user';
-            if (roles.includes('umkm')) primaryType = 'umkm';
+            if (roles.includes('wirausaha')) primaryType = 'umkm'; // Display as 'umkm' type for color consistency
+            else if (roles.includes('umkm')) primaryType = 'umkm';
             else if (roles.includes('mentor')) primaryType = 'mentor';
             else if (roles.includes('consultant')) primaryType = 'consultant';
 
-            // Try to get location from UMKM Profile
-            const umkm = user.umkmProfiles[0]; // Take first profile if exists
+            let lat: number | undefined;
+            let lng: number | undefined;
+            let address: string | undefined;
+            let province: string | undefined;
+            let city: string | undefined;
+            let umkmId: string | undefined;
+            let locationSource: 'personal' | 'business' = 'personal';
 
-            if (umkm) {
-                let lat: number | undefined;
-                let lng: number | undefined;
+            // PRIORITY 1: User's personal location
+            if (user.location && typeof user.location === 'object') {
+                const loc = user.location as { lat?: number; lng?: number, latitude?: number, longitude?: number };
+                if (loc.lat && loc.lng) {
+                    lat = Number(loc.lat);
+                    lng = Number(loc.lng);
+                } else if (loc.latitude && loc.longitude) {
+                    lat = Number(loc.latitude);
+                    lng = Number(loc.longitude);
+                }
+                address = user.address || undefined;
+                province = user.province || undefined;
+                city = user.city || undefined;
+                locationSource = 'personal';
+            }
 
-                // Try JSON location first
-                if (umkm.location && typeof umkm.location === 'object') {
+            // PRIORITY 2: Fallback to UMKM Profile location (business address)
+            if (!lat || !lng) {
+                const umkm = user.umkmProfiles[0];
+                if (umkm?.location && typeof umkm.location === 'object') {
                     const loc = umkm.location as { lat?: number; lng?: number, latitude?: number, longitude?: number };
                     if (loc.lat && loc.lng) {
                         lat = Number(loc.lat);
@@ -116,28 +135,31 @@ export class UserMapService {
                         lat = Number(loc.latitude);
                         lng = Number(loc.longitude);
                     }
+                    address = umkm.address || undefined;
+                    province = umkm.province || undefined;
+                    city = umkm.city || undefined;
+                    umkmId = umkm.id;
+                    locationSource = 'business';
                 }
+            }
 
-                // If we have coords, add to result
-                if (lat && lng) {
-                    results.push({
-                        id: user.id,
-                        name: user.fullName,
-                        businessName: umkm.businessName,
-                        role: user.userRoles[0]?.role.displayName || user.userRoles[0]?.role.name,
-                        avatar: user.profilePictureUrl || undefined,
-                        lat,
-                        lng,
-                        address: umkm.address || undefined,
-                        province: umkm.province || undefined,
-                        city: umkm.city || undefined,
-                        umkmId: umkm.id,
-                        type: primaryType
-                    });
-                }
-                // If we DON'T have coords but have City, we could potentially rely on frontend to cluster them 
-                // OR we skip them for the "Map View" but they might appear in stats.
-                // For the MAP, we need coords.
+            // Only add if we have valid coordinates
+            if (lat && lng) {
+                results.push({
+                    id: user.id,
+                    name: user.fullName,
+                    businessName: user.umkmProfiles[0]?.businessName || user.businessName,
+                    role: user.userRoles[0]?.role.displayName || user.userRoles[0]?.role.name,
+                    avatar: user.profilePictureUrl || undefined,
+                    lat,
+                    lng,
+                    address,
+                    province,
+                    city,
+                    umkmId,
+                    type: primaryType,
+                    locationSource
+                });
             }
         }
 

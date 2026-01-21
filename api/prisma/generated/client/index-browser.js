@@ -128,6 +128,10 @@ exports.Prisma.UserScalarFieldEnum = {
   phone: 'phone',
   businessName: 'businessName',
   profilePictureUrl: 'profilePictureUrl',
+  address: 'address',
+  city: 'city',
+  province: 'province',
+  location: 'location',
   emailVerified: 'emailVerified',
   isActive: 'isActive',
   createdAt: 'createdAt',
@@ -1076,15 +1080,15 @@ exports.Prisma.QueryMode = {
   insensitive: 'insensitive'
 };
 
-exports.Prisma.NullsOrder = {
-  first: 'first',
-  last: 'last'
-};
-
 exports.Prisma.JsonNullValueFilter = {
   DbNull: Prisma.DbNull,
   JsonNull: Prisma.JsonNull,
   AnyNull: Prisma.AnyNull
+};
+
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
 };
 
 

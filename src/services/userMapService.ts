@@ -14,6 +14,8 @@ export interface UserMapPoint {
     address?: string;
     umkmId?: string;
     type: 'umkm' | 'mentor' | 'consultant' | 'user';
+    // Indicates if location is personal (owner) or business (UMKM)
+    locationSource?: 'personal' | 'business';
 }
 
 export const userMapService = {

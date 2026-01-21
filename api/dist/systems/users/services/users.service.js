@@ -3,7 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UsersService = void 0;
 const db_1 = require("../../utils/db");
 const password_1 = require("../../utils/password");
+const audit_service_1 = require("../../audit/services/audit.service");
 class UsersService {
+    constructor() {
+        this.auditService = new audit_service_1.AuditService();
+    }
     async findAll(query) {
         const page = Number(query.page) || 1;
         const limit = Number(query.limit) || 10;
@@ -69,7 +73,7 @@ class UsersService {
                         role: true
                     }
                 },
-                umkmProfile: true,
+                umkmProfiles: true,
                 mentorProfile: true
             }
         });
@@ -108,7 +112,25 @@ class UsersService {
                             }
                         }
                     }
-                }
+                },
+                // Auto-create ConsultantProfile if role is consultant or konsultan
+                ...(data.role.toLowerCase() === 'consultant' || data.role.toLowerCase() === 'konsultan' ? {
+                    consultantProfile: {
+                        create: {
+                            status: 'approved',
+                            title: 'Consultant',
+                            bio: 'Profile under review',
+                            yearsExperience: 0,
+                            hourlyRate: 0,
+                            expertiseAreas: [],
+                            industries: [],
+                            languages: ['Indonesian'],
+                            isAcceptingNewClients: false,
+                            totalSessions: 0,
+                            averageRating: 0
+                        }
+                    }
+                } : {})
             },
             include: {
                 userRoles: {
@@ -118,7 +140,7 @@ class UsersService {
         });
         return {
             ...user,
-            roles: user.userRoles.map(ur => ur.role.name),
+            roles: user.userRoles.map((ur) => ur.role.name),
             passwordHash: undefined
         };
     }
@@ -169,6 +191,133 @@ class UsersService {
             where: { id }
         });
         return { message: 'User deleted successfully' };
+    }
+    // Profile Management Methods
+    async getCurrentUser(id) {
+        const user = await db_1.db.user.findUnique({
+            where: { id },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                },
+                umkmProfiles: true,
+                mentorProfile: true
+            }
+        });
+        if (!user)
+            throw new Error('User not found');
+        return {
+            ...user,
+            roles: user.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        };
+    }
+    async updateOwnProfile(id, data) {
+        const user = await db_1.db.user.update({
+            where: { id },
+            data: {
+                fullName: data.fullName,
+                phone: data.phone,
+                businessName: data.businessName
+            },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                }
+            }
+        });
+        return {
+            ...user,
+            roles: user.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        };
+    }
+    async changePassword(id, oldPassword, newPassword) {
+        const user = await db_1.db.user.findUnique({
+            where: { id }
+        });
+        if (!user)
+            throw new Error('User not found');
+        // Verify old password
+        const bcrypt = require('bcryptjs');
+        const isValid = await bcrypt.compare(oldPassword, user.passwordHash);
+        if (!isValid)
+            throw new Error('Current password is incorrect');
+        // Hash new password
+        const passwordHash = await (0, password_1.hashPassword)(newPassword);
+        await db_1.db.user.update({
+            where: { id },
+            data: { passwordHash }
+        });
+        return { message: 'Password changed successfully' };
+    }
+    async updateProfilePicture(id, profilePictureUrl) {
+        const user = await db_1.db.user.update({
+            where: { id },
+            data: { profilePictureUrl },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                }
+            }
+        });
+        return {
+            ...user,
+            roles: user.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        };
+    }
+    // User-Role Management Methods
+    async assignRoles(userId, roleIds) {
+        // Check if user exists
+        const user = await db_1.db.user.findUnique({ where: { id: userId } });
+        if (!user)
+            throw new Error('User not found');
+        // Delete existing roles
+        await db_1.db.userRole.deleteMany({
+            where: { userId }
+        });
+        // Create new roles
+        await db_1.db.userRole.createMany({
+            data: roleIds.map(roleId => ({
+                userId,
+                roleId
+            }))
+        });
+        // Return updated user with roles
+        const updatedUser = await db_1.db.user.findUnique({
+            where: { id: userId },
+            include: {
+                userRoles: {
+                    include: {
+                        role: true
+                    }
+                }
+            }
+        });
+        return {
+            ...updatedUser,
+            roles: updatedUser.userRoles.map(ur => ur.role.name),
+            passwordHash: undefined
+        };
+    }
+    async removeRole(userId, roleId) {
+        const deleted = await db_1.db.userRole.deleteMany({
+            where: {
+                userId,
+                roleId
+            }
+        });
+        if (deleted.count === 0) {
+            throw new Error('Role not found for this user');
+        }
+        return { message: 'Role removed from user' };
     }
 }
 exports.UsersService = UsersService;

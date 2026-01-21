@@ -160,7 +160,12 @@ export class UsersService {
             fullName: data.fullName,
             phone: data.phone,
             businessName: data.businessName,
-            isActive: data.isActive
+            isActive: data.isActive,
+            // Personal Location fields
+            address: data.address,
+            city: data.city,
+            province: data.province,
+            location: data.location
         }
 
         if (data.password) {

@@ -70,6 +70,7 @@ async function main() {
                     email,
                     passwordHash,
                     fullName: name,
+                    businessName, // Added for consistency
                     isActive: true, // Auto active
                     emailVerified: true,
                     userRoles: {
