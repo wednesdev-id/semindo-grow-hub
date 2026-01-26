@@ -9,10 +9,11 @@ const api = {
     },
     post: async <T>(url: string, body: any, options?: any) => {
         const client = getGlobalApiClient();
-        // Handle FormData: remove Content-Type to let browser set boundary
+        // Handle FormData: set Content-Type to undefined to let browser set boundary
         const headers = options?.headers || {};
         if (body instanceof FormData) {
-            delete headers['Content-Type'];
+            // @ts-ignore - Explicitly set to undefined to override ApiClient default
+            headers['Content-Type'] = undefined;
         }
 
         const response = await client.post<T>(url, body, { ...options, headers });
@@ -59,7 +60,8 @@ export interface Course {
     title: string;
     slug: string;
     description: string;
-    thumbnailUrl?: string;
+    thumbnail?: string;
+    thumbnailUrl?: string; // Frontend alias or legacy
     level: string;
     category: string;
     price: number;
@@ -296,13 +298,10 @@ export const lmsService = {
 
     // Resource Management
     uploadResource: async (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        const response = await api.post<{ data: { url: string } }>('/lms/resources/upload', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-        return response.data;
+        const client = getGlobalApiClient();
+        const response = await client.uploadFile('/lms/resources/upload', file);
+        if (!response.success) throw response.error;
+        const body = response.data as { data: { url: string } };
+        return body.data;
     },
 };

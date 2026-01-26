@@ -1061,6 +1061,161 @@ exports.Prisma.ExpertiseAuditLogScalarFieldEnum = {
   changedAt: 'changedAt'
 };
 
+exports.Prisma.LetterCategoryScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LetterSubjectScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LetterheadScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  unit: 'unit',
+  address: 'address',
+  website: 'website',
+  email: 'email',
+  phone: 'phone',
+  logoUrl: 'logoUrl',
+  config: 'config',
+  isActive: 'isActive',
+  isDefault: 'isDefault',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LetterTemplateScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  code: 'code',
+  type: 'type',
+  description: 'description',
+  letterheadId: 'letterheadId',
+  content: 'content',
+  variables: 'variables',
+  numberFormat: 'numberFormat',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.IncomingLetterScalarFieldEnum = {
+  id: 'id',
+  letterNumber: 'letterNumber',
+  letterDate: 'letterDate',
+  receivedDate: 'receivedDate',
+  sender: 'sender',
+  senderAddress: 'senderAddress',
+  subject: 'subject',
+  categoryId: 'categoryId',
+  classification: 'classification',
+  nature: 'nature',
+  priority: 'priority',
+  fileUrl: 'fileUrl',
+  fileName: 'fileName',
+  fileSize: 'fileSize',
+  mimeType: 'mimeType',
+  status: 'status',
+  notes: 'notes',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  finishedAt: 'finishedAt',
+  archivedAt: 'archivedAt'
+};
+
+exports.Prisma.OutgoingLetterScalarFieldEnum = {
+  id: 'id',
+  letterNumber: 'letterNumber',
+  templateId: 'templateId',
+  recipient: 'recipient',
+  recipientAddress: 'recipientAddress',
+  subject: 'subject',
+  content: 'content',
+  attachment: 'attachment',
+  letterDate: 'letterDate',
+  categoryId: 'categoryId',
+  subjectId: 'subjectId',
+  classification: 'classification',
+  nature: 'nature',
+  priority: 'priority',
+  status: 'status',
+  fileUrl: 'fileUrl',
+  fileName: 'fileName',
+  fileSize: 'fileSize',
+  mimeType: 'mimeType',
+  revision: 'revision',
+  notes: 'notes',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  publishedAt: 'publishedAt',
+  archivedAt: 'archivedAt'
+};
+
+exports.Prisma.DispositionScalarFieldEnum = {
+  id: 'id',
+  incomingLetterId: 'incomingLetterId',
+  fromUserId: 'fromUserId',
+  toUserId: 'toUserId',
+  instruction: 'instruction',
+  notes: 'notes',
+  status: 'status',
+  readAt: 'readAt',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.LetterApprovalScalarFieldEnum = {
+  id: 'id',
+  outgoingLetterId: 'outgoingLetterId',
+  userId: 'userId',
+  sequence: 'sequence',
+  status: 'status',
+  notes: 'notes',
+  approvalDate: 'approvalDate',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ArchiveScalarFieldEnum = {
+  id: 'id',
+  archiveNumber: 'archiveNumber',
+  letterType: 'letterType',
+  incomingLetterId: 'incomingLetterId',
+  outgoingLetterId: 'outgoingLetterId',
+  letterNumber: 'letterNumber',
+  subject: 'subject',
+  categoryId: 'categoryId',
+  archiveYear: 'archiveYear',
+  archiveMonth: 'archiveMonth',
+  location: 'location',
+  protectionLevel: 'protectionLevel',
+  activeRetention: 'activeRetention',
+  inactiveRetention: 'inactiveRetention',
+  disposalDate: 'disposalDate',
+  status: 'status',
+  notes: 'notes',
+  createdBy: 'createdBy',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  deletedAt: 'deletedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1164,7 +1319,16 @@ exports.Prisma.ModelName = {
   ConsultationReview: 'ConsultationReview',
   ExpertiseCategory: 'ExpertiseCategory',
   ConsultantExpertise: 'ConsultantExpertise',
-  ExpertiseAuditLog: 'ExpertiseAuditLog'
+  ExpertiseAuditLog: 'ExpertiseAuditLog',
+  LetterCategory: 'LetterCategory',
+  LetterSubject: 'LetterSubject',
+  Letterhead: 'Letterhead',
+  LetterTemplate: 'LetterTemplate',
+  IncomingLetter: 'IncomingLetter',
+  OutgoingLetter: 'OutgoingLetter',
+  Disposition: 'Disposition',
+  LetterApproval: 'LetterApproval',
+  Archive: 'Archive'
 };
 
 /**

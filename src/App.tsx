@@ -18,6 +18,7 @@ import { Suspense, lazy } from "react";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import AdminDashboard from "./pages/dashboards/AdminDashboard";
+import { featureFlags } from "@/config/feature-flags";
 
 const Index = lazy(() => import("./pages/Index"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -152,6 +153,17 @@ const MentorUMKMDetailPage = lazy(() => import("./pages/mentor/MentorUMKMDetailP
 // UMKM Pages
 const UpcomingEventsPage = lazy(() => import("./pages/umkm/UpcomingEventsPage"));
 const UMKMEventDetailPage = lazy(() => import("./pages/umkm/EventDetailPage"));
+
+// Arsipari Pages
+const IncomingLetterPage = lazy(() => import("./pages/arsipari/IncomingLetterPage"));
+const IncomingLetterFormPage = lazy(() => import("./pages/arsipari/IncomingLetterFormPage"));
+const IncomingLetterDetailPage = lazy(() => import("./pages/arsipari/IncomingLetterDetailPage"));
+const OutgoingLetterPage = lazy(() => import("./pages/arsipari/OutgoingLetterPage"));
+const OutgoingLetterFormPage = lazy(() => import("./pages/arsipari/OutgoingLetterFormPage"));
+const OutgoingLetterDetailPage = lazy(() => import("./pages/arsipari/OutgoingLetterDetailPage"));
+const DispositionsPage = lazy(() => import("./pages/arsipari/DispositionsPage"));
+const TemplatePage = lazy(() => import("./pages/arsipari/TemplatePage"));
+const SettingsPage = lazy(() => import("./pages/arsipari/SettingsPage"));
 
 const queryClient = new QueryClient();
 
@@ -593,6 +605,23 @@ const App = () => {
                           description="Program bantuan dan fasilitasi ekspor."
                           features={["Program application", "Status tracking", "Success stories"]}
                         />} />
+
+                        {/* Arsipari (Mail & Archive) */}
+                        {featureFlags.ARSIPARI_ENABLED && (
+                          <>
+                            <Route path="/arsipari/incoming" element={<IncomingLetterPage />} />
+                            <Route path="/arsipari/incoming/new" element={<IncomingLetterFormPage />} />
+                            <Route path="/arsipari/incoming/:id" element={<IncomingLetterDetailPage />} />
+                            <Route path="/arsipari/incoming/:id/edit" element={<IncomingLetterFormPage />} />
+                            <Route path="/arsipari/outgoing" element={<OutgoingLetterPage />} />
+                            <Route path="/arsipari/outgoing/new" element={<OutgoingLetterFormPage />} />
+                            <Route path="/arsipari/outgoing/:id" element={<OutgoingLetterDetailPage />} />
+                            <Route path="/arsipari/outgoing/:id/edit" element={<OutgoingLetterFormPage />} />
+                            <Route path="/arsipari/dispositions" element={<DispositionsPage />} />
+                            <Route path="/arsipari/templates" element={<TemplatePage />} />
+                            <Route path="/arsipari/settings" element={<SettingsPage />} />
+                          </>
+                        )}
                         <Route path="/export/approval" element={<FeaturePreviewPage
                           title="Approval Permintaan Konsultasi"
                           description="Manajemen permintaan konsultasi ekspor."

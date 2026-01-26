@@ -243,6 +243,13 @@ export class ApiClient {
   private async buildHeaders(options: RequestOptions): Promise<Record<string, string>> {
     const headers = { ...this.defaultHeaders, ...options.headers };
 
+    // Remove headers with undefined values (e.g. Content-Type for FormData)
+    Object.keys(headers).forEach(key => {
+      if (headers[key] === undefined) {
+        delete headers[key];
+      }
+    });
+
     // Add authentication token if required
     // Add Authorization header if token provider is set
     if (options.requiresAuth !== false && this.tokenProvider) {

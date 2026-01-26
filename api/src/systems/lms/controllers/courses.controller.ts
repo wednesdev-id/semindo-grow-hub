@@ -8,10 +8,12 @@ export class CoursesController {
     async create(req: Request, res: Response) {
         try {
             const userId = (req as any).user.userId as string;
+            const { thumbnailUrl, ...otherBody } = req.body;
             const data: Prisma.CourseCreateInput = {
-                ...req.body,
+                ...otherBody,
+                thumbnail: thumbnailUrl,
                 author: { connect: { id: userId } },
-                slug: req.body.title.toLowerCase().replace(/ /g, '-') + '-' + Date.now(),
+                slug: req.body.title.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-') + '-' + Date.now(),
             };
             const course = await coursesService.create(data);
             res.status(201).json({ data: course });
@@ -24,7 +26,9 @@ export class CoursesController {
         try {
             const { skip, take, category, level, search } = req.query;
 
-            const where: Prisma.CourseWhereInput = {};
+            const where: Prisma.CourseWhereInput = {
+                isPublished: true, // Only show published courses in catalog
+            };
             if (category) where.category = String(category);
             if (level) where.level = String(level);
             if (search) {
@@ -71,7 +75,12 @@ export class CoursesController {
     async update(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const data = req.body;
+            const { thumbnailUrl, ...otherData } = req.body;
+            const data: any = { ...otherData };
+            if (thumbnailUrl !== undefined) {
+                data.thumbnail = thumbnailUrl;
+            }
+
             const course = await coursesService.update({
                 where: { id },
                 data,
@@ -167,8 +176,17 @@ export class CoursesController {
 
     async getInstructorCourses(req: Request, res: Response) {
         try {
-            const userId = (req as any).user.userId as string;
-            const courses = await coursesService.getInstructorCourses(userId);
+            const user = (req as any).user;
+            const userId = user.userId as string;
+            // Assuming role is available on user object from token/middleware
+            // If not, we might need to fetch it. But usually JWT payload has it or auth middleware attaches it.
+            // Let's assume user.role or user.roles exists.
+            // Based on UserRole model, it might be an array.
+            // But simplified auth often puts primary role in token.
+            // Let's check if 'role' property exists.
+            const role = user.role || (user.roles && user.roles[0]);
+
+            const courses = await coursesService.getInstructorCourses(userId, role);
             res.json({ data: courses });
         } catch (error: any) {
             res.status(400).json({ error: error.message });

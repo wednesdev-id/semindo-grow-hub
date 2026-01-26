@@ -239,9 +239,9 @@ export default function InstructorCourseManagement() {
                                 >
                                     {/* Thumbnail */}
                                     <div className="relative aspect-video bg-gradient-to-br from-primary/10 to-primary/5 overflow-hidden">
-                                        {course.thumbnailUrl ? (
+                                        {course.thumbnail || course.thumbnailUrl ? (
                                             <img
-                                                src={course.thumbnailUrl}
+                                                src={course.thumbnail || course.thumbnailUrl}
                                                 alt={course.title}
                                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                             />

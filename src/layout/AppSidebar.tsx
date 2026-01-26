@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Calendar,
+  FileText,
 } from "lucide-react";
 
 type NavItem = {
@@ -232,6 +233,18 @@ const getMenuItems = (): {
         { name: "Moderasi Konten", path: "/community/moderation", roles: ["admin", "management"] },
         { name: "Event Komunitas", path: "/community/events" },
         { name: "Laporkan Pelanggaran", path: "/community/reports" },
+      ],
+    }] : []),
+    // 12. Arsipari (Feature Flagged)
+    ...(featureFlags.ARSIPARI_ENABLED ? [{
+      icon: <FileText size={20} />,
+      name: "Arsipari",
+      subItems: [
+        { name: "Surat Masuk", path: "/arsipari/incoming" },
+        { name: "Surat Keluar", path: "/arsipari/outgoing" },
+        { name: "Disposisi", path: "/arsipari/dispositions" },
+        { name: "Template Surat", path: "/arsipari/templates" },
+        { name: "Kategori & Kop", path: "/arsipari/settings" },
       ],
     }] : []),
   ];
@@ -520,8 +533,8 @@ export default function AppSidebar() {
       {/* Header / Logo */}
       <div className={`h-20 flex items-center ${!isExpanded && !isHovered ? "justify-center" : "px-6"}`}>
         <Link to="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20 shrink-0">
-            <span className="text-xl font-bold">S</span>
+          <div className="flex h-10 w-10 items-center justify-center shrink-0">
+            <img src="/LOGOS.png" alt="Logo" className="h-10 w-10 object-contain" />
           </div>
           {(isExpanded || isHovered || isMobileOpen) && (
             <div className="flex flex-col animate-in fade-in duration-300 whitespace-nowrap overflow-hidden">

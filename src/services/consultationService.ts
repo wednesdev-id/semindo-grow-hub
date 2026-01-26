@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot, BookingSlot } from '../types/consultation';
+import type { ConsultantProfile, ConsultationRequest, ChatChannel, ChatMessage, AvailabilitySlot, BookingSlot, ConsultationReview, SessionFile } from '../types/consultation';
 
 const BASE_URL = '/consultation';
 
@@ -168,7 +168,7 @@ export const consultationService = {
 
         // Uses fetch directly or api abstraction that handles FormData
         // Assuming api.post can handle FormData if we don't set Content-Type header manually (browser sets it)
-        const response = await api.post<{ success: boolean; data: any }>(
+        const response = await api.post<{ success: boolean; data: SessionFile }>(
             `${BASE_URL}/requests/${requestId}/files`,
             formData,
             // Assuming the api wrapper handles Content-Type for FormData automatically or allows override
@@ -178,7 +178,7 @@ export const consultationService = {
     },
 
     async getFiles(requestId: string) {
-        const response = await api.get<{ success: boolean; data: any[] }>(
+        const response = await api.get<{ success: boolean; data: SessionFile[] }>(
             `${BASE_URL}/requests/${requestId}/files`
         );
         return response.data;
@@ -208,12 +208,12 @@ export const consultationService = {
     },
 
     async markMessagesAsRead(requestId: string) {
-        await api.put(`${BASE_URL}/requests/${requestId}/chat/read`);
+        await api.put(`${BASE_URL}/requests/${requestId}/chat/read`, {});
     },
 
     // Admin Chat Monitoring
     async getAdminAllChannels() {
-        const response = await api.get<{ success: boolean; data: any[] }>(
+        const response = await api.get<{ success: boolean; data: ChatChannel[] }>(
             `${BASE_URL}/admin/chat/channels`
         );
         return response.data;
@@ -229,14 +229,16 @@ export const consultationService = {
     // Archive Management
     async archiveRequest(id: string) {
         const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
-            `${BASE_URL}/requests/${id}/archive`
+            `${BASE_URL}/requests/${id}/archive`,
+            {}
         );
         return response.data;
     },
 
     async unarchiveRequest(id: string) {
         const response = await api.post<{ success: boolean; data: ConsultationRequest }>(
-            `${BASE_URL}/requests/${id}/unarchive`
+            `${BASE_URL}/requests/${id}/unarchive`,
+            {}
         );
         return response.data;
     },

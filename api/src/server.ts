@@ -25,6 +25,7 @@ import { permissionsRouter } from './systems/permissions/routes/permissions.rout
 import { auditRouter } from './systems/audit/routes/audit.routes';
 import consultationRouter from './systems/consultation/routes/consultation.routes';
 import { onboardingRouter } from './systems/onboarding';
+import arsipariRouter from './systems/arsipari/routes';
 
 import { CronService } from './systems/scheduler/cron.service';
 import { featureFlags, requireFeature } from './config/feature-flags';
@@ -37,10 +38,10 @@ export function createServer(): Application {
 
   app.disable('x-powered-by')
   // Global Middleware
+  app.use(corsMiddleware)
   app.use(compression())
   app.use(apiLimiter)
-  app.use(express.json({ limit: '1mb' }))
-  app.use(corsMiddleware)
+  app.use(express.json({ limit: '10mb' }))
   app.use(securityMiddleware)
   app.use(auditMiddleware)
 
@@ -72,6 +73,13 @@ export function createServer(): Application {
   app.use('/api/v1/audit-logs', auditRouter);
   app.use('/api/v1/consultation', consultationRouter);
   app.use('/api/v1/onboarding', onboardingRouter); // Public registration
+
+
+  if (featureFlags.ARSIPARI_ENABLED) {
+    app.use('/api/v1/arsip', arsipariRouter); // Arsipari - Mail & Archive Management
+  } else {
+    app.use('/api/v1/arsip', requireFeature('ARSIPARI_ENABLED'));
+  }
 
   // Feature-flagged routes
   if (featureFlags.MARKETPLACE_ENABLED) {

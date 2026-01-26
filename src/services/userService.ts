@@ -20,7 +20,7 @@ export const userService = {
         if (params?.role) query.append('role', params.role);
         if (params?.isActive) query.append('isActive', params.isActive);
 
-        return api.get<PaginatedResponse<User>>(`/users?${query.toString()}`);
+        return api.get<ApiResponse<PaginatedResponse<User>>>(`/users?${query.toString()}`);
     },
 
     findById: (id: string) => api.get<ApiResponse<User>>(`/users/${id}`),

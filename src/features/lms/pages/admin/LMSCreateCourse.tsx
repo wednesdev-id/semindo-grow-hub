@@ -10,6 +10,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -253,13 +254,66 @@ export default function LMSCreateCourse() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="thumbnail">Thumbnail URL</Label>
-                            <Input
-                                id="thumbnail"
-                                placeholder="https://..."
-                                value={formData.thumbnailUrl}
-                                onChange={handleChange}
-                            />
+                            <Label htmlFor="thumbnail">Thumbnail</Label>
+                            <Tabs defaultValue="url" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="url">Paste URL</TabsTrigger>
+                                    <TabsTrigger value="upload">Upload Image</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="url" className="mt-4 space-y-2">
+                                    <Input
+                                        id="thumbnail"
+                                        placeholder="https://..."
+                                        value={formData.thumbnailUrl}
+                                        onChange={handleChange}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Paste a direct link to an image.
+                                    </p>
+                                </TabsContent>
+                                <TabsContent value="upload" className="mt-4 space-y-2">
+                                    <div className="flex items-center gap-4">
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                try {
+                                                    // Show loading state if needed
+                                                    const result = await lmsService.uploadResource(file);
+                                                    setFormData(prev => ({ ...prev, thumbnailUrl: result.url }));
+                                                    toast({ title: "Upload Successful", description: "Image uploaded to S3" });
+                                                } catch (error) {
+                                                    console.error("Upload failed", error);
+                                                    toast({
+                                                        title: "Upload Failed",
+                                                        description: "Failed to upload image",
+                                                        variant: "destructive"
+                                                    });
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Upload an image from your device (Max 5MB).
+                                    </p>
+                                </TabsContent>
+                            </Tabs>
+
+                            {formData.thumbnailUrl && (
+                                <div className="mt-4 relative aspect-video rounded-md overflow-hidden bg-muted border">
+                                    <img
+                                        src={formData.thumbnailUrl}
+                                        alt="Thumbnail Preview"
+                                        className="object-cover w-full h-full"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=Invalid+Image';
+                                        }}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 

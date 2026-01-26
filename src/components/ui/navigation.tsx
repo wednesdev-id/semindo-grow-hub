@@ -56,7 +56,7 @@ const Navigation = ({ onDaftarClick }: NavigationProps) => {
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
               <img
-                src="/logo.jpg"
+                src="/LOGOS.png"
                 alt="Sinergi Logo"
                 className="h-10 w-auto"
               />

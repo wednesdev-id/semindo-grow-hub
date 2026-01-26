@@ -71,6 +71,7 @@ export default function LMSCourseEditor() {
                 price: course.price,
                 level: course.level,
                 category: course.category,
+                thumbnailUrl: course.thumbnailUrl || course.thumbnail,
             });
             toast({ title: "Success", description: "Course details saved successfully" });
         } catch (error) {
@@ -359,6 +360,79 @@ export default function LMSCourseEditor() {
                                             <p className="text-sm text-green-800 dark:text-green-200 font-medium">
                                                 ✓ This course will be free for all students
                                             </p>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Thumbnail */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <ImageIcon className="h-5 w-5" />
+                                        Thumbnail
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Update course thumbnail (Image)
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <Tabs defaultValue="url" className="w-full">
+                                        <TabsList className="grid w-full grid-cols-2">
+                                            <TabsTrigger value="url">Paste URL</TabsTrigger>
+                                            <TabsTrigger value="upload">Upload Image</TabsTrigger>
+                                        </TabsList>
+                                        <TabsContent value="url" className="mt-4 space-y-2">
+                                            <Input
+                                                id="thumbnail"
+                                                placeholder="https://..."
+                                                value={course.thumbnailUrl || course.thumbnail || ""}
+                                                onChange={(e) => setCourse({ ...course, thumbnailUrl: e.target.value })}
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Paste a direct link to an image.
+                                            </p>
+                                        </TabsContent>
+                                        <TabsContent value="upload" className="mt-4 space-y-2">
+                                            <div className="flex items-center gap-4">
+                                                <Input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={async (e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (!file) return;
+
+                                                        try {
+                                                            const result = await lmsService.uploadResource(file);
+                                                            setCourse({ ...course, thumbnailUrl: result.url });
+                                                            toast({ title: "Upload Successful", description: "Image uploaded to S3" });
+                                                        } catch (error) {
+                                                            console.error("Upload failed", error);
+                                                            toast({
+                                                                title: "Upload Failed",
+                                                                description: "Failed to upload image",
+                                                                variant: "destructive"
+                                                            });
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Upload an image from your device (Max 5MB).
+                                            </p>
+                                        </TabsContent>
+                                    </Tabs>
+
+                                    {(course.thumbnailUrl || course.thumbnail) && (
+                                        <div className="mt-4 relative aspect-video rounded-md overflow-hidden bg-muted border">
+                                            <img
+                                                src={course.thumbnailUrl || course.thumbnail}
+                                                alt="Thumbnail Preview"
+                                                className="object-cover w-full h-full"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://placehold.co/600x400?text=Invalid+Image';
+                                                }}
+                                            />
                                         </div>
                                     )}
                                 </CardContent>

@@ -4,7 +4,9 @@ import { Upload, X, FileText, CheckCircle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileUploadProps {
-    onUpload: (file: File) => Promise<void>
+    onUpload?: (file: File) => Promise<void>
+    onFileSelect?: (file: File) => void
+    selectedFile?: File | null
     accept?: string
     maxSize?: number // in MB
     label?: string
@@ -15,6 +17,8 @@ interface FileUploadProps {
 
 export function FileUpload({
     onUpload,
+    onFileSelect,
+    selectedFile,
     accept = 'image/*,application/pdf',
     maxSize = 5,
     label = 'Upload File',
@@ -37,22 +41,32 @@ export function FileUpload({
         }
 
         setError(null)
-        setUploading(true)
 
-        try {
-            await onUpload(file)
-        } catch (err: any) {
-            setError(err.message || 'Upload failed')
-        } finally {
-            setUploading(false)
-            // Reset input
+        if (onFileSelect) {
+            onFileSelect(file)
             if (inputRef.current) {
                 inputRef.current.value = ''
+            }
+            return
+        }
+
+        if (onUpload) {
+            setUploading(true)
+            try {
+                await onUpload(file)
+            } catch (err: any) {
+                setError(err.message || 'Upload failed')
+            } finally {
+                setUploading(false)
+                // Reset input
+                if (inputRef.current) {
+                    inputRef.current.value = ''
+                }
             }
         }
     }
 
-    if (value) {
+    if (value || selectedFile) {
         return (
             <div className="relative flex items-center gap-4 rounded-lg border border-border p-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -60,10 +74,10 @@ export function FileUpload({
                 </div>
                 <div className="flex-1 overflow-hidden">
                     <p className="truncate text-sm font-medium text-foreground">
-                        {value.split('/').pop()}
+                        {selectedFile ? selectedFile.name : value?.split('/').pop()}
                     </p>
                     <p className="text-xs text-success flex items-center gap-1">
-                        <CheckCircle className="h-3 w-3" /> Uploaded
+                        <CheckCircle className="h-3 w-3" /> {selectedFile ? 'Selected' : 'Uploaded'}
                     </p>
                 </div>
                 {onDelete && !disabled && (

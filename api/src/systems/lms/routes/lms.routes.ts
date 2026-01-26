@@ -15,20 +15,7 @@ const controller = new CoursesController();
 const assessmentController = new AssessmentController();
 
 // Configure Multer
-const uploadDir = path.join(__dirname, '../../../../uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
     storage,
@@ -46,7 +33,24 @@ const upload = multer({
 });
 
 const resourceController = new ResourceController();
-router.post('/resources/upload', authenticate, upload.single('file'), resourceController.upload);
+router.post('/resources/upload',
+    (req, res, next) => {
+        console.log('[LMS] Upload Request Headers:', req.headers);
+        next();
+    },
+    authenticate,
+    (req, res, next) => {
+        upload.single('file')(req, res, (err) => {
+            if (err) {
+                console.error('[LMS] Multer Error:', err);
+                return res.status(400).json({ error: err.message });
+            }
+            console.log('[LMS] Multer Success, File:', req.file);
+            next();
+        });
+    },
+    resourceController.upload
+);
 
 // Assessment Routes (Quiz & Assignment)
 router.post('/lessons/:lessonId/quiz', authenticate, requireRole(['admin', 'mentor', 'konsultan', 'umkm']), assessmentController.createQuiz);

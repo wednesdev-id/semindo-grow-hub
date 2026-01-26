@@ -18,6 +18,9 @@ export const featureFlags = {
     COMMUNITY_ENABLED: process.env.FEATURE_COMMUNITY !== 'false', // default enabled
     EXPORT_HUB_ENABLED: process.env.FEATURE_EXPORT_HUB !== 'false', // default enabled
     FINANCING_ENABLED: process.env.FEATURE_FINANCING !== 'false', // default enabled
+
+    // Administrative Modules
+    ARSIPARI_ENABLED: process.env.FEATURE_ARSIPARI !== 'false', // default enabled
 };
 
 /**

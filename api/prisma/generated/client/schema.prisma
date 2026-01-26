@@ -45,9 +45,10 @@ model User {
   reviews Review[]
 
   // Community Relations
-  forumThreads       ForumThread[]
-  forumPosts         ForumPost[]
-  forumUpvotes       ForumUpvote[]
+  forumThreads ForumThread[]
+  forumPosts   ForumPost[]
+  forumUpvotes ForumUpvote[]
+
   organizedEvents    Event[]
   eventRegistrations EventRegistration[]
 
@@ -63,6 +64,14 @@ model User {
   consultationRequests  ConsultationRequest[]
   consultationReviews   ConsultationReview[]
   sentMessages          ChatMessage[]
+
+  // Arsipari Relations
+  createdIncomingLetters IncomingLetter[] @relation("IncomingLetterCreator")
+  createdOutgoingLetters OutgoingLetter[] @relation("OutgoingLetterCreator")
+  dispositionsFrom       Disposition[]    @relation("DispositionFrom")
+  dispositionsTo         Disposition[]    @relation("DispositionTo")
+  letterApprovals        LetterApproval[] @relation("LetterApprovalUser")
+  createdArchives        Archive[]        @relation("ArchiveCreator")
 
   @@map("users")
 }
@@ -1394,4 +1403,260 @@ model ExpertiseAuditLog {
   @@index([expertiseId])
   @@index([changedBy])
   @@map("expertise_audit_logs")
+}
+
+// ============================================
+// ARSIPARI - MAIL & ARCHIVE MANAGEMENT SYSTEM
+// ============================================
+
+// Letter category for classification
+model LetterCategory {
+  id          String   @id @default(uuid())
+  code        String   @unique // Category code (e.g., SK, SURAT, UNDANGAN)
+  name        String // Category name
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  incomingLetters IncomingLetter[]
+  outgoingLetters OutgoingLetter[]
+  archives        Archive[]
+
+  @@index([isActive])
+  @@map("letter_categories")
+}
+
+// Letter Subject / Perihal Surat for Numbering
+model LetterSubject {
+  id          String   @id @default(uuid())
+  code        String   @unique // Classification code (e.g., 005, UM)
+  name        String // Subject name (e.g., Undangan, Umum)
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  outgoingLetters OutgoingLetter[]
+
+  @@index([isActive])
+  @@map("letter_subjects")
+}
+
+// Letterhead / Kop surat
+model Letterhead {
+  id        String   @id @default(uuid())
+  name      String // Institution/unit name
+  unit      String? // Unit/organization name
+  address   String?  @db.Text
+  website   String?
+  email     String?
+  phone     String?
+  logoUrl   String?  @map("logo_url")
+  config    Json? // Custom layout configuration
+  isActive  Boolean  @default(true) @map("is_active")
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  templates LetterTemplate[]
+
+  @@index([isActive])
+  @@map("letterheads")
+}
+
+// Letter template for outgoing letters
+model LetterTemplate {
+  id           String   @id @default(uuid())
+  name         String // Template name
+  code         String   @unique // Template code
+  type         String // Letter type (UNDANGAN, EDARAN, SURAT_PERINTAH, etc)
+  description  String?
+  letterheadId String?  @map("letterhead_id")
+  content      String   @db.Text // Template content with variable placeholders
+  variables    String[] // Variable names: ["nomor", "tanggal", "tujuan", "perihal", "isi"]
+  numberFormat String?  @map("number_format") // Number format, e.g., "NO/UNIT/BULAN/TAHUN"
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  letterhead      Letterhead?      @relation(fields: [letterheadId], references: [id])
+  outgoingLetters OutgoingLetter[]
+
+  @@index([isActive])
+  @@map("letter_templates")
+}
+
+// Incoming letter / Surat masuk
+model IncomingLetter {
+  id             String    @id @default(uuid())
+  letterNumber   String    @map("letter_number") // Letter number from sender
+  letterDate     DateTime  @map("letter_date") // Letter date
+  receivedDate   DateTime  @map("received_date") // Received date
+  sender         String // Sender name
+  senderAddress  String?   @map("sender_address")
+  subject        String // Subject
+  categoryId     String?   @map("category_id")
+  classification String? // Security classification: BIASA, RAHASIA, SANGAT_RAHASIA
+  nature         String? // Letter nature: BIASA, PENTING, SEGERA
+  priority       String    @default("NORMAL") // RENDAH, NORMAL, TINGGI, URGENT
+  fileUrl        String?   @map("file_url") // File URL (PDF/IMG)
+  fileName       String?   @map("file_name")
+  fileSize       Int?      @map("file_size")
+  mimeType       String?   @map("mime_type")
+  status         String    @default("BARU") // BARU, DIPROSES, DISPOSISI, SELESAI, ARSIP
+  notes          String?   @db.Text
+  createdBy      String?   @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  finishedAt     DateTime? @map("finished_at")
+  archivedAt     DateTime? @map("archived_at")
+
+  // Relations
+  category     LetterCategory? @relation(fields: [categoryId], references: [id])
+  creator      User?           @relation("IncomingLetterCreator", fields: [createdBy], references: [id])
+  dispositions Disposition[]
+  archive      Archive?
+
+  @@unique([letterNumber])
+  @@index([status])
+  @@index([letterDate])
+  @@index([priority])
+  @@index([categoryId])
+  @@index([createdBy])
+  @@map("incoming_letters")
+}
+
+// Outgoing letter / Surat keluar
+model OutgoingLetter {
+  id               String    @id @default(uuid())
+  letterNumber     String?   @map("letter_number") // Auto-generated on publish
+  templateId       String?   @map("template_id")
+  recipient        String // Recipient
+  recipientAddress String?   @map("recipient_address")
+  subject          String // Subject
+  content          String    @db.Text // Letter content
+  attachment       String?
+  letterDate       DateTime? @map("letter_date") // Letter date
+  categoryId       String?   @map("category_id")
+  subjectId        String?   @map("subject_id")
+  classification   String? // Security classification: BIASA, RAHASIA, SANGAT_RAHASIA
+  nature           String? // Letter nature: BIASA, PENTING, SEGERA
+  priority         String    @default("NORMAL") // RENDAH, NORMAL, TINGGI, URGENT
+  status           String    @default("DRAFT") // DRAFT, REVIEW, APPROVED, REJECTED, PUBLISHED, ARSIP
+  fileUrl          String?   @map("file_url") // Generated PDF
+  fileName         String?   @map("file_name")
+  fileSize         Int?      @map("file_size")
+  mimeType         String?   @map("mime_type")
+  revision         Int       @default(0)
+  notes            String?   @db.Text
+  createdBy        String?   @map("created_by")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  publishedAt      DateTime? @map("published_at")
+  archivedAt       DateTime? @map("archived_at")
+
+  // Relations
+  template      LetterTemplate?  @relation(fields: [templateId], references: [id])
+  category      LetterCategory?  @relation(fields: [categoryId], references: [id])
+  letterSubject LetterSubject?   @relation(fields: [subjectId], references: [id])
+  creator       User?            @relation("OutgoingLetterCreator", fields: [createdBy], references: [id])
+  approvals     LetterApproval[]
+  archive       Archive?
+
+  @@unique([letterNumber])
+  @@index([status])
+  @@index([categoryId])
+  @@index([createdBy])
+  @@map("outgoing_letters")
+}
+
+// Letter disposition / Disposisi
+model Disposition {
+  id               String    @id @default(uuid())
+  incomingLetterId String    @map("incoming_letter_id")
+  fromUserId       String    @map("from_user_id")
+  toUserId         String    @map("to_user_id")
+  instruction      String    @db.Text
+  notes            String?   @db.Text
+  status           String    @default("AWAITING") // AWAITING, READ, COMPLETED
+  readAt           DateTime? @map("read_at")
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  incomingLetter IncomingLetter @relation(fields: [incomingLetterId], references: [id], onDelete: Cascade)
+  fromUser       User           @relation("DispositionFrom", fields: [fromUserId], references: [id])
+  toUser         User           @relation("DispositionTo", fields: [toUserId], references: [id])
+
+  @@index([incomingLetterId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([status])
+  @@map("dispositions")
+}
+
+// Letter approval workflow
+model LetterApproval {
+  id               String    @id @default(uuid())
+  outgoingLetterId String    @map("outgoing_letter_id")
+  userId           String    @map("user_id")
+  sequence         Int // Approval sequence order
+  status           String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes            String?   @db.Text
+  approvalDate     DateTime? @map("approval_date")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  outgoingLetter OutgoingLetter @relation(fields: [outgoingLetterId], references: [id], onDelete: Cascade)
+  user           User           @relation("LetterApprovalUser", fields: [userId], references: [id])
+
+  @@index([outgoingLetterId])
+  @@index([userId])
+  @@index([status])
+  @@map("letter_approvals")
+}
+
+// Central archive
+model Archive {
+  id                String    @id @default(uuid())
+  archiveNumber     String    @unique @map("archive_number") // Unique archive number
+  letterType        String    @map("letter_type") // MASUK, KELUAR
+  incomingLetterId  String?   @unique @map("incoming_letter_id")
+  outgoingLetterId  String?   @unique @map("outgoing_letter_id")
+  letterNumber      String    @map("letter_number")
+  subject           String
+  categoryId        String?   @map("category_id")
+  archiveYear       Int       @map("archive_year")
+  archiveMonth      Int       @map("archive_month")
+  location          String? // Physical location: Cabinet, Shelf, Box
+  protectionLevel   String?   @map("protection_level") // OPEN, RESTRICTED, SECRET
+  activeRetention   Int?      @map("active_retention") // Years in active retention
+  inactiveRetention Int?      @map("inactive_retention") // Years in inactive retention
+  disposalDate      DateTime? @map("disposal_date") // Date when can be destroyed
+  status            String    @default("AKTIF") // AKTIF, INAKTIF, MUSNAH
+  notes             String?   @db.Text
+  createdBy         String?   @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  deletedAt         DateTime? @map("deleted_at")
+
+  // Relations
+  incomingLetter IncomingLetter? @relation(fields: [incomingLetterId], references: [id])
+  outgoingLetter OutgoingLetter? @relation(fields: [outgoingLetterId], references: [id])
+  category       LetterCategory? @relation(fields: [categoryId], references: [id])
+  creator        User?           @relation("ArchiveCreator", fields: [createdBy], references: [id])
+
+  @@index([letterType])
+  @@index([categoryId])
+  @@index([archiveYear])
+  @@index([archiveMonth])
+  @@index([status])
+  @@map("archives")
 }

@@ -11,8 +11,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Ports
-FRONTEND_PORT=5173
-BACKEND_PORT=8000
+FRONTEND_PORT=5174
+BACKEND_PORT=3000
 
 # Ensure we are in the script directory
 cd "$(dirname "$0")"
@@ -69,15 +69,22 @@ is_port_in_use() {
 kill_port() {
     local port=$1
     
-    if is_port_in_use $port; then
-        echo -e "${YELLOW}Port $port sedang digunakan. Mencoba membersihkan...${NC}"
-        local pid=$(lsof -ti:$port)
-        if [ -n "$pid" ]; then
-            echo -e "${RED}Menghentikan proses PID $pid di port $port${NC}"
-            kill -9 $pid
+    # Check if port is in use
+    if lsof -i :$port >/dev/null 2>&1; then
+        echo -e "${YELLOW}Port $port sedang digunakan. Membersihkan...${NC}"
+        # Find all PIDs using the port
+        local pids=$(lsof -ti:$port)
+        
+        if [ -n "$pids" ]; then
+            echo -e "${RED}Menghentikan proses PID: $pids di port $port${NC}"
+            # Try graceful kill first
+            kill -15 $pids 2>/dev/null
             sleep 1
+            # Force kill if still running
+            kill -9 $pids 2>/dev/null
             
-            if is_port_in_use $port; then
+            # Double check
+            if lsof -i :$port >/dev/null 2>&1; then
                 echo -e "${RED}Gagal membersihkan port $port${NC}"
                 return 1
             else
@@ -85,25 +92,17 @@ kill_port() {
                 return 0
             fi
         fi
-    else
-        return 0
     fi
+    return 0
 }
 
 # Fungsi untuk membersihkan saat script dihentikan
 cleanup() {
     echo -e "\n${YELLOW}Menerima sinyal berhenti. Membersihkan process...${NC}"
     
-    # Kill child processes if they exist
-    if [ -n "$BACKEND_PID" ]; then
-        echo -e "${YELLOW}Menghentikan Backend Server (PID: $BACKEND_PID)...${NC}"
-        kill $BACKEND_PID 2>/dev/null
-    fi
-    
-    if [ -n "$FRONTEND_PID" ]; then
-        echo -e "${YELLOW}Menghentikan Frontend Server (PID: $FRONTEND_PID)...${NC}"
-        kill $FRONTEND_PID 2>/dev/null
-    fi
+    # Kill all child processes of this script
+    # This captures the concurrently processes and their children
+    pkill -P $$ 2>/dev/null
     
     # Ensure ports are free
     kill_port $BACKEND_PORT
@@ -112,6 +111,9 @@ cleanup() {
     echo -e "${GREEN}Semua service telah dihentikan. Bye! 👋${NC}"
     exit 0
 }
+
+# Trap signals
+trap cleanup SIGINT SIGTERM EXIT
 
 # Fungsi untuk menjalankan development server
 run_dev() {
@@ -124,13 +126,11 @@ run_dev() {
     echo -e "${BLUE}Starting Backend & Frontend...${NC}"
     
     # Use concurrently for better logging
-    # -n: Names for the processes
-    # -c: Colors for the processes
-    # --kill-others: Kill all if one dies (optional, but good for dev)
     npx concurrently \
         -n "BACKEND,FRONTEND" \
         -c "blue,green" \
-        "cd api && npm run dev" \
+        --kill-others \
+        "cd api && PORT=$BACKEND_PORT npm run dev" \
         "npm run dev"
 }
 

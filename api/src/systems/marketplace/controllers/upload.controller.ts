@@ -2,20 +2,10 @@ import { Request, Response } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import sharp from 'sharp';
+import { s3Service } from '../../../services/s3.service';
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = 'uploads/';
-        if (!fs.existsSync(uploadPath)) {
-            fs.mkdirSync(uploadPath, { recursive: true });
-        }
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+const storage = multer.memoryStorage(); // Switch to memory storage for S3 uploads
 
 export const upload = multer({
     storage: storage,
@@ -29,8 +19,6 @@ export const upload = multer({
     }
 });
 
-import sharp from 'sharp';
-
 export const uploadController = {
     uploadImage: async (req: Request, res: Response) => {
         if (!req.file) {
@@ -38,39 +26,44 @@ export const uploadController = {
         }
 
         try {
-            const filePath = req.file.path;
+            const fileBuffer = req.file.buffer;
             const fileExt = path.extname(req.file.originalname);
-            const fileName = path.basename(req.file.filename, fileExt);
-            const outputFileName = `processed-${fileName}.webp`;
-            const outputPath = path.join('uploads', outputFileName);
-            const thumbFileName = `thumb-${fileName}.webp`;
-            const thumbPath = path.join('uploads', thumbFileName);
+            const fileName = path.basename(req.file.originalname, fileExt).replace(/[^a-zA-Z0-9]/g, '-'); // Sanitize
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
 
-            // Define base URL for response (using relative path for better proxy compatibility)
-            const baseUrl = `/uploads`;
+            const outputFileName = `processed-${fileName}-${uniqueSuffix}.webp`;
+            const thumbFileName = `thumb-${fileName}-${uniqueSuffix}.webp`;
 
             // Process image: resize, compress, convert to webp
-            const metadata = await sharp(filePath)
+            const processedBuffer = await sharp(fileBuffer)
                 .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
                 .webp({ quality: 80 })
-                .toFile(outputPath);
+                .toBuffer();
 
             // Generate thumbnail
-            await sharp(filePath)
+            const thumbBuffer = await sharp(fileBuffer)
                 .resize(300, 300, { fit: 'cover' })
                 .webp({ quality: 70 })
-                .toFile(thumbPath);
+                .toBuffer();
 
-            // Cleanup original uploaded file
-            fs.unlinkSync(filePath);
+            // Upload to S3
+            const [url, thumbnailUrl] = await Promise.all([
+                s3Service.uploadFile(processedBuffer, outputFileName, 'image/webp'),
+                s3Service.uploadFile(thumbBuffer, thumbFileName, 'image/webp')
+            ]);
+
+            // Get metadata from processed buffer if needed, or re-read. 
+            // Sharp can give metadata with toBuffer but via resolveWithObject?
+            // For simplicity, reading metadata from sharp instance again if needed, OR just return size from buffer.
+            const metadata = await sharp(processedBuffer).metadata();
 
             res.json({
-                url: `${baseUrl}/${outputFileName}`,
-                thumbnail: `${baseUrl}/${thumbFileName}`,
+                url: url,
+                thumbnail: thumbnailUrl,
                 metadata: {
                     width: metadata.width,
                     height: metadata.height,
-                    size: metadata.size,
+                    size: processedBuffer.length,
                     format: 'webp'
                 }
             });
@@ -87,39 +80,40 @@ export const uploadController = {
 
         try {
             const files = req.files as Express.Multer.File[];
-            const baseUrl = `/uploads`;
 
             const results = await Promise.all(files.map(async (file) => {
-                const filePath = file.path;
+                const fileBuffer = file.buffer;
                 const fileExt = path.extname(file.originalname);
-                const fileName = path.basename(file.filename, fileExt);
-                const outputFileName = `processed-${fileName}.webp`;
-                const outputPath = path.join('uploads', outputFileName);
-                const thumbFileName = `thumb-${fileName}.webp`;
-                const thumbPath = path.join('uploads', thumbFileName);
+                const fileName = path.basename(file.originalname, fileExt).replace(/[^a-zA-Z0-9]/g, '-');
+                const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
 
-                const metadata = await sharp(filePath)
+                const outputFileName = `processed-${fileName}-${uniqueSuffix}.webp`;
+                const thumbFileName = `thumb-${fileName}-${uniqueSuffix}.webp`;
+
+                const processedBuffer = await sharp(fileBuffer)
                     .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
                     .webp({ quality: 80 })
-                    .toFile(outputPath);
+                    .toBuffer();
 
-                await sharp(filePath)
+                const thumbBuffer = await sharp(fileBuffer)
                     .resize(300, 300, { fit: 'cover' })
                     .webp({ quality: 70 })
-                    .toFile(thumbPath);
+                    .toBuffer();
 
-                // Cleanup original uploaded file
-                if (fs.existsSync(filePath)) {
-                    fs.unlinkSync(filePath);
-                }
+                const [url, thumbnailUrl] = await Promise.all([
+                    s3Service.uploadFile(processedBuffer, outputFileName, 'image/webp'),
+                    s3Service.uploadFile(thumbBuffer, thumbFileName, 'image/webp')
+                ]);
+
+                const metadata = await sharp(processedBuffer).metadata();
 
                 return {
-                    url: `${baseUrl}/${outputFileName}`,
-                    thumbnail: `${baseUrl}/${thumbFileName}`,
+                    url: url,
+                    thumbnail: thumbnailUrl,
                     metadata: {
                         width: metadata.width,
                         height: metadata.height,
-                        size: metadata.size,
+                        size: processedBuffer.length,
                         format: 'webp',
                         originalName: file.originalname
                     }
@@ -148,29 +142,32 @@ export const uploadController = {
 
             const fileName = `ext-${Date.now()}`;
             const outputFileName = `processed-${fileName}.webp`;
-            const outputPath = path.join('uploads', outputFileName);
             const thumbFileName = `thumb-${fileName}.webp`;
-            const thumbPath = path.join('uploads', thumbFileName);
 
-            const metadata = await sharp(nodeBuffer)
+            const processedBuffer = await sharp(nodeBuffer)
                 .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
                 .webp({ quality: 80 })
-                .toFile(outputPath);
+                .toBuffer();
 
-            await sharp(nodeBuffer)
+            const thumbBuffer = await sharp(nodeBuffer)
                 .resize(300, 300, { fit: 'cover' })
                 .webp({ quality: 70 })
-                .toFile(thumbPath);
+                .toBuffer();
 
-            const baseUrl = `/uploads`;
+            const [s3Url, thumbnailUrl] = await Promise.all([
+                s3Service.uploadFile(processedBuffer, outputFileName, 'image/webp'),
+                s3Service.uploadFile(thumbBuffer, thumbFileName, 'image/webp')
+            ]);
+
+            const metadata = await sharp(processedBuffer).metadata();
 
             res.json({
-                url: `${baseUrl}/${outputFileName}`,
-                thumbnail: `${baseUrl}/${thumbFileName}`,
+                url: s3Url,
+                thumbnail: thumbnailUrl,
                 metadata: {
                     width: metadata.width,
                     height: metadata.height,
-                    size: metadata.size,
+                    size: processedBuffer.length,
                     format: 'webp'
                 }
             });

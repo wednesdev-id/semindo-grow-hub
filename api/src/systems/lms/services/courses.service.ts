@@ -244,7 +244,27 @@ export class CoursesService {
         return lessonProgress;
     }
 
-    async getInstructorCourses(userId: string): Promise<Course[]> {
+    async getInstructorCourses(userId: string, role?: string): Promise<Course[]> {
+        // If user is admin/super admin, return ALL courses
+        if (role === 'admin' || role === 'super admin' || role === 'super_admin') {
+            return prisma.course.findMany({
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            email: true
+                        }
+                    },
+                    _count: {
+                        select: { enrollments: true }
+                    }
+                }
+            });
+        }
+
+        // Default: Only return courses authored by this user
         return prisma.course.findMany({
             where: { authorId: userId },
             orderBy: { createdAt: 'desc' },

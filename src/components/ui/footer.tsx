@@ -86,10 +86,12 @@ const Footer = () => {
           {/* Brand Section */}
           <div className="lg:col-span-2 space-y-8">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-white font-bold text-xl">S</span>
-              </div>
-              <span className="text-2xl font-bold text-white">Semindo</span>
+              <img
+                src="/LOGOS.png"
+                alt="Sinergi Logo"
+                className="w-32 h-24 object-contain"
+              />
+
             </div>
             <p className="text-slate-400 leading-relaxed text-lg">
               Platform konsultasi berbasis teknologi yang membantu UMKM Indonesia
