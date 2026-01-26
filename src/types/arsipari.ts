@@ -167,6 +167,8 @@ export interface OutgoingLetter {
   letterDate?: string; // Letter date
   categoryId?: string;
   category?: LetterCategory;
+  subjectId?: string;
+  letterSubject?: LetterSubject;
   classification?: LetterClassification;
   nature?: LetterNature;
   priority?: LetterPriority;
@@ -372,6 +374,16 @@ export interface OutgoingLetterFilters {
   templateId?: string;
   priority?: LetterPriority;
   search?: string; // Search by letter number, recipient, subject
+  page?: number;
+  limit?: number;
+}
+
+export interface DispositionFilters {
+  incomingLetterId?: string;
+  status?: DispositionStatus;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }

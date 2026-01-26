@@ -299,7 +299,7 @@ export const templateService = {
     return api.get<PaginatedResponse<LetterCategory>>(`${BASE_URL}/template/categories${params}`);
   },
 
-  async createCategory(data: { code: string; name: string; description?: string }): Promise<ApiResponse<LetterCategory>> {
+  async createCategory(data: { code: string; name: string; description?: string; isActive?: boolean }): Promise<ApiResponse<LetterCategory>> {
     return api.post<ApiResponse<LetterCategory>>(`${BASE_URL}/template/categories`, data);
   },
 
@@ -395,7 +395,7 @@ export const letterSubjectService = {
     return api.get<PaginatedResponse<LetterSubject>>(`${BASE_URL}/perihal${params}`);
   },
 
-  async create(data: { code: string; name: string; description?: string }): Promise<ApiResponse<LetterSubject>> {
+  async create(data: { code: string; name: string; description?: string; isActive?: boolean }): Promise<ApiResponse<LetterSubject>> {
     return api.post<ApiResponse<LetterSubject>>(`${BASE_URL}/perihal`, data);
   },
 
