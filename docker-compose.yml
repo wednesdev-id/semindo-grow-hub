@@ -28,12 +28,18 @@ services:
       target: production
     container_name: semindo-backend
     restart: unless-stopped
+    command: [ "node", "dist/index.js" ]
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${DB_USER:-semindo}:${DB_PASSWORD:-semindo_password}@db:5432/${DB_NAME:-semindo_db}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       PORT: 8000
+      S3_ENDPOINT: http://semindo-localstack:4566
+      S3_BUCKET: sinergiumkm
+      S3_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
     ports:
       - "3001:8000"
     depends_on:
@@ -43,7 +49,6 @@ services:
       - semindo-network
     volumes:
       - ./api/uploads:/app/uploads
-    command: [ "node", "dist/index.js" ]
 
   # Frontend
   frontend:
@@ -75,6 +80,27 @@ services:
       - semindo-network
     environment:
       ADMINER_DEFAULT_SERVER: db
+
+  # LocalStack - S3 Mock
+  localstack:
+    image: localstack/localstack
+    container_name: semindo-localstack
+    profiles: [ "dev", "prod" ]
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - "./localstack_data:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./api/localstack-init:/etc/localstack/init/ready.d"
+    networks:
+      - semindo-network
 
   # Nginx Reverse Proxy - Development
   nginx-dev:

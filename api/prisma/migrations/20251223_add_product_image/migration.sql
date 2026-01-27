@@ -2,8 +2,8 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS product_images (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id uuid,
+  id text PRIMARY KEY,
+  product_id text,
   url text NOT NULL,
   thumbnail_url text,
   width integer,
