@@ -87,6 +87,7 @@ export class AuthService {
     }
 
     async login(data: LoginDto): Promise<AuthResponse> {
+        console.log(`[AuthDebug] Login attempt for: ${data.email}`);
         // Find user
         const user = await db.user.findUnique({
             where: { email: data.email },
@@ -108,11 +109,17 @@ export class AuthService {
         })
 
         if (!user) {
+            console.log(`[AuthDebug] User not found: ${data.email}`);
             throw new Error('Invalid email or password')
         }
 
+        console.log(`[AuthDebug] User found. Hash: ${user.passwordHash.substring(0, 10)}...`);
+        console.log(`[AuthDebug] Input password length: ${data.password.length}`);
+
         // Verify password
         const isValid = await comparePassword(data.password, user.passwordHash)
+        console.log(`[AuthDebug] Password valid: ${isValid}`);
+
         if (!isValid) {
             throw new Error('Invalid email or password')
         }
