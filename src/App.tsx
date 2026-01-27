@@ -163,7 +163,7 @@ const OutgoingLetterFormPage = lazy(() => import("./pages/arsipari/OutgoingLette
 const OutgoingLetterDetailPage = lazy(() => import("./pages/arsipari/OutgoingLetterDetailPage"));
 const DispositionsPage = lazy(() => import("./pages/arsipari/DispositionsPage"));
 const TemplatePage = lazy(() => import("./pages/arsipari/TemplatePage"));
-const SettingsPage = lazy(() => import("./pages/arsipari/SettingsPage"));
+
 
 const queryClient = new QueryClient();
 
@@ -619,7 +619,7 @@ const App = () => {
                             <Route path="/arsipari/outgoing/:id/edit" element={<OutgoingLetterFormPage />} />
                             <Route path="/arsipari/dispositions" element={<DispositionsPage />} />
                             <Route path="/arsipari/templates" element={<TemplatePage />} />
-                            <Route path="/arsipari/settings" element={<SettingsPage />} />
+
                           </>
                         )}
                         <Route path="/export/approval" element={<FeaturePreviewPage

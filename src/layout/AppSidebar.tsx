@@ -244,7 +244,7 @@ const getMenuItems = (): {
         { name: "Surat Keluar", path: "/arsipari/outgoing" },
         { name: "Disposisi", path: "/arsipari/dispositions" },
         { name: "Template Surat", path: "/arsipari/templates" },
-        { name: "Kategori & Kop", path: "/arsipari/settings" },
+
       ],
     }] : []),
   ];
