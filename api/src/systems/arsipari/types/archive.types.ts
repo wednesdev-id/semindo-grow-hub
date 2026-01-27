@@ -10,6 +10,8 @@ export interface CreateArchiveDto {
   protectionLevel?: string;
   activeRetention?: number;
   inactiveRetention?: number;
+  disposalDate?: Date;
+  createdBy?: string;
   notes?: string;
 }
 
