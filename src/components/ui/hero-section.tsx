@@ -1,97 +1,171 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, TrendingUp, ShieldCheck, Users } from "lucide-react";
-import heroImage from "@/assets/hero-consulting.jpg";
+import { useState } from "react";
+import heroImage from "@/assets/Hero Semindo 1@2x.png";
+
+interface FormData {
+  namaLengkap: string;
+  email: string;
+  telepon: string;
+  namaUsaha: string;
+}
 
 const HeroSection = () => {
+  const [formData, setFormData] = useState<FormData>({
+    namaLengkap: "",
+    email: "",
+    telepon: "",
+    namaUsaha: ""
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const isFormValid = formData.namaLengkap && formData.email && formData.telepon && formData.namaUsaha;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isFormValid) {
+      console.log("Form submitted:", formData);
+      // TODO: Submit to API
+    }
+  };
+
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Background Image & Overlay */}
+    <section className="relative w-screen min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image - Pure Image Only */}
       <div className="absolute inset-0 z-0">
         <img
           src={heroImage}
-          alt="Tech consulting for SMEs"
-          className="w-full h-full object-cover opacity-20 scale-105 animate-pulse-slow"
+          alt="UMKM Growth"
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-20 pb-16">
-        <div className="animate-fade-in space-y-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-sm font-medium mb-4 animate-slide-up">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
-            </span>
-            Platform No.1 untuk UMKM Indonesia
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-0" style={{ marginTop: "316px" }}>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-8 items-center min-h-screen lg:min-h-auto lg:h-[90vh]">
+          
+          {/* Left Column - Content (60%) */}
+          <div className="lg:col-span-3 text-white">
+            <h1 
+              className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 lg:mb-8"
+              style={{ maxWidth: "90%", fontFamily: "Inter" }}
+            >
+              Tingkatkan Level UMKM mu bersama kami
+            </h1>
+            
+            <p 
+              className="text-lg sm:text-xl leading-relaxed mb-8 lg:mb-12"
+              style={{ 
+                maxWidth: "80%",
+                opacity: 0.85,
+                fontFamily: "Inter",
+                fontWeight: 400
+              }}
+            >
+              Semindo bantu UMKM Indonesia berkembang secara terstruktur melalui assessment, pendampingan, dan pembelajaran yang tepat sasaran.
+            </p>
+
+            {/* Additional Info */}
+            <div className="space-y-4 text-base" style={{ maxWidth: "80%", fontFamily: "Inter" }}>
+              <div className="flex items-start gap-3">
+                <span className="text-secondary font-bold text-xl">✓</span>
+                <span>Evaluasi mendalam tingkat kematangan bisnis Anda</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-secondary font-bold text-xl">✓</span>
+                <span>Pendampingan langsung dari mentor berpengalaman</span>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-secondary font-bold text-xl">✓</span>
+                <span>Akses ke ribuan materi pembelajaran digital</span>
+              </div>
+            </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight px-2">
-            Beyond Solutions
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-secondary to-blue-400 mt-2">
-              for SMEs Growth
-            </span>
-          </h1>
-
-          <p className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed px-4">
-            Aselerasi pertumbuhan bisnis Anda dengan solusi digital terintegrasi,
-            akses pembiayaan, dan pendampingan ahli dalam satu ekosistem.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4 pt-4">
-            <Button
-              variant="hero"
-              size="lg"
-              className="w-full sm:w-auto text-lg px-8 py-6 rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 hover:-translate-y-1"
+          {/* Right Column - Form Card (40%) */}
+          <div className="lg:col-span-2 flex items-center justify-center lg:justify-end h-full">
+            <div 
+              className="w-full bg-white rounded-lg p-8 shadow-lg"
+              style={{ maxWidth: "420px", fontFamily: "Inter" }}
             >
-              Mulai Konsultasi Gratis
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6" style={{ color: "#212A65" }}>
+                Daftar UMKM untuk bergabung
+              </h2>
 
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/40 font-semibold text-lg px-8 py-6 rounded-2xl backdrop-blur-sm transition-all duration-300"
-            >
-              <Play className="mr-2 h-5 w-5 fill-current" />
-              Lihat Demo
-            </Button>
-          </div>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Nama Lengkap */}
+                <div>
+                  <input
+                    type="text"
+                    name="namaLengkap"
+                    placeholder="Nama lengkap Anda"
+                    value={formData.namaLengkap}
+                    onChange={handleInputChange}
+                    disabled={true}
+                    className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded placeholder-gray-400 focus:outline-none cursor-not-allowed"
+                  />
+                </div>
 
-          {/* Stats / Trust Indicators */}
-          <div className="mt-16 pt-8 border-t border-white/10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <p className="text-slate-400 text-sm mb-8 uppercase tracking-wider font-medium">Dipercaya oleh 5000+ UMKM & Partner</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-secondary">
-                  <Users className="h-6 w-6" />
+                {/* Email */}
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email@gmail.com"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    disabled={true}
+                    className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded placeholder-gray-400 focus:outline-none cursor-not-allowed"
+                  />
                 </div>
-                <div className="text-2xl font-bold text-white">5000+</div>
-                <div className="text-sm text-slate-400">UMKM Terdaftar</div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-blue-400">
-                  <TrendingUp className="h-6 w-6" />
+
+                {/* Telepon */}
+                <div>
+                  <input
+                    type="tel"
+                    name="telepon"
+                    placeholder="08xxx"
+                    value={formData.telepon}
+                    onChange={handleInputChange}
+                    disabled={true}
+                    className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded placeholder-gray-400 focus:outline-none cursor-not-allowed"
+                  />
                 </div>
-                <div className="text-2xl font-bold text-white">85%</div>
-                <div className="text-sm text-slate-400">Pertumbuhan Rata-rata</div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-green-400">
-                  <ShieldCheck className="h-6 w-6" />
+
+                {/* Nama Usaha */}
+                <div>
+                  <input
+                    type="text"
+                    name="namaUsaha"
+                    placeholder="Nama lengkap Anda"
+                    value={formData.namaUsaha}
+                    onChange={handleInputChange}
+                    disabled={true}
+                    className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded placeholder-gray-400 focus:outline-none cursor-not-allowed"
+                  />
                 </div>
-                <div className="text-2xl font-bold text-white">100%</div>
-                <div className="text-sm text-slate-400">Terverifikasi</div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-purple-400">
-                  <Play className="h-6 w-6" />
-                </div>
-                <div className="text-2xl font-bold text-white">500+</div>
-                <div className="text-sm text-slate-400">Modul Pembelajaran</div>
-              </div>
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  disabled={!isFormValid}
+                  className="w-full py-3 px-4 rounded font-bold text-white transition-all duration-200 mt-8"
+                  style={{ 
+                    backgroundColor: "#212A65",
+                    height: "44px",
+                    minHeight: "44px",
+                    fontFamily: "Inter"
+                  }}
+                >
+                  Daftar UMKM Sekarang
+                </Button>
+              </form>
             </div>
           </div>
         </div>

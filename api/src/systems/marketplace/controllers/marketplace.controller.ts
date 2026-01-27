@@ -102,9 +102,8 @@ class MarketplaceController {
     async createOrder(req: Request, res: Response) {
         try {
             const userId = (req as any).user.id;
-            const { items, shippingAddress, shippingCost, paymentMethod } = req.body;
-            const courier = shippingAddress?.courier;
-            const order = await marketplaceService.createOrder(userId, items, shippingAddress, courier, shippingCost, paymentMethod);
+            const { items } = req.body; // items: [{ productId, quantity }]
+            const order = await marketplaceService.createOrder(userId, items);
             res.status(201).json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -167,25 +166,7 @@ class MarketplaceController {
     async getMyProducts(req: Request, res: Response) {
         try {
             const userId = (req as any).user.id;
-            const {
-                search,
-                category,
-                stockStatus,
-                sortBy,
-                minPrice,
-                maxPrice
-            } = req.query;
-
-            const params = {
-                search: search ? String(search) : undefined,
-                category: category ? String(category) : undefined,
-                stockStatus: stockStatus ? String(stockStatus) : undefined,
-                sortBy: sortBy ? String(sortBy) : undefined,
-                minPrice: minPrice ? Number(minPrice) : undefined,
-                maxPrice: maxPrice ? Number(maxPrice) : undefined,
-            };
-
-            const products = await marketplaceService.getMyProducts(userId, params);
+            const products = await marketplaceService.getMyProducts(userId);
             res.json({ data: products });
         } catch (error: any) {
             console.error('[MarketplaceController] getMyProducts error:', error);
@@ -211,19 +192,6 @@ class MarketplaceController {
             const userId = (req as any).user.id;
 
             const order = await marketplaceService.updateOrderStatus(id, status, userId);
-            res.json({ data: order });
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    async cancelOrder(req: Request, res: Response) {
-        try {
-            const { id } = req.params;
-            const { reason } = req.body;
-            const userId = (req as any).user.id;
-
-            const order = await marketplaceService.cancelOrder(id, userId, reason);
             res.json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
@@ -271,94 +239,6 @@ class MarketplaceController {
             res.status(400).json({ error: error.message });
         }
     }
-
-
-
-    async approveProduct(req: Request, res: Response) {
-        try {
-            const { id } = req.params;
-            const product = await marketplaceService.approveProduct(id);
-            res.json({ data: product });
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    async rejectProduct(req: Request, res: Response) {
-        try {
-            const { id } = req.params;
-            const { reason } = req.body;
-            if (!reason) throw new Error("Rejection reason is required");
-
-            const product = await marketplaceService.rejectProduct(id, reason);
-            res.json({ data: product });
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    async getConsultantClientsProducts(req: Request, res: Response) {
-        try {
-            const consultantId = (req as any).user.id;
-            const {
-                search,
-                clientId,
-                status,
-                page,
-                limit
-            } = req.query;
-
-            const params = {
-                search: search ? String(search) : undefined,
-                clientId: clientId ? String(clientId) : undefined,
-                status: status ? String(status) : undefined,
-                page: page ? Number(page) : 1,
-                limit: limit ? Number(limit) : 20,
-            };
-
-            const result = await marketplaceService.getConsultantClientsProducts(consultantId, params);
-            res.json(result);
-        } catch (error: any) {
-            console.error('[MarketplaceController] getConsultantClientsProducts error:', error);
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-
-    async getAdminProducts(req: Request, res: Response) {
-        try {
-            const {
-                search,
-                category,
-                status,
-                sellerId,
-                sortBy,
-                page,
-                limit,
-                startDate,
-                endDate
-            } = req.query;
-
-            const params = {
-                search: search ? String(search) : undefined,
-                category: category ? String(category) : undefined,
-                status: status ? String(status) : undefined,
-                sellerId: sellerId ? String(sellerId) : undefined,
-                sortBy: sortBy ? String(sortBy) : 'newest',
-                page: page ? Number(page) : 1,
-                limit: limit ? Number(limit) : 20,
-                startDate: startDate ? new Date(String(startDate)) : undefined,
-                endDate: endDate ? new Date(String(endDate)) : undefined,
-            };
-
-            const result = await marketplaceService.getAdminProducts(params);
-            res.json(result);
-        } catch (error: any) {
-            console.error('[MarketplaceController] getAdminProducts error:', error);
-            res.status(400).json({ error: error.message });
-        }
-    }
-
 
     async getPendingProducts(req: Request, res: Response) {
         try {
@@ -452,61 +332,6 @@ class MarketplaceController {
             const userId = (req as any).user.id;
             const product = await marketplaceService.deleteProductImage(id, userId, imageId);
             res.json({ data: product });
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-    async getExportReadyProducts(req: Request, res: Response) {
-        try {
-            const { page, limit, category, region } = req.query;
-            const params = {
-                page: page ? Number(page) : 1,
-                limit: limit ? Number(limit) : 20,
-                category: category ? String(category) : undefined,
-                region: region ? String(region) : undefined,
-            };
-
-            const result = await marketplaceService.getExportReadyProducts(params);
-            res.json(result);
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    async getFinancingCandidates(req: Request, res: Response) {
-        try {
-            const { page, limit, minRevenue, location } = req.query;
-            const params = {
-                page: page ? Number(page) : 1,
-                limit: limit ? Number(limit) : 20,
-                minRevenue: minRevenue ? Number(minRevenue) : undefined,
-                location: location ? String(location) : undefined,
-            };
-
-            const result = await marketplaceService.getFinancingCandidates(params);
-            res.json(result);
-        } catch (error: any) {
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    async processPayment(req: Request, res: Response) {
-        try {
-            const { orderId, status } = req.body;
-            // Validate status enum if needed: 'success' | 'failed' | 'expired'
-            const result = await marketplaceService.processPayment(orderId, status);
-            res.json({ data: result });
-        } catch (error: any) {
-            console.error('[MarketplaceController] processPayment error:', error);
-            res.status(400).json({ error: error.message });
-        }
-    }
-
-    async checkPaymentStatus(req: Request, res: Response) {
-        try {
-            const { id } = req.params;
-            const order = await marketplaceService.checkPaymentStatus(id);
-            res.json({ data: order });
         } catch (error: any) {
             res.status(400).json({ error: error.message });
         }
