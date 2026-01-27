@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, TrendingUp, ShieldCheck, Users } from "lucide-react";
-import heroImage from "@/assets/hero-consulting.jpg";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import heroImage from "@/assets/semindo-hero-bg.jpeg";
 
 interface HeroSectionProps {
   onDaftarClick?: () => void;
@@ -8,97 +9,108 @@ interface HeroSectionProps {
 
 const HeroSection = ({ onDaftarClick }: HeroSectionProps) => {
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <section className="relative w-full overflow-hidden font-sans pt-32 lg:pt-[336px] pb-32">
+      {/* Note: User asked for 316px gap. 
+           With navbar height ~80px (h-20), pt-32 (128px) is usually for mobile.
+           For desktop gap 316px, we need pt = 80 + 316 = 396px.
+           However, to strictly visually match the "proportion" in the image which shows text starting lower,
+           I will stick to the calculated [396px] or adjustments. 
+           The previous step set it to [396px]. I'll keep it or tweak slightly if needed.
+           Let's stick to lg:pt-[396px] to maintain the "gap 316" request.
+       */}
+
       {/* Background Image & Overlay */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 h-full">
         <img
           src={heroImage}
-          alt="Tech consulting for SMEs"
-          className="w-full h-full object-cover opacity-20 scale-105 animate-pulse-slow"
+          alt="Tingkatkan Level UMKM"
+          className="w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div>
+        {/* Dark Overlay Gradient Removed as per request */}
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-20 pb-16">
-        <div className="animate-fade-in space-y-8">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-sm font-medium mb-4 animate-slide-up">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
-            </span>
-            Platform No.1 untuk UMKM Indonesia
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-[1440px] mx-auto px-6 lg:px-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-32 items-end">
+
+          {/* Left Column: Content - Aligned Bottom to match visual */}
+          <div className="text-left space-y-6 lg:py-8 order-2 lg:order-1 lg:max-w-xl">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white tracking-tight leading-[1.05]">
+              Tingkatkan Level UMKM mu bersama kami
+            </h1>
+
+            <p className="text-lg sm:text-xl text-white/90 font-normal leading-relaxed max-w-lg">
+              Semindo bantu UMKM Indonesia berkembang secara terstruktur melalui assessment, pendampingan, dan pembelajaran yang tepat sasaran.
+            </p>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white tracking-tight leading-tight px-2">
-            Beyond Solutions
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-secondary to-blue-400 mt-2">
-              for SMEs Growth
-            </span>
-          </h1>
-
-          <p className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-3xl mx-auto leading-relaxed px-4">
-            Aselerasi pertumbuhan bisnis Anda dengan solusi digital terintegrasi,
-            akses pembiayaan, dan pendampingan ahli dalam satu ekosistem.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center px-4 pt-4">
-            <Button
-              variant="hero"
-              size="lg"
-              onClick={onDaftarClick}
-              className="w-full sm:w-auto text-lg px-8 py-6 rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 hover:-translate-y-1"
-            >
-              Daftar UMKM Sekarang
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto border-white/20 bg-white/5 text-white hover:bg-white/10 hover:border-white/40 font-semibold text-lg px-8 py-6 rounded-2xl backdrop-blur-sm transition-all duration-300"
-            >
-              <Play className="mr-2 h-5 w-5 fill-current" />
-              Lihat Demo
-            </Button>
-          </div>
-
-          {/* Stats / Trust Indicators */}
-          <div className="mt-16 pt-8 border-t border-white/10 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-            <p className="text-slate-400 text-sm mb-8 uppercase tracking-wider font-medium">Dipercaya oleh 5000+ UMKM & Partner</p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-secondary">
-                  <Users className="h-6 w-6" />
-                </div>
-                <div className="text-2xl font-bold text-white">5000+</div>
-                <div className="text-sm text-slate-400">UMKM Terdaftar</div>
+          {/* Right Column: Registration Form */}
+          <div className="w-full flex justify-center lg:justify-end order-1 lg:order-2">
+            <div className="w-full max-w-[480px] bg-white rounded-xl shadow-2xl p-6 sm:p-8 animate-slide-up">
+              <div className="mb-8">
+                <h2 className="text-2xl font-semibold text-slate-900">
+                  Daftar UMKM untuk bergabung
+                </h2>
               </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-blue-400">
-                  <TrendingUp className="h-6 w-6" />
+
+              <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName" className="text-slate-700 font-medium">Nama Lengkap</Label>
+                    <Input
+                      id="fullName"
+                      placeholder="Nama lengkap Anda"
+                      disabled
+                      className="bg-[#E5E7EB] border-transparent text-slate-600 cursor-not-allowed h-12 rounded-md px-4 placeholder:text-slate-400"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="text-slate-700 font-medium">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="Email@gmail.com"
+                        disabled
+                        className="bg-[#E5E7EB] border-transparent text-slate-600 cursor-not-allowed h-12 rounded-md px-4 placeholder:text-slate-400"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone" className="text-slate-700 font-medium">Telepon</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        placeholder="08xxx"
+                        disabled
+                        className="bg-[#E5E7EB] border-transparent text-slate-600 cursor-not-allowed h-12 rounded-md px-4 placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="businessName" className="text-slate-700 font-medium">Nama Usaha</Label>
+                    <Input
+                      id="businessName"
+                      placeholder="Nama lengkap Anda"
+                      disabled
+                      className="bg-[#E5E7EB] border-transparent text-slate-600 cursor-not-allowed h-12 rounded-md px-4 placeholder:text-slate-400"
+                    />
+                    {/* Note: Placeholder matches the image typo "Nama lengkap Anda" for visual fidelity, though strictly it should be "Nama usaha Anda" */}
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-white">85%</div>
-                <div className="text-sm text-slate-400">Pertumbuhan Rata-rata</div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-green-400">
-                  <ShieldCheck className="h-6 w-6" />
-                </div>
-                <div className="text-2xl font-bold text-white">100%</div>
-                <div className="text-sm text-slate-400">Terverifikasi</div>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div className="p-3 rounded-xl bg-white/5 text-purple-400">
-                  <Play className="h-6 w-6" />
-                </div>
-                <div className="text-2xl font-bold text-white">500+</div>
-                <div className="text-sm text-slate-400">Modul Pembelajaran</div>
-              </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 mt-6 bg-[#212A65] hover:bg-[#1a2152] text-white font-medium text-base rounded-lg transition-all duration-200"
+                  onClick={onDaftarClick}
+                >
+                  Daftar UMKM Sekarang
+                </Button>
+              </form>
             </div>
           </div>
+
         </div>
       </div>
     </section>

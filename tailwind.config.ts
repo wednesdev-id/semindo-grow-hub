@@ -42,6 +42,12 @@ export default {
           foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
           hover: "hsl(var(--secondary-hover) / <alpha-value>)",
         },
+        tertiary: {
+          DEFAULT: "hsl(var(--tertiary) / <alpha-value>)",
+          foreground: "hsl(var(--tertiary-foreground) / <alpha-value>)",
+        },
+        "white-blue": "hsl(var(--white-blue) / <alpha-value>)",
+        "white-grey": "hsl(var(--white-grey) / <alpha-value>)",
         destructive: {
           DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
           foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",

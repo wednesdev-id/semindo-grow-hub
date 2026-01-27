@@ -11,8 +11,8 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Ports
-FRONTEND_PORT=5174
-BACKEND_PORT=3000
+FRONTEND_PORT=${FRONTEND_PORT:-5174}
+BACKEND_PORT=${BACKEND_PORT:-3002}
 
 # Ensure we are in the script directory
 cd "$(dirname "$0")"
@@ -145,7 +145,6 @@ run_lint() {
     echo -e "${BLUE}Menjalankan linter...${NC}"
     npm run lint
 }
-
 # Fungsi untuk menjalankan test
 run_test() {
     echo -e "${BLUE}Menjalankan test...${NC}"

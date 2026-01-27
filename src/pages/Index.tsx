@@ -1,7 +1,10 @@
 import { useState, useContext } from 'react';
 import Navigation from "@/components/ui/navigation";
 import HeroSection from "@/components/ui/hero-section";
-import QuickAccess from "@/components/ui/quick-access";
+import WhoWeAre from "@/components/landing/WhoWeAre";
+import ProgramsServices from "@/components/landing/ProgramsServices";
+import WhyUs from "@/components/landing/WhyUs";
+import FAQ from "@/components/landing/FAQ";
 import SuccessStories from "@/components/ui/success-stories";
 import Footer from "@/components/ui/footer";
 import SEOHead from "@/components/ui/seo-head";
@@ -23,8 +26,11 @@ const Index = () => {
       />
       <Navigation onDaftarClick={() => !isAuthenticated && setShowOnboardingModal(true)} />
       <HeroSection onDaftarClick={() => !isAuthenticated && setShowOnboardingModal(true)} />
-      <QuickAccess />
+      <WhoWeAre />
+      <ProgramsServices />
+      <WhyUs />
       <SuccessStories />
+      <FAQ />
       <Footer />
 
       {/* Onboarding Modal for non-logged in users */}

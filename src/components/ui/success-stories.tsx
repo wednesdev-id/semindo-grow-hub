@@ -1,7 +1,10 @@
+
 import { useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Quote, Star, TrendingUp, Award, Globe } from "lucide-react";
+import imgSarah from "@/assets/image 43.png";
+import imgEvelyn from "@/assets/image 44.png";
+import imgJoko from "@/assets/image 45.png";
+import arrowLeft from "@/assets/arrow left.png";
+import arrowRight from "@/assets/arrow right.png";
 
 const SuccessStories = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -10,194 +13,142 @@ const SuccessStories = () => {
     {
       name: "Sarah Dewi",
       business: "Warung Digital Nusantara",
-      category: "F&B Tech",
-      image: "https://images.unsplash.com/photo-1494790108755-2616b612b647?w=150&h=150&fit=crop&crop=face",
-      story: "Dari warung kecil menjadi franchise digital dengan 50+ outlet berkat strategi digitalisasi dari Semindo.",
-      metrics: {
-        revenue: "500%",
-        outlets: "50+",
-        period: "18 bulan"
-      },
-      rating: 5
+      category: "F&B",
+      date: "Bandung, 12 Januari 2026",
+      image: imgSarah,
+      quote: "Dari warung kecil menjadi franchise digital dengan 50+ outlet berkat strategi digitalisasi dari Semindo.",
     },
     {
-      name: "Budi Santoso",
+      name: "Evelyn Wijayanto",
       business: "Batik Modern Indonesia",
-      category: "Fashion & Craft",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      story: "Ekspor batik ke 15 negara dengan bantuan program export readiness dan sertifikasi internasional.",
-      metrics: {
-        revenue: "800%",
-        countries: "15",
-        period: "2 tahun"
-      },
-      rating: 5
+      category: "Fashion",
+      date: "Padang, 22 Januari 2026",
+      image: imgEvelyn,
+      quote: "Ekspor batik ke 15 negara dengan bantuan program export readiness dan sertifikasi internasional.",
     },
     {
-      name: "Ani Kusuma",
-      business: "AgriTech Solutions",
-      category: "Agriculture",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      story: "Mengintegrasikan IoT dan AI untuk pertanian modern, meningkatkan produktivitas petani lokal 300%.",
-      metrics: {
-        revenue: "400%",
-        farmers: "1000+",
-        period: "15 bulan"
-      },
-      rating: 5
+      name: "Joko Utomo",
+      business: "Toko pertanian",
+      category: "Pertanian",
+      date: "Timika, 24 Januari 2026",
+      image: imgJoko,
+      quote: "Mengintegrasikan IoT dan AI untuk pertanian modern, meningkatkan produktivitas petani lokal 300%.",
+    },
+    {
+      name: "Andi Saputra",
+      business: "Kopi Nusantara",
+      category: "F&B",
+      date: "Aceh, 28 Januari 2026",
+      image: imgSarah, // Reusing for demo
+      quote: "Omzet meningkat 200% setelah mengikuti program pendampingan dan akses pasar global dari Semindo.",
     }
   ];
 
-  const nextStory = () => {
-    setCurrentIndex((prev) => (prev + 1) % stories.length);
+  const itemsPerPage = 3;
+  const maxIndex = Math.max(0, stories.length - itemsPerPage);
+
+  // Logic: Previous button disabled if index == 0
+  // Next button disabled if index >= maxIndex
+  const isPrevDisabled = currentIndex === 0;
+  const isNextDisabled = currentIndex >= maxIndex;
+
+  const handlePrev = () => {
+    if (!isPrevDisabled) setCurrentIndex(prev => prev - 1);
   };
 
-  const prevStory = () => {
-    setCurrentIndex((prev) => (prev - 1 + stories.length) % stories.length);
+  const handleNext = () => {
+    if (!isNextDisabled) setCurrentIndex(prev => prev + 1);
   };
-
-  const currentStory = stories[currentIndex];
 
   return (
-    <section className="py-24 bg-white dark:bg-slate-950">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16 space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/20 mb-4">
-            <TrendingUp className="h-8 w-8 text-orange-600 dark:text-orange-400" />
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Success Stories UMKM
+    <section className="py-24 bg-white font-sans">
+      <div className="container max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12">
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start mb-16 gap-4">
+          <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight max-w-2xl">
+            Apa yang UMKM rasakan setelah bergabung dengan kami
           </h2>
-          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Inspirasi nyata dari UMKM yang telah bertransformasi dan naik kelas bersama Semindo.
-          </p>
+          <span className="text-primary font-bold uppercase tracking-wider text-sm pt-2">
+            (SUCCESS STORY)
+          </span>
         </div>
 
-        {/* Main Story Card */}
-        <div className="max-w-5xl mx-auto relative">
-          {/* Decorative Elements */}
-          <div className="absolute -top-10 -left-10 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl animate-pulse delay-700"></div>
+        {/* Stories Grid/Carousel */}
+        <div className="overflow-hidden">
+          <div
+            className="flex gap-8 transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateX(-${currentIndex * (384 + 32)}px)` }} // Approximate card width + gap (w-96 = 384px) - or better: use grid/flex layout logic
+          >
+            {/* Note: Fixed width translation is tricky with responsive. 
+                 For exact "desktop" match where card width is balanced, I'll use a specific card width or flex-basis.
+                 The layout shows 3 balanced cards. I'll use simple grid for the cards but apply translation logic if I had to slide them one by one.
+                 Or, since I have 4 items, I can just slice the array for simplicity if strictly "3 visible".
+                 But "slider" implies movement. I'll settle for a grid that shows `slice(index, index+3)` which simulates sliding without complex CSS transform calc.
+             */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
+              {stories.slice(currentIndex, currentIndex + 3).map((story, idx) => (
+                <div key={idx} className="bg-[#E9ECF6] rounded-[2rem] p-8 flex flex-col justify-between h-full min-h-[360px] animate-fade-in">
+                  {/* Header: Date & Category */}
+                  <div className="flex justify-between items-start text-xs sm:text-sm text-slate-500 mb-6 font-medium">
+                    <span>{story.date}</span>
+                    <span className="text-slate-600">({story.category})</span>
+                  </div>
 
-          <Card className="bg-white dark:bg-slate-900 border-0 shadow-2xl overflow-hidden relative z-10">
-            <CardContent className="p-0">
-              <div className="grid md:grid-cols-2">
-                {/* Story Content */}
-                <div className="p-8 md:p-12 flex flex-col justify-center relative">
-                  <Quote className="h-12 w-12 text-primary/20 absolute top-8 left-8" />
+                  {/* Quote */}
+                  <div className="mb-8">
+                    <p className="text-xl sm:text-2xl font-semibold text-slate-900 leading-snug">
+                      "{story.quote}"
+                    </p>
+                  </div>
 
-                  <div className="relative z-10 space-y-6">
-                    <div className="flex items-center gap-1">
-                      {[...Array(currentStory.rating)].map((_, i) => (
-                        <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
-                      ))}
-                    </div>
-
-                    <blockquote className="text-xl md:text-2xl font-medium text-slate-900 dark:text-white leading-relaxed">
-                      "{currentStory.story}"
-                    </blockquote>
-
-                    <div className="flex items-center pt-6 border-t border-slate-100 dark:border-slate-800">
-                      <img
-                        src={currentStory.image}
-                        alt={currentStory.name}
-                        className="w-14 h-14 rounded-full mr-4 object-cover ring-4 ring-slate-50 dark:ring-slate-800"
-                      />
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-white text-lg">{currentStory.name}</h4>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm">{currentStory.business}</p>
-                        <span className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mt-2">
-                          {currentStory.category}
-                        </span>
-                      </div>
+                  {/* Profile */}
+                  <div className="flex items-center gap-4 mt-auto">
+                    <img
+                      src={story.image}
+                      alt={story.name}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-base">{story.name}</h4>
+                      <p className="text-slate-500 text-sm">{story.business}</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Metrics Side */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-8 md:p-12 flex flex-col justify-center border-l border-slate-100 dark:border-slate-800">
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-8 flex items-center gap-2">
-                    <Award className="h-5 w-5 text-orange-500" />
-                    Key Achievements
-                  </h3>
-
-                  <div className="space-y-6">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 hover:scale-105 transition-transform duration-300">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">Revenue Growth</span>
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                      </div>
-                      <div className="text-3xl font-bold text-slate-900 dark:text-white">+{currentStory.metrics.revenue}</div>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 hover:scale-105 transition-transform duration-300 delay-100">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">
-                          {currentStory.metrics.outlets ? 'Total Outlets' :
-                            currentStory.metrics.countries ? 'Export Countries' : 'Farmers Impacted'}
-                        </span>
-                        <Globe className="h-4 w-4 text-blue-500" />
-                      </div>
-                      <div className="text-3xl font-bold text-slate-900 dark:text-white">
-                        {currentStory.metrics.outlets || currentStory.metrics.countries || currentStory.metrics.farmers}
-                      </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 hover:scale-105 transition-transform duration-300 delay-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">Transformation Period</span>
-                        <Award className="h-4 w-4 text-purple-500" />
-                      </div>
-                      <div className="text-3xl font-bold text-slate-900 dark:text-white">{currentStory.metrics.period}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Navigation Controls */}
-          <div className="flex justify-between items-center mt-8 px-4">
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={prevStory}
-              className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
-            >
-              <ChevronLeft className="h-6 w-6 mr-2" />
-              <span className="hidden sm:inline">Story Sebelumnya</span>
-            </Button>
-
-            <div className="flex space-x-3">
-              {stories.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => setCurrentIndex(index)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentIndex ? 'bg-primary w-8' : 'bg-slate-300 dark:bg-slate-700 hover:bg-primary/50'
-                    }`}
-                  aria-label={`Go to story ${index + 1}`}
-                />
               ))}
             </div>
-
-            <Button
-              variant="ghost"
-              size="lg"
-              onClick={nextStory}
-              className="hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
-            >
-              <span className="hidden sm:inline">Story Selanjutnya</span>
-              <ChevronRight className="h-6 w-6 ml-2" />
-            </Button>
           </div>
         </div>
 
-        {/* Bottom CTA */}
-        <div className="text-center mt-20">
-          <Button className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 px-10 py-6 rounded-xl text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-            Lihat Semua Success Stories
-          </Button>
+        {/* Navigation Arrows */}
+        <div className="flex justify-center items-center gap-4 mt-16">
+          <button
+            onClick={handlePrev}
+            disabled={isPrevDisabled}
+            className="transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <img
+              src={arrowLeft}
+              alt="Previous"
+              className={`w-12 h-12 object-contain ${isPrevDisabled ? 'grayscale opacity-50' : ''}`}
+            // Note: User said "bila tidak on maka warna grey". 
+            // If the png is already blue, grayscale makes it grey.
+            // Assuming arrow pngs are Blue by default.
+            />
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={isNextDisabled}
+            className="transition-opacity hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <img
+              src={arrowRight}
+              alt="Next"
+              className={`w-12 h-12 object-contain ${isNextDisabled ? 'grayscale opacity-50' : ''}`}
+            />
+          </button>
         </div>
+
       </div>
     </section>
   );

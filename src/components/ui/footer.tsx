@@ -1,179 +1,109 @@
-import { Button } from "@/components/ui/button";
-import {
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Youtube,
-  Mail,
-  Phone,
-  MapPin,
-  ArrowRight,
-  Heart
-} from "lucide-react";
-import { featureFlags } from "@/config/feature-flags";
+
+import logoWhite from "@/assets/LOGO SINERGI PUTIH1 1.png";
+import iconPhone from "@/assets/telpon.png";
+import iconEmail from "@/assets/email.png";
+import iconLocation from "@/assets/location.png";
+import iconFb from "@/assets/facebook.png";
+import iconIg from "@/assets/instagram.png";
+import iconX from "@/assets/x.png";
+import iconLinkedin from "@/assets/linkedin.png";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
-  const footerSections = [
-    {
-      title: "Layanan",
-      links: [
-        { name: "Konsultasi Digital", href: "#konsultasi-digital" },
-        { name: "Konsultasi Keuangan", href: "#konsultasi-keuangan" },
-        { name: "Sertifikasi & Legalitas", href: "#sertifikasi" },
-        { name: "Pasar & Ekspor", href: "#pasar-ekspor" }
-      ]
-    },
-    {
-      title: "Program",
-      links: [
-        { name: "Self-Assessment", href: "#assessment" },
-        { name: "Learning Hub", href: "#learning" },
-        ...(featureFlags.MARKETPLACE_ENABLED ? [{ name: "Marketplace", href: "#marketplace" }] : []),
-        { name: "Community", href: "#community" }
-      ]
-    },
-    {
-      title: "Resources",
-      links: [
-        { name: "Blog & Insight", href: "#blog" },
-        { name: "Success Stories", href: "#stories" },
-        { name: "Export Hub", href: "#export" },
-        { name: "Financing Hub", href: "#financing" }
-      ]
-    },
-    {
-      title: "Perusahaan",
-      links: [
-        { name: "Tentang Kami", href: "#tentang" },
-        { name: "Tim", href: "#tim" },
-        { name: "Karir", href: "#karir" },
-        { name: "Press Kit", href: "#press" }
-      ]
-    }
-  ];
-
   return (
-    <footer className="bg-slate-950 text-slate-200 border-t border-slate-800">
-      {/* Newsletter Section */}
-      <div className="border-b border-slate-800 bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
-            <div className="space-y-2">
-              <h3 className="text-2xl md:text-3xl font-bold text-white">Stay Updated</h3>
-              <p className="text-slate-400 text-lg">
-                Dapatkan insights terbaru tentang perkembangan UMKM dan teknologi bisnis.
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <input
-                type="email"
-                placeholder="Masukkan email Anda"
-                className="flex-1 px-6 py-4 rounded-xl bg-slate-800 border border-slate-700 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-              />
-              <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-6 rounded-xl text-lg font-semibold shadow-lg hover:shadow-primary/25 transition-all">
-                Subscribe
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <footer className="bg-[#212A65] pt-20 pb-12 font-sans text-white">
+      <div className="container max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
 
-      {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8">
-          {/* Brand Section */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="flex items-center gap-2">
-              <img
-                src="/LOGOS.png"
-                alt="Sinergi Logo"
-                className="w-32 h-24 object-contain"
-              />
-
+          {/* Left Column (Brand & Contact) - Spans 5 columns */}
+          <div className="lg:col-span-5 space-y-8">
+            {/* Logo */}
+            <div className="mb-6">
+              <img src={logoWhite} alt="Semindo Logo" className="h-16 w-auto object-contain" />
             </div>
-            <p className="text-slate-400 leading-relaxed text-lg">
-              Platform konsultasi berbasis teknologi yang membantu UMKM Indonesia
-              berkembang melalui solusi digital, keuangan, dan strategi bisnis terintegrasi.
+
+            {/* Description */}
+            <p className="text-white/80 leading-relaxed max-w-md text-base">
+              Platform konsultasi berbasis teknologi yang membantu UMKM Indonesia berkembang melalui solusi digital, keuangan, dan strategi bisnis terintegrasi.
             </p>
 
             {/* Contact Info */}
             <div className="space-y-4">
-              <div className="flex items-start text-slate-400 hover:text-white transition-colors group">
-                <MapPin className="h-5 w-5 mr-3 text-primary mt-1 group-hover:scale-110 transition-transform" />
-                <span className="text-sm leading-relaxed">Jakarta, Bandung, Surabaya, Medan</span>
+              <div className="flex items-center gap-3">
+                <img src={iconPhone} alt="Phone" className="w-5 h-5 object-contain" />
+                <span className="text-white">+6298123467580</span>
               </div>
-              <div className="flex items-center text-slate-400 hover:text-white transition-colors group">
-                <Phone className="h-5 w-5 mr-3 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm">+62 21 1234 5678</span>
+              <div className="flex items-center gap-3">
+                <img src={iconEmail} alt="Email" className="w-5 h-5 object-contain" />
+                <span className="text-white">Semindo@gmail.com</span>
               </div>
-              <div className="flex items-center text-slate-400 hover:text-white transition-colors group">
-                <Mail className="h-5 w-5 mr-3 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm">hello@semindo.id</span>
+              <div className="flex items-center gap-3">
+                <img src={iconLocation} alt="Location" className="w-5 h-5 object-contain" />
+                <span className="text-white">Daerah Istimewa Yogyakarta</span>
               </div>
             </div>
 
             {/* Social Media */}
-            <div className="flex gap-3">
-              {[
-                { Icon: Facebook, href: "#" },
-                { Icon: Instagram, href: "#" },
-                { Icon: Twitter, href: "#" },
-                { Icon: Linkedin, href: "#" },
-                { Icon: Youtube, href: "#" }
-              ].map(({ Icon, href }, index) => (
-                <a
-                  key={index}
-                  href={href}
-                  className="p-3 bg-slate-800 rounded-xl hover:bg-primary hover:text-white hover:-translate-y-1 transition-all duration-300 group"
-                >
-                  <Icon className="h-5 w-5 text-slate-400 group-hover:text-white transition-colors" />
+            <div className="pt-4">
+              <p className="text-white mb-4 font-medium">Sosial Media:</p>
+              <div className="flex gap-4">
+                <a href="#" className="opacity-80 hover:opacity-100 transition-opacity">
+                  <img src={iconFb} alt="Facebook" className="w-10 h-10 object-contain" />
                 </a>
-              ))}
+                <a href="#" className="opacity-80 hover:opacity-100 transition-opacity">
+                  <img src={iconIg} alt="Instagram" className="w-10 h-10 object-contain" />
+                </a>
+                <a href="#" className="opacity-80 hover:opacity-100 transition-opacity">
+                  <img src={iconX} alt="X" className="w-10 h-10 object-contain" />
+                </a>
+                <a href="#" className="opacity-80 hover:opacity-100 transition-opacity">
+                  <img src={iconLinkedin} alt="LinkedIn" className="w-10 h-10 object-contain" />
+                </a>
+              </div>
             </div>
           </div>
 
-          {/* Footer Links */}
-          {footerSections.map((section) => (
-            <div key={section.title} className="space-y-6">
-              <h3 className="font-bold text-white text-lg">{section.title}</h3>
+          {/* Right Columns (Links) - Spans 7 columns */}
+          <div className="lg:col-span-7 grid grid-cols-2 md:grid-cols-4 gap-8">
+
+            {/* Layanan */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold">Layanan</h3>
               <ul className="space-y-4">
-                {section.links.map((link) => (
-                  <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="text-slate-400 hover:text-primary hover:pl-2 transition-all duration-200 text-sm block"
-                    >
-                      {link.name}
-                    </a>
-                  </li>
-                ))}
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Konsultasi dengan Expert</Link></li>
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Pendampingan</Link></li>
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Sertifikasi & Legalitas</Link></li>
               </ul>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Bottom Bar */}
-      <div className="border-t border-slate-800 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-slate-500 text-sm flex items-center gap-1">
-              © 2024 Semindo. Made with <Heart className="h-4 w-4 text-red-500 fill-current animate-pulse" /> for Indonesian SMEs.
+            {/* Program */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold">Program</h3>
+              <ul className="space-y-4">
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Self Assessment</Link></li>
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Learning hub</Link></li>
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Community</Link></li>
+              </ul>
             </div>
-            <div className="flex flex-wrap justify-center gap-8 text-sm">
-              <a href="#privacy" className="text-slate-500 hover:text-white transition-colors">
-                Privacy Policy
-              </a>
-              <a href="#terms" className="text-slate-500 hover:text-white transition-colors">
-                Terms of Service
-              </a>
-              <a href="#cookies" className="text-slate-500 hover:text-white transition-colors">
-                Cookie Policy
-              </a>
+
+            {/* Resource */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold">Resource</h3>
+              <ul className="space-y-4">
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Success Story</Link></li>
+              </ul>
             </div>
+
+            {/* Perusahaan */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold">Perusahaan</h3>
+              <ul className="space-y-4">
+                <li><Link to="#" className="text-white/80 hover:text-white transition-colors">Tentang Kami</Link></li>
+              </ul>
+            </div>
+
           </div>
+
         </div>
       </div>
     </footer>
