@@ -4,7 +4,7 @@ import stonkIcon from "@/assets/stonk_graph.png";
 
 const WhyUs = () => {
     return (
-        <section className="py-24 bg-white font-sans">
+        <section className="py-24 bg-[#F7F7F7] font-sans">
             <div className="container max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12">
 
                 {/* Headline */}
@@ -21,7 +21,7 @@ const WhyUs = () => {
                         <img
                             src={whyUsImage}
                             alt="Mengapa Semindo"
-                            className="w-full h-auto rounded-[2rem] object-cover shadow-lg"
+                            className="w-full h-auto rounded-xl object-cover shadow-lg"
                         />
                     </div>
 
@@ -35,9 +35,9 @@ const WhyUs = () => {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-3">Lorem ipsum dolor sit amet</h3>
+                                <h3 className="text-2xl font-bold text-slate-900 mb-3">Pendekatan Berbasis Diagnosis Bisnis</h3>
                                 <p className="text-slate-600 text-lg leading-relaxed">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                                    Semindo menerapkan pendekatan berbasis pemetaan kondisi bisnis yang objektif dan terstruktur, sehingga UMKM dapat memahami posisi usahanya secara menyeluruh. Proses ini membantu pelaku usaha mengidentifikasi kekuatan, kelemahan, serta prioritas pengembangan sebelum mengambil keputusan strategis yang berdampak pada pertumbuhan bisnis.
                                 </p>
                             </div>
                         </div>
@@ -50,9 +50,9 @@ const WhyUs = () => {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-3">Lorem ipsum dolor sit amet</h3>
+                                <h3 className="text-2xl font-bold text-slate-900 mb-3">Pendampingan Terarah oleh Mentor dan Expert</h3>
                                 <p className="text-slate-600 text-lg leading-relaxed">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                                    Kami menyediakan pendampingan langsung bersama mentor dan tenaga ahli yang memiliki pengalaman praktis di berbagai sektor usaha. Pendekatan ini memastikan UMKM memperoleh arahan yang relevan, aplikatif, dan sesuai dengan konteks bisnis yang sedang dijalankan, bukan sekadar pembelajaran teoritis umum.
                                 </p>
                             </div>
                         </div>
@@ -65,9 +65,9 @@ const WhyUs = () => {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-900 mb-3">Lorem ipsum dolor sit amet</h3>
+                                <h3 className="text-2xl font-bold text-slate-900 mb-3">Akses ke Ekosistem dan Pertumbuhan Berkelanjutan</h3>
                                 <p className="text-slate-600 text-lg leading-relaxed">
-                                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                                    Semindo menghubungkan UMKM dengan ekosistem pendukung yang mencakup pembelajaran, konsultasi, legalitas, serta peluang kolaborasi dan pembiayaan. Melalui pendekatan ini, UMKM dipersiapkan untuk membangun bisnis yang berkelanjutan, adaptif, dan siap berkembang dalam jangka panjang.
                                 </p>
                             </div>
                         </div>

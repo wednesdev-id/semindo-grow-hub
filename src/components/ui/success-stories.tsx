@@ -88,7 +88,7 @@ const SuccessStories = () => {
              */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
               {stories.slice(currentIndex, currentIndex + 3).map((story, idx) => (
-                <div key={idx} className="bg-[#E9ECF6] rounded-[2rem] p-8 flex flex-col justify-between h-full min-h-[360px] animate-fade-in">
+                <div key={idx} className="bg-[#E9ECF6] rounded-xl p-8 flex flex-col justify-between h-full min-h-[360px] animate-fade-in">
                   {/* Header: Date & Category */}
                   <div className="flex justify-between items-start text-xs sm:text-sm text-slate-500 mb-6 font-medium">
                     <span>{story.date}</span>

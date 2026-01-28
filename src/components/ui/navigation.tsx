@@ -17,9 +17,10 @@ import logoSinergi from "@/assets/logo-sinergi-gold.png";
 
 interface NavigationProps {
   onDaftarClick?: () => void;
+  variant?: "transparent" | "solid";
 }
 
-const Navigation = ({ onDaftarClick }: NavigationProps) => {
+const Navigation = ({ onDaftarClick, variant = "solid" }: NavigationProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const authContext = useContext(AuthContext);
@@ -47,15 +48,13 @@ const Navigation = ({ onDaftarClick }: NavigationProps) => {
     { name: "Kontak", href: "/contact" }
   ], []);
 
-  const textColorClass = isScrolled ? "text-slate-600 hover:text-primary" : "text-white/90 hover:text-white";
-  const mobileMenuButtonClass = isScrolled ? "text-slate-600" : "text-white";
+  const isSolid = true;
+  const textColorClass = "text-slate-600 hover:text-primary";
+  const mobileMenuButtonClass = "text-slate-600";
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-        ? "bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm py-0"
-        : "bg-white/25 backdrop-blur-md py-4 shadow-sm"
-        }`}
+      className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b border-gray-100 transition-all duration-300"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
@@ -66,7 +65,7 @@ const Navigation = ({ onDaftarClick }: NavigationProps) => {
               <img
                 src={logoSinergi}
                 alt="Sinergi Logo"
-                className={`h-14 w-auto object-contain transition-all duration-300 ${!isScrolled ? "brightness-200 contrast-100" : ""}`}
+                className="h-14 w-auto object-contain"
               />
             </Link>
           </div>
@@ -202,7 +201,7 @@ const Navigation = ({ onDaftarClick }: NavigationProps) => {
                 <Link to="/login">
                   <Button
                     variant="ghost"
-                    className={`${isScrolled ? "text-slate-600 hover:text-primary hover:bg-slate-50" : "text-white hover:text-white hover:bg-white/10"} font-medium px-6 transition-colors`}
+                    className="text-slate-600 hover:text-primary hover:bg-slate-50 font-medium px-6 transition-colors"
                   >
                     Masuk
                   </Button>

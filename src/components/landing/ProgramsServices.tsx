@@ -45,7 +45,7 @@ const ProgramsServices = () => {
                                 Bantu kamu analisis kesehatan bisnismu dengan metode self assessment.
                             </p>
                         </div>
-                        <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                        <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                             <img
                                 src={assessmentImg}
                                 alt="Cek kesehatan bisnis"
@@ -62,7 +62,7 @@ const ProgramsServices = () => {
                                 Bergabung dengan kami dan dapatkan akses belajar langsung dengan para profesional.
                             </p>
                         </div>
-                        <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                        <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                             <img
                                 src={learningImg}
                                 alt="Learning-hub"
@@ -82,7 +82,7 @@ const ProgramsServices = () => {
                                 Bantu kamu mendapatkan pendampingan berkualitas bantu pertumbuhan UMKM-mu
                             </p>
                         </div>
-                        <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                        <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                             <img src={pendampinganImg} alt="Pendampingan UMKM" className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500" />
                         </div>
                     </div>
@@ -95,7 +95,7 @@ const ProgramsServices = () => {
                                 Konsultasikan permasalahan bisnismu dan dapatkan solusi dari para expert.
                             </p>
                         </div>
-                        <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                        <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                             <img src={konsultasiImg} alt="Konsultasi dengan Expert" className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500" />
                         </div>
                     </div>
@@ -108,7 +108,7 @@ const ProgramsServices = () => {
                                 Kami bekerja sama dengan pemerintah, bantu kamu mendapatkan sertifikasi usaha dan legalitas bisnis.
                             </p>
                         </div>
-                        <div className="rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                        <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
                             <img src={sertifikasiImg} alt="Sertifikasi & Legalitas" className="w-full h-64 object-cover transform group-hover:scale-105 transition-transform duration-500" />
                         </div>
                     </div>

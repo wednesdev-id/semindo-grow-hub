@@ -1,7 +1,9 @@
 #!/bin/bash
-
 # manage.sh - Script untuk mengelola project Semindo (Fullstack)
 # Dapat menjalankan frontend & backend server secara bersamaan dan membersihkan port saat dihentikan
+
+# Ensure C:\Windows\System32 is in PATH for concurrently/cmd.exe on Windows
+export PATH="$PATH:/c/Windows/System32:/c/Windows"
 
 # Warna untuk output
 RED='\033[0;31m'
@@ -12,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Ports
 FRONTEND_PORT=${FRONTEND_PORT:-5174}
-BACKEND_PORT=${BACKEND_PORT:-3002}
+BACKEND_PORT=${BACKEND_PORT:-8080}
 
 # Ensure we are in the script directory
 cd "$(dirname "$0")"
@@ -58,10 +60,13 @@ show_help() {
 # Fungsi untuk memeriksa apakah port digunakan
 is_port_in_use() {
     local port=$1
-    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-        return 0
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1
+        return $?
     else
-        return 1
+        # Windows fallback (using netstat)
+        /c/Windows/System32/netstat.exe -ano | grep ":$port.*LISTENING" >/dev/null 2>&1
+        return $?
     fi
 }
 
@@ -70,27 +75,34 @@ kill_port() {
     local port=$1
     
     # Check if port is in use
-    if lsof -i :$port >/dev/null 2>&1; then
+    if is_port_in_use $port; then
         echo -e "${YELLOW}Port $port sedang digunakan. Membersihkan...${NC}"
-        # Find all PIDs using the port
-        local pids=$(lsof -ti:$port)
         
-        if [ -n "$pids" ]; then
-            echo -e "${RED}Menghentikan proses PID: $pids di port $port${NC}"
-            # Try graceful kill first
-            kill -15 $pids 2>/dev/null
-            sleep 1
-            # Force kill if still running
-            kill -9 $pids 2>/dev/null
-            
-            # Double check
-            if lsof -i :$port >/dev/null 2>&1; then
-                echo -e "${RED}Gagal membersihkan port $port${NC}"
-                return 1
-            else
-                echo -e "${GREEN}Port $port berhasil dibebaskan${NC}"
-                return 0
+        if command -v lsof >/dev/null 2>&1; then
+            # Linux logic
+            local pids=$(lsof -ti:$port)
+            if [ -n "$pids" ]; then
+                echo -e "${RED}Menghentikan proses PID: $pids di port $port${NC}"
+                kill -15 $pids 2>/dev/null
+                sleep 1
+                kill -9 $pids 2>/dev/null
             fi
+        else
+            # Windows/MINGW fallback
+            local pid=$(/c/Windows/System32/netstat.exe -ano | grep ":$port.*LISTENING" | awk '{print $5}' | head -n 1)
+            if [ -n "$pid" ]; then
+                echo -e "${RED}Menghentikan proses PID: $pid di port $port (Windows)${NC}"
+                /c/Windows/System32/taskkill.exe /F /PID $pid 2>/dev/null
+            fi
+        fi
+
+        # Double check
+        if is_port_in_use $port; then
+            echo -e "${RED}Gagal membersihkan port $port${NC}"
+            return 1
+        else
+            echo -e "${GREEN}Port $port berhasil dibebaskan${NC}"
+            return 0
         fi
     fi
     return 0
@@ -101,8 +113,9 @@ cleanup() {
     echo -e "\n${YELLOW}Menerima sinyal berhenti. Membersihkan process...${NC}"
     
     # Kill all child processes of this script
-    # This captures the concurrently processes and their children
-    pkill -P $$ 2>/dev/null
+    if command -v pkill >/dev/null 2>&1; then
+        pkill -P $$ 2>/dev/null
+    fi
     
     # Ensure ports are free
     kill_port $BACKEND_PORT

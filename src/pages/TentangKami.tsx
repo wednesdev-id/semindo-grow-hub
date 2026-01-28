@@ -1,204 +1,104 @@
 import Navigation from "@/components/ui/navigation";
 import Footer from "@/components/ui/footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Users, Target, Heart, Award, Building2, TrendingUp } from "lucide-react";
 import SEOHead from "@/components/ui/seo-head";
+import aboutImage1 from "@/assets/image 46 1.png";
+import aboutImage2 from "@/assets/image 49.png";
 
 const TentangKami = () => {
-  const team = [
-    {
-      name: "Dr. Ahmad Rifai",
-      role: "CEO & Lead Consultant",
-      expertise: "Digital Transformation",
-      image: "/placeholder.svg"
-    },
-    {
-      name: "Sari Maharani, M.Ec",
-      role: "Financial Consultant",
-      expertise: "UMKM Finance & Banking",
-      image: "/placeholder.svg"
-    },
-    {
-      name: "Budi Santoso",
-      role: "Export Specialist",
-      expertise: "International Trade",
-      image: "/placeholder.svg"
-    },
-    {
-      name: "Lisa Permata",
-      role: "Technology Director",
-      expertise: "AI & Digital Solutions",
-      image: "/placeholder.svg"
-    }
-  ];
-
-  const partners = [
-    { name: "Kementerian Koperasi dan UKM", type: "Government" },
-    { name: "Bank Indonesia", type: "Banking" },
-    { name: "Shopee Indonesia", type: "Marketplace" },
-    { name: "Tokopedia", type: "Marketplace" },
-    { name: "BUMN Partnership", type: "Corporate" },
-    { name: "Gramedia Foundation", type: "NGO" }
-  ];
-
-  const impacts = [
-    { number: "15,000+", label: "UMKM Binaan", icon: Users },
-    { number: "Rp 45M+", label: "Akses Pembiayaan", icon: TrendingUp },
-    { number: "2,500+", label: "Produk Terekspor", icon: Award },
-    { number: "85%", label: "Success Rate", icon: Target }
-  ];
 
   return (
     <div className="min-h-screen bg-background">
-      <SEOHead 
+      <SEOHead
         title="Tentang Semindo – Konsultan & Pendamping UMKM Digital"
         description="Kenali visi, misi, tim konsultan, dan partner strategis Semindo. Lihat dampak nyata yang telah membantu ratusan UMKM naik kelas."
         keywords="tentang semindo, konsultan UMKM, pendamping bisnis, tim ahli, partner strategis"
       />
-      <Navigation />
-      
-      {/* Hero Section */}
-      <section className="pt-20 pb-12 px-4 bg-gradient-to-r from-primary/10 to-secondary/10">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
-            Tentang <span className="text-primary">Semindo</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-            Platform konsultasi teknologi yang memberdayakan UMKM Indonesia menuju transformasi digital dan ekspor global
-          </p>
-        </div>
-      </section>
+      <Navigation variant="solid" />
 
-      {/* Visi Misi */}
-      <section className="py-16 px-4">
+      {/* Section 1: Apa itu SEMINDO dan mengapa kami ada? */}
+      <section className="pt-32 pb-24 px-4 bg-slate-50">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card>
-              <CardHeader>
-                <Target className="h-12 w-12 text-primary mb-4" />
-                <CardTitle>Visi</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Menjadi platform konsultasi teknologi terdepan yang memberdayakan 1 juta UMKM Indonesia untuk go digital dan go global pada 2030
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left Column: Text Content */}
+            <div className="space-y-8">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-[1.1]">
+                Apa itu SEMINDO dan mengapa kami ada?
+              </h1>
+
+              <div className="space-y-6">
+                <p className="text-xl md:text-2xl font-bold text-slate-900 leading-relaxed">
+                  SEMINDO adalah One-Stop Digital SME Ecosystem yang membantu UMKM naik kelas melalui pendekatan yang terukur, terarah, dan terintegrasi.
                 </p>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <Heart className="h-12 w-12 text-secondary mb-4" />
-                <CardTitle>Misi</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Memberikan solusi konsultasi terintegrasi berbasis AI untuk transformasi digital, akses pembiayaan, dan ekspor UMKM
+                <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
+                  Kami percaya masalah utama UMKM bukan kurang semangat, tetapi tidak adanya diagnosis bisnis yang jelas, akses ke ahli yang tepat, serta ekosistem yang saling terhubung. Akibatnya, banyak pelaku usaha berjalan tanpa peta dan sulit berkembang.
                 </p>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader>
-                <Users className="h-12 w-12 text-primary mb-4" />
-                <CardTitle>Nilai Inti</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Badge variant="secondary">Inovasi</Badge>
-                  <Badge variant="secondary">Keberpihakan</Badge>
-                  <Badge variant="secondary">Integritas</Badge>
-                  <Badge variant="secondary">Kolaborasi</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Tim & Konsultan */}
-      <section className="py-16 px-4 bg-muted/30">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Tim & Konsultan Ahli
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Dipandu oleh para ahli berpengalaman di bidangnya
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <Card key={index} className="text-center">
-                <CardHeader>
-                  <div className="w-24 h-24 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
-                    <Users className="h-12 w-12 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{member.name}</CardTitle>
-                  <CardDescription>{member.role}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Badge variant="outline">{member.expertise}</Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Partner Strategis */}
-      <section className="py-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Partner Strategis
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Berkolaborasi dengan institusi terpercaya
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {partners.map((partner, index) => (
-              <Card key={index}>
-                <CardContent className="p-6 text-center">
-                  <Building2 className="h-8 w-8 text-primary mx-auto mb-3" />
-                  <h3 className="font-semibold mb-2">{partner.name}</h3>
-                  <Badge variant="secondary">{partner.type}</Badge>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Impact Data */}
-      <section className="py-16 px-4 bg-gradient-to-r from-primary/5 to-secondary/5">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Impact & Capaian
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Bukti nyata kontribusi kami untuk UMKM Indonesia
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {impacts.map((impact, index) => (
-              <div key={index} className="text-center">
-                <div className="w-16 h-16 rounded-full bg-primary/10 mx-auto mb-4 flex items-center justify-center">
-                  <impact.icon className="h-8 w-8 text-primary" />
-                </div>
-                <div className="text-3xl md:text-4xl font-bold text-primary mb-2">
-                  {impact.number}
-                </div>
-                <div className="text-muted-foreground font-medium">
-                  {impact.label}
-                </div>
+                <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
+                  SEMINDO hadir untuk menjembatani itu semua, mulai dari diagnosis berbasis data, akses langsung ke mentor dan praktisi, hingga dukungan pembelajaran, pembiayaan, dan persiapan ekspor dalam satu platform.
+                  <span className="block mt-4 font-semibold text-slate-900">
+                    Bukan sekadar pendampingan, tetapi solusi end-to-end agar UMKM bisa tumbuh secara nyata dan berkelanjutan.
+                  </span>
+                </p>
               </div>
-            ))}
+            </div>
+
+            {/* Right Column: Image */}
+            <div className="relative">
+              <img
+                src={aboutImage1}
+                alt="Semindo Presentation"
+                className="w-full h-auto rounded-xl shadow-xl object-cover"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 2: Visi & Misi */}
+      <section className="py-24 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          {/* Visi & Misi Toggles/Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-20">
+            {/* Visi */}
+            <div className="space-y-6">
+              <h2 className="text-4xl md:text-5xl lg:text-7xl font-bold text-slate-900">
+                Visi kami
+              </h2>
+              <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
+                Memberdayakan 1 juta UMKM Indonesia menjadi tulang punggung ekonomi yang tangguh dan siap bersaing di pasar global pada tahun 2030.
+              </p>
+            </div>
+
+            {/* Misi */}
+            <div className="space-y-6">
+              <h2 className="text-4xl md:text-5xl lg:text-7xl font-bold text-slate-900">
+                Misi kami
+              </h2>
+              <div className="space-y-4">
+                <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
+                  Menyediakan pendampingan UMKM berbasis data sebagai dasar pengambilan keputusan bisnis.
+                </p>
+                <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
+                  Menghubungkan UMKM dengan mentor, praktisi, dan jejaring profesional lintas sektor.
+                </p>
+                <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
+                  Mengintegrasikan pembelajaran, konsultasi, pembiayaan, dan ekspor dalam satu ekosistem digital.
+                </p>
+                <p className="text-lg md:text-xl text-slate-600 leading-relaxed">
+                  Mendorong pertumbuhan UMKM yang berkelanjutan dan siap menghadapi pasar global.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Large Bottom Image */}
+          <div className="relative">
+            <img
+              src={aboutImage2}
+              alt="Semindo Workshop"
+              className="w-full h-[400px] md:h-[600px] rounded-xl shadow-lg object-cover"
+            />
           </div>
         </div>
       </section>

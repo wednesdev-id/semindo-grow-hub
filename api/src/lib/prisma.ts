@@ -11,6 +11,7 @@ const prismaClientSingleton = () => {
     }
 
     const pool = new Pool({ connectionString });
+    console.log(`[DEBUG] Connecting to DB with URL: ${connectionString.replace(/:([^@]+)@/, ':****@')}`);
     const adapter = new PrismaPg(pool);
 
     const logOptions = process.env.NODE_ENV !== 'production'
