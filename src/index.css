@@ -82,6 +82,17 @@ All colors MUST be HSL.
     /* Body and text colors */
     --body-color: 220 9% 46%;
     --dark: 220 18% 20%;
+
+    /* Enhanced Button Colors Light */
+    --button-primary: 232 51% 26%;
+    --button-primary-foreground: 0 0% 100%;
+    --button-secondary: 226 36% 94%;
+    --button-secondary-foreground: 232 51% 26%;
+    --button-outline: transparent;
+    --button-outline-foreground: 213 76% 46%;
+    --button-outline-border: 213 76% 46%;
+    --button-hero: 232 51% 26%;
+    --button-hero-foreground: 0 0% 100%;
   }
 
   .dark {
