@@ -11,6 +11,13 @@ import { Label } from "@/components/ui/label";
 import {
   Star, Search, ArrowUpRight
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import SEOHead from "@/components/ui/seo-head";
 import { consultationService } from '@/services/consultationService';
 import { api } from '@/services/api';
@@ -132,46 +139,46 @@ const LayananKonsultasi = () => {
             {/* Sidebar Filters */}
             <aside className="w-full lg:w-1/4 space-y-8">
               {/* Rating Filter */}
+              {/* Rating Filter */}
               <div>
                 <h3 className="font-bold text-lg mb-4">Penilaian</h3>
-                <div className="space-y-4">
-                  <button
-                    onClick={() => setSelectedRating(null)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedRating === null ? 'bg-gray-100 text-gray-900' : 'text-gray-500 hover:bg-gray-50'}`}
-                  >
-                    Semua Penilaian
-                  </button>
-                  <div className="space-y-2 px-2">
+                <Select
+                  value={selectedRating ? String(selectedRating) : "all"}
+                  onValueChange={(value) => setSelectedRating(value === "all" ? null : Number(value))}
+                >
+                  <SelectTrigger className="w-full bg-white border-gray-200">
+                    <SelectValue placeholder="Pilih Penilaian" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Penilaian</SelectItem>
                     {[5, 4, 3, 2, 1].map((rating) => (
-                      <div
-                        key={rating}
-                        className="flex items-center gap-2 cursor-pointer group"
-                        onClick={() => setSelectedRating(rating === selectedRating ? null : rating)}
-                      >
-                        <div className="flex gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`h-4 w-4 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`}
-                            />
-                          ))}
+                      <SelectItem key={rating} value={String(rating)}>
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`h-3 w-3 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'fill-gray-200 text-gray-200'}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-gray-600 font-medium">
+                            {rating} Bintang
+                          </span>
                         </div>
-                        <span className={`text-sm ${selectedRating === rating ? 'text-gray-900 font-medium' : 'text-gray-500 group-hover:text-gray-700'}`}>
-                          {rating === 5 ? "" : "ke atas"}
-                        </span>
-                      </div>
+                      </SelectItem>
                     ))}
-                  </div>
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Specialist Filter */}
               <div>
                 <h3 className="font-bold text-lg mb-4">Specialist</h3>
-                <div className="space-y-2">
+                <div className="flex flex-col gap-3 text-sm text-gray-600">
                   <button
                     onClick={() => setSelectedExpertise('Semua')}
-                    className={`block w-full text-left py-2 px-3 rounded-md transition-colors text-sm ${selectedExpertise === 'Semua' ? 'text-blue-600 font-medium' : 'text-gray-500 hover:text-gray-900'
+                    className={`text-left hover:text-blue-600 transition-colors ${selectedExpertise === 'Semua' ? 'text-blue-600 font-medium' : ''
                       }`}
                   >
                     Semua
@@ -180,7 +187,7 @@ const LayananKonsultasi = () => {
                     <button
                       key={cat.id}
                       onClick={() => setSelectedExpertise(cat.name || cat.id)}
-                      className={`block w-full text-left py-2 px-3 rounded-md transition-colors text-sm ${selectedExpertise === (cat.name || cat.id) ? 'text-blue-600 font-medium' : 'text-gray-500 hover:text-gray-900'
+                      className={`text-left hover:text-blue-600 transition-colors ${selectedExpertise === (cat.name || cat.id) ? 'text-blue-600 font-medium' : ''
                         }`}
                     >
                       {cat.name}
@@ -193,7 +200,7 @@ const LayananKonsultasi = () => {
                         <button
                           key={item}
                           onClick={() => setSelectedExpertise(item)}
-                          className={`block w-full text-left py-2 px-3 rounded-md transition-colors text-sm ${selectedExpertise === item ? 'text-blue-600 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
+                          className={`text-left hover:text-blue-600 transition-colors ${selectedExpertise === item ? 'text-blue-600 font-medium' : ''}`}
                         >
                           {item}
                         </button>
@@ -218,92 +225,94 @@ const LayananKonsultasi = () => {
               </div>
 
               {/* Consultants Grid */}
-              {loading ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="space-y-4">
-                      <div className="bg-gray-200 aspect-[4/5] rounded-xl animate-pulse"></div>
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  ))}
-                </div>
-              ) : consultants.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  Tidak ada konsultan yang ditemukan.
-                </div>
-              ) : (
-                <>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 mb-12">
-                    {consultants.map((consultant) => (
-                      <div key={consultant.id} className="group flex flex-col h-full bg-transparent">
-                        {/* Image Placeholder - Matches the gray box in design */}
-                        <div className="w-full aspect-[4/4.5] bg-gray-200 rounded-xl mb-4 overflow-hidden relative">
-                          {((consultant.user as any)?.profilePictureUrl) ? (
-                            <img
-                              src={(consultant.user as any)?.profilePictureUrl}
-                              alt={(consultant.user as any)?.fullName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-                              {/* Gray placeholder as per design */}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-bold text-lg text-gray-900 line-clamp-1">{(consultant.user as any)?.fullName}</h3>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                            <span className="text-sm font-bold text-gray-700">{consultant.averageRating?.toFixed(1).replace('.', ',') || '4,5'}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-sm text-gray-500 font-normal mb-1">{consultant.title || 'Specialist'}</p>
-                        <p className="text-xs text-gray-400 mb-6">{consultant.yearsExperience || '1'} tahun pengalaman</p>
-
-                        <div className="mt-auto flex gap-3">
-                          <Button className="flex-1 bg-[#1e2350] hover:bg-[#2a306e] text-white text-sm h-11 rounded-lg font-medium">
-                            Booking Konsultasi
-                          </Button>
-                          <Button variant="outline" className="h-11 w-11 p-0 border-gray-300 rounded-lg text-[#1e2350] shrink-0">
-                            <ArrowUpRight className="h-5 w-5" />
-                          </Button>
-                        </div>
+              {
+                loading ? (
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="space-y-4">
+                        <div className="bg-gray-200 aspect-[4/5] rounded-xl animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                       </div>
                     ))}
                   </div>
-
-                  {/* Pagination */}
-                  <div className="flex justify-center items-center gap-2">
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-400 hover:text-gray-900 bg-gray-100 rounded-full">
-                      <span className="sr-only">Previous</span>
-                      <ArrowUpRight className="h-4 w-4 rotate-[225deg]" /> {/* Left arrow approximation */}
-                    </Button>
-                    {[1, 2, 3, 4, 5].map((page) => (
-                      <button
-                        key={page}
-                        className={`h-10 w-10 rounded-full text-sm font-medium transition-colors ${page === 1 ? 'bg-transparent text-blue-600' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-                    <span className="text-gray-400">...</span>
-                    <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-400 hover:text-gray-900 bg-gray-100 rounded-full">
-                      <span className="sr-only">Next</span>
-                      <ArrowUpRight className="h-4 w-4 rotate-45" /> {/* Right arrow approximation */}
-                    </Button>
+                ) : consultants.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    Tidak ada konsultan yang ditemukan.
                   </div>
-                </>
-              )}
-            </main>
-          </div>
-        </div>
-      </section>
+                ) : (
+                  <>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 mb-12">
+                      {consultants.map((consultant) => (
+                        <div key={consultant.id} className="group flex flex-col h-full bg-transparent">
+                          {/* Image Placeholder - Matches the gray box in design */}
+                          <div className="w-full aspect-[4/4.5] bg-gray-200 rounded-xl mb-4 overflow-hidden relative">
+                            {((consultant.user as any)?.profilePictureUrl) ? (
+                              <img
+                                src={(consultant.user as any)?.profilePictureUrl}
+                                alt={(consultant.user as any)?.fullName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                                {/* Gray placeholder as per design */}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="font-bold text-lg text-gray-900 line-clamp-1">{(consultant.user as any)?.fullName}</h3>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                              <span className="text-sm font-bold text-gray-700">{consultant.averageRating?.toFixed(1).replace('.', ',') || '4,5'}</span>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-gray-500 font-normal mb-1">{consultant.title || 'Specialist'}</p>
+                          <p className="text-xs text-gray-400 mb-6">{consultant.yearsExperience || '1'} tahun pengalaman</p>
+
+                          <div className="mt-auto flex gap-3">
+                            <Button className="flex-1 bg-[#1e2350] hover:bg-[#2a306e] text-white text-sm h-11 rounded-lg font-medium">
+                              Booking Konsultasi
+                            </Button>
+                            <Button variant="outline" className="h-11 w-11 p-0 border-gray-300 rounded-lg text-[#1e2350] shrink-0">
+                              <ArrowUpRight className="h-5 w-5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="flex justify-center items-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-400 hover:text-gray-900 bg-gray-100 rounded-full">
+                        <span className="sr-only">Previous</span>
+                        <ArrowUpRight className="h-4 w-4 rotate-[225deg]" /> {/* Left arrow approximation */}
+                      </Button>
+                      {[1, 2, 3, 4, 5].map((page) => (
+                        <button
+                          key={page}
+                          className={`h-10 w-10 rounded-full text-sm font-medium transition-colors ${page === 1 ? 'bg-transparent text-blue-600' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'}`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                      <span className="text-gray-400">...</span>
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-gray-400 hover:text-gray-900 bg-gray-100 rounded-full">
+                        <span className="sr-only">Next</span>
+                        <ArrowUpRight className="h-4 w-4 rotate-45" /> {/* Right arrow approximation */}
+                      </Button>
+                    </div>
+                  </>
+                )
+              }
+            </main >
+          </div >
+        </div >
+      </section >
 
       <Footer />
-    </div>
+    </div >
   );
 };
 
