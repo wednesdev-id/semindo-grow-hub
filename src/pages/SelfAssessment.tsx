@@ -236,6 +236,7 @@ export default function SelfAssessment() {
                 <Button
                   size="lg"
                   className="bg-[#212A65] hover:bg-[#1a2151] text-white px-8 h-12 text-base rounded-md shadow-lg shadow-blue-200"
+                  onClick={() => navigate('/assessment/sample')}
                 >
                   Lihat Sampel
                 </Button>

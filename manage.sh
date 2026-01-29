@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Ports
 FRONTEND_PORT=${FRONTEND_PORT:-5174}
-BACKEND_PORT=${BACKEND_PORT:-8080}
+BACKEND_PORT=${BACKEND_PORT:-8081}
 
 # Ensure we are in the script directory
 cd "$(dirname "$0")"

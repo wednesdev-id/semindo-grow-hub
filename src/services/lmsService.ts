@@ -78,6 +78,27 @@ export interface Course {
     modules?: Module[];
 }
 
+export interface Webinar {
+    id: string;
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+    thumbnail?: string;
+    province?: string;
+    city?: string;
+    venue?: string;
+    type: string;
+    status: string;
+    mentor: {
+        user: {
+            fullName: string;
+            profilePictureUrl?: string;
+        }
+    };
+    attendees?: { id: string }[];
+}
+
 export const lmsService = {
     getCourses: async (params?: {
         category?: string;
@@ -108,6 +129,25 @@ export const lmsService = {
 
     getMyCourses: async () => {
         const response = await api.get<{ data: any[] }>('/lms/my-courses');
+        return response.data;
+    },
+
+    getWebinars: async (params?: {
+        search?: string;
+        type?: string;
+        city?: string;
+        isOnline?: boolean;
+    }) => {
+        const queryParams = new URLSearchParams();
+        if (params?.search) queryParams.append('search', params.search);
+        if (params?.type) queryParams.append('type', params.type);
+        if (params?.city) queryParams.append('city', params.city);
+        if (params?.isOnline !== undefined) queryParams.append('isOnline', String(params.isOnline));
+
+        const queryString = queryParams.toString();
+        const url = `/lms/webinars${queryString ? `?${queryString}` : ''}`;
+
+        const response = await api.get<{ data: Webinar[] }>(url);
         return response.data;
     },
 

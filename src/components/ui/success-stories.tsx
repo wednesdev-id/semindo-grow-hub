@@ -1,8 +1,8 @@
 
 import { useState } from "react";
 import imgSarah from "@/assets/image 43.png";
-import imgEvelyn from "@/assets/image 44.png";
-import imgJoko from "@/assets/image 45.png";
+import imgEvelyn from "@/assets/image 45.png";
+import imgJoko from "@/assets/image 44.png";
 import arrowLeft from "@/assets/arrow left.png";
 import arrowRight from "@/assets/arrow right.png";
 

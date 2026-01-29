@@ -14,6 +14,9 @@ const router = Router();
 const controller = new CoursesController();
 const assessmentController = new AssessmentController();
 
+import { WebinarController } from '../controllers/webinar.controller';
+const webinarController = new WebinarController();
+
 // Configure Multer
 const storage = multer.memoryStorage();
 
@@ -67,6 +70,8 @@ router.get('/assignments/:assignmentId/submissions', authenticate, requireRole([
 // Public routes
 router.get('/courses', controller.findAll);
 router.get('/courses/:slug', controller.findBySlug);
+router.get('/webinars', webinarController.findAll);
+router.get('/webinars/:id', webinarController.findOne);
 
 // Protected routes
 router.use(authenticate);

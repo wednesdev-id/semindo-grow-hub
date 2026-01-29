@@ -25,6 +25,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const TentangKami = lazy(() => import("./pages/TentangKami"));
 const LayananKonsultasi = lazy(() => import("./pages/LayananKonsultasi"));
 const SelfAssessment = lazy(() => import("./pages/SelfAssessment"));
+const SampleAssessmentResult = lazy(() => import("./pages/SampleAssessmentResult"));
 const LearningHub = lazy(() => import("./pages/LearningHub"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const ProductDetail = lazy(() => import("./pages/marketplace/ProductDetail"));
@@ -242,6 +243,7 @@ const App = () => {
                       <Route path="/tentang-kami" element={<TentangKami />} />
                       <Route path="/layanan-konsultasi" element={<LayananKonsultasi />} />
                       <Route path="/self-assessment" element={<SelfAssessment />} />
+                      <Route path="/assessment/sample" element={<SampleAssessmentResult />} />
                       <Route path="/learning-hub" element={<LearningHub />} />
                       <Route path="/marketplace" element={<Marketplace />} />
                       <Route path="/marketplace/product/:slug" element={<ProductDetail />} />
