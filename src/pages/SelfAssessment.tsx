@@ -225,9 +225,9 @@ export default function SelfAssessment() {
         <div className="container mx-auto px-4">
           <div className="bg-blue-50 rounded-3xl overflow-hidden flex flex-col lg:flex-row items-stretch">
             <div className="lg:w-1/3 p-8 md:p-16 space-y-8 flex flex-col justify-center">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
-                Gambaran Hasil yang Akan<br />
-                Anda Dapatkan
+              <h2 className="text-4xl md:text-4xl font-bold text-gray-900 leading-tight">
+                Lihat sampel hasil<br />
+                Assessment
               </h2>
               <p className="text-gray-500 text-lg leading-relaxed">
                 Bukan sekadar angka, tapi panduan nyata. Lihat contoh laporan detil yang telah membantu ribuan UMKM mengambil keputusan bisnis yang lebih tepat dan strategis.
