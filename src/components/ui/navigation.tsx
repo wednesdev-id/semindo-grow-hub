@@ -88,12 +88,12 @@ const Navigation = ({ onDaftarClick, variant = "solid" }: NavigationProps) => {
                         <h4 className="font-bold text-slate-900 mb-4 text-base">Program kami</h4>
                         <ul className="space-y-3">
                           <li>
-                            <Link to="#" className="block text-slate-600 hover:text-primary transition-colors text-sm">
+                            <Link to="/self-assessment" className="block text-slate-600 hover:text-primary transition-colors text-sm">
                               Self Assessment
                             </Link>
                           </li>
                           <li>
-                            <Link to="#" className="block text-slate-600 hover:text-primary transition-colors text-sm">
+                            <Link to="/learning-hub" className="block text-slate-600 hover:text-primary transition-colors text-sm">
                               Learning Hub
                             </Link>
                           </li>
@@ -105,17 +105,17 @@ const Navigation = ({ onDaftarClick, variant = "solid" }: NavigationProps) => {
                         <h4 className="font-bold text-slate-900 mb-4 text-base">Layanan kami</h4>
                         <ul className="space-y-3">
                           <li>
-                            <Link to="#" className="block text-slate-600 hover:text-primary transition-colors text-sm">
+                            <Link to="/layanan-konsultasi" className="block text-slate-600 hover:text-primary transition-colors text-sm">
                               Konsultasi
                             </Link>
                           </li>
                           <li>
-                            <Link to="#" className="block text-slate-600 hover:text-primary transition-colors text-sm">
+                            <Link to="/programs" className="block text-slate-600 hover:text-primary transition-colors text-sm">
                               Pendampingan
                             </Link>
                           </li>
                           <li>
-                            <Link to="#" className="block text-slate-600 hover:text-primary transition-colors text-sm">
+                            <Link to="/programs" className="block text-slate-600 hover:text-primary transition-colors text-sm">
                               Sertifikasi & Legalitas
                             </Link>
                           </li>
